@@ -10,7 +10,6 @@ coverage
 build
 dist
 .vscode
-.git
 *.keystore
 *.jks
 *.p8
