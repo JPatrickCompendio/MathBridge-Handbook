@@ -1,6 +1,8 @@
-import { useRouter } from 'expo-router';
-import React, { useState, useEffect, useRef } from 'react';
+import { Href, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+    Animated,
+    Easing,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -8,8 +10,6 @@ import {
     Text,
     TouchableOpacity,
     View,
-    Animated,
-    Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/ui/Button';
@@ -26,27 +26,16 @@ const ProfessionalColors = {
   textSecondary: '#666666',
   border: '#E5E5E5',
   error: '#DC2626',
-  success: '#61E35D',
+  success: '#059669',
 };
 
 const MATH_SYMBOLS = ['+', '−', '×', '÷', 'Σ', 'π', '√', '='];
 
-export default function SignupScreen() {
+export default function LoginScreen() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    username: '',
-    password: '',
-    confirmPassword: '',
-  });
-  const [errors, setErrors] = useState<{
-    name?: string;
-    email?: string;
-    username?: string;
-    password?: string;
-    confirmPassword?: string;
-  }>({});
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [currentSymbolIndex, setCurrentSymbolIndex] = useState(0);
 
   // Animation values for 3D rotation
@@ -62,7 +51,7 @@ export default function SignupScreen() {
       );
     }, 2000);
 
-    // Continuous 3D rotation animation
+    // Continuous 3D rotation animation (original effect)
     const animateMathSymbol = () => {
       Animated.parallel([
         // Y-axis rotation (3D flip)
@@ -122,7 +111,7 @@ export default function SignupScreen() {
     };
   }, []);
 
-  // 3D rotation interpolations
+  // 3D rotation interpolations (original effect)
   const rotateY = rotateYAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
@@ -134,55 +123,37 @@ export default function SignupScreen() {
   });
 
   const validateForm = () => {
-    const newErrors: typeof errors = {};
+    const newErrors: { email?: string; password?: string } = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-
-    if (!formData.email.trim()) {
+    if (!email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email';
     }
 
-    if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
-    } else if (formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
-    }
-
-    if (!formData.password.trim()) {
+    if (!password.trim()) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (!formData.confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSignup = () => {
+  const handleLogin = () => {
     if (validateForm()) {
-      console.log('Signup:', formData);
+      // TODO: Implement actual login logic with backend
+      console.log('Login:', { email, password });
+      // Navigate to homepage after successful login
+      router.replace('/tabs' as Href);
     }
   };
 
-  const handleGoogleSignup = () => {
-    console.log('Google signup');
+  const handleGoogleLogin = () => {
+    console.log('Google login');
   };
 
-  const handleFieldChange = (field: keyof typeof formData, value: string) => {
-    setFormData({ ...formData, [field]: value });
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: undefined });
-    }
+  const handleForgotPassword = () => {
+    console.log('Forgot password');
   };
 
   return (
@@ -221,9 +192,9 @@ export default function SignupScreen() {
               </Animated.View>
             </View>
 
-            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>
-              Join us and start your learning journey
+              Sign in to access your learning dashboard
             </Text>
           </View>
 
@@ -231,20 +202,13 @@ export default function SignupScreen() {
           <View style={styles.formCard}>
             <View style={styles.form}>
               <Input
-                label="Full Name"
-                placeholder="Enter your full name"
-                value={formData.name}
-                onChangeText={(text) => handleFieldChange('name', text)}
-                autoCapitalize="words"
-                error={errors.name}
-                containerStyle={styles.input}
-              />
-
-              <Input
                 label="Email Address"
                 placeholder="Enter your email"
-                value={formData.email}
-                onChangeText={(text) => handleFieldChange('email', text)}
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) setErrors({ ...errors, email: undefined });
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -253,42 +217,31 @@ export default function SignupScreen() {
               />
 
               <Input
-                label="Username"
-                placeholder="Choose a username"
-                value={formData.username}
-                onChangeText={(text) => handleFieldChange('username', text)}
-                autoCapitalize="none"
-                autoCorrect={false}
-                error={errors.username}
-                containerStyle={styles.input}
-              />
-
-              <Input
                 label="Password"
-                placeholder="Create a password"
-                value={formData.password}
-                onChangeText={(text) => handleFieldChange('password', text)}
+                placeholder="Enter your password"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) setErrors({ ...errors, password: undefined });
+                }}
                 secureTextEntry
                 error={errors.password}
                 containerStyle={styles.input}
               />
 
-              <Input
-                label="Confirm Password"
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChangeText={(text) => handleFieldChange('confirmPassword', text)}
-                secureTextEntry
-                error={errors.confirmPassword}
-                containerStyle={styles.input}
-              />
+              <TouchableOpacity
+                onPress={handleForgotPassword}
+                style={styles.forgotPassword}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
+              </TouchableOpacity>
 
               <Button
-                title="Create Account"
-                onPress={handleSignup}
+                title="Sign In"
+                onPress={handleLogin}
                 variant="primary"
                 size="large"
-                style={styles.signUpButton}
+                style={styles.signInButton}
               />
 
               <View style={styles.divider}>
@@ -299,18 +252,18 @@ export default function SignupScreen() {
 
               <Button
                 title="Continue with Google"
-                onPress={handleGoogleSignup}
+                onPress={handleGoogleLogin}
                 variant="outline"
                 size="large"
                 style={styles.googleButton}
               />
 
-              <View style={styles.loginContainer}>
-                <Text style={styles.loginText}>Already have an account? </Text>
+              <View style={styles.signupContainer}>
+                <Text style={styles.signupText}>Don't have an account? </Text>
                 <TouchableOpacity 
-                  onPress={() => router.push('/(auth)/login')}
+                  onPress={() => router.push('/auth/signup')}
                 >
-                  <Text style={styles.loginLinkText}>Sign in</Text>
+                  <Text style={styles.signupLinkText}>Create account</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -403,7 +356,16 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: Spacing.lg,
   },
-  signUpButton: {
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: Spacing.xl,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: ProfessionalColors.primary,
+    fontWeight: '600',
+  },
+  signInButton: {
     marginBottom: Spacing.lg,
     backgroundColor: ProfessionalColors.primary,
     shadowColor: ProfessionalColors.primary,
@@ -433,21 +395,22 @@ const styles = StyleSheet.create({
     borderColor: ProfessionalColors.border,
     backgroundColor: ProfessionalColors.white,
   },
-  loginContainer: {
+  signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 'auto',
     paddingTop: Spacing.xl,
   },
-  loginText: {
+  signupText: {
     fontSize: 15,
     color: ProfessionalColors.textSecondary,
     fontWeight: '400',
   },
-  loginLinkText: {
+  signupLinkText: {
     fontSize: 15,
     color: ProfessionalColors.primary,
     fontWeight: '600',
   },
 });
+

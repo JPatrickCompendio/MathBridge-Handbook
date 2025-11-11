@@ -9,7 +9,7 @@ export default function Index() {
   const handleLoadingFinish = () => {
     setShowLoading(false);
     // Navigate to login screen after loading
-    router.replace('/(auth)/login');
+    router.replace('/auth/login');
   };
 
   if (showLoading) {

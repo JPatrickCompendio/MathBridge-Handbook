@@ -7,16 +7,16 @@ This document explains the folder structure of the Math Bridge Handbook mobile a
 ```
 math-bridge-handbook/
 ├── app/                          # Expo Router screens (file-based routing)
-│   ├── (auth)/                   # Authentication group
+│   ├── auth/                     # Authentication group
 │   │   ├── _layout.tsx          # Auth layout configuration
 │   │   ├── login.tsx            # Login screen
-│   │   └── signup.tsx           # Sign up screen (to be created)
-│   ├── (tabs)/                   # Main app screens group (to be created)
+│   │   └── signup.tsx           # Sign up screen
+│   ├── tabs/                     # Main app screens group
 │   │   ├── _layout.tsx          # Tab navigation layout
 │   │   ├── index.tsx            # Homepage/Dashboard
-│   │   ├── lessons.tsx          # Lessons screen
 │   │   ├── activities.tsx       # Activities screen
-│   │   └── progress.tsx          # Progress screen
+│   │   ├── achievements.tsx     # Achievements screen
+│   │   └── profile.tsx          # Profile screen
 │   ├── _layout.tsx              # Root layout
 │   └── index.tsx                # Entry point (Loading screen)
 │
@@ -31,7 +31,8 @@ math-bridge-handbook/
 │
 ├── types/                        # TypeScript type definitions (to be created)
 │
-├── utils/                        # Utility functions (to be created)
+├── utils/                        # Utility functions
+│   └── progressStorage.ts       # Progress storage utilities
 │
 └── assets/                       # Static assets (images, fonts, etc.)
     └── images/                   # Image files
@@ -42,21 +43,21 @@ math-bridge-handbook/
 ### `app/`
 Contains all screen components using Expo Router's file-based routing system.
 - Files in `app/` become routes automatically
-- Groups (folders with parentheses) organize related screens
+- Folders organize related screens into route groups
 - `_layout.tsx` files define navigation structure for groups
 
-### `app/(auth)/`
+### `app/auth/`
 Authentication-related screens:
 - Login screen
 - Sign up screen
 - Forgot password screen (to be added)
 
-### `app/(tabs)/`
-Main application screens (to be created):
+### `app/tabs/`
+Main application screens:
 - Homepage with topics menu
-- Lessons screen
 - Activities screen
-- Progress/Score tracker
+- Achievements screen
+- Profile screen
 
 ### `components/`
 Reusable UI components that can be used across multiple screens.

@@ -117,7 +117,7 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: () => {
             console.log('Logout');
-            router.replace('/(auth)/login');
+            router.replace('/auth/login');
           },
         },
       ],

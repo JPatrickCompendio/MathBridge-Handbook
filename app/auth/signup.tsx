@@ -1,4 +1,4 @@
-import { Href, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     Animated,
@@ -26,16 +26,27 @@ const ProfessionalColors = {
   textSecondary: '#666666',
   border: '#E5E5E5',
   error: '#DC2626',
-  success: '#059669',
+  success: '#61E35D',
 };
 
 const MATH_SYMBOLS = ['+', '−', '×', '÷', 'Σ', 'π', '√', '='];
 
-export default function LoginScreen() {
+export default function SignupScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    username: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    username?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
   const [currentSymbolIndex, setCurrentSymbolIndex] = useState(0);
 
   // Animation values for 3D rotation
@@ -51,7 +62,7 @@ export default function LoginScreen() {
       );
     }, 2000);
 
-    // Continuous 3D rotation animation (original effect)
+    // Continuous 3D rotation animation
     const animateMathSymbol = () => {
       Animated.parallel([
         // Y-axis rotation (3D flip)
@@ -111,7 +122,7 @@ export default function LoginScreen() {
     };
   }, []);
 
-  // 3D rotation interpolations (original effect)
+  // 3D rotation interpolations
   const rotateY = rotateYAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
@@ -123,37 +134,55 @@ export default function LoginScreen() {
   });
 
   const validateForm = () => {
-    const newErrors: { email?: string; password?: string } = {};
+    const newErrors: typeof errors = {};
 
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email';
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
     }
 
-    if (!password.trim()) {
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (formData.username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
+    }
+
+    if (!formData.password.trim()) {
       newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (!formData.confirmPassword.trim()) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = () => {
+  const handleSignup = () => {
     if (validateForm()) {
-      // TODO: Implement actual login logic with backend
-      console.log('Login:', { email, password });
-      // Navigate to homepage after successful login
-      router.replace('/(tabs)' as Href);
+      console.log('Signup:', formData);
     }
   };
 
-  const handleGoogleLogin = () => {
-    console.log('Google login');
+  const handleGoogleSignup = () => {
+    console.log('Google signup');
   };
 
-  const handleForgotPassword = () => {
-    console.log('Forgot password');
+  const handleFieldChange = (field: keyof typeof formData, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: undefined });
+    }
   };
 
   return (
@@ -192,9 +221,9 @@ export default function LoginScreen() {
               </Animated.View>
             </View>
 
-            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>
-              Sign in to access your learning dashboard
+              Join us and start your learning journey
             </Text>
           </View>
 
@@ -202,13 +231,20 @@ export default function LoginScreen() {
           <View style={styles.formCard}>
             <View style={styles.form}>
               <Input
+                label="Full Name"
+                placeholder="Enter your full name"
+                value={formData.name}
+                onChangeText={(text) => handleFieldChange('name', text)}
+                autoCapitalize="words"
+                error={errors.name}
+                containerStyle={styles.input}
+              />
+
+              <Input
                 label="Email Address"
                 placeholder="Enter your email"
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  if (errors.email) setErrors({ ...errors, email: undefined });
-                }}
+                value={formData.email}
+                onChangeText={(text) => handleFieldChange('email', text)}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -217,31 +253,42 @@ export default function LoginScreen() {
               />
 
               <Input
+                label="Username"
+                placeholder="Choose a username"
+                value={formData.username}
+                onChangeText={(text) => handleFieldChange('username', text)}
+                autoCapitalize="none"
+                autoCorrect={false}
+                error={errors.username}
+                containerStyle={styles.input}
+              />
+
+              <Input
                 label="Password"
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (errors.password) setErrors({ ...errors, password: undefined });
-                }}
+                placeholder="Create a password"
+                value={formData.password}
+                onChangeText={(text) => handleFieldChange('password', text)}
                 secureTextEntry
                 error={errors.password}
                 containerStyle={styles.input}
               />
 
-              <TouchableOpacity
-                onPress={handleForgotPassword}
-                style={styles.forgotPassword}
-              >
-                <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
-              </TouchableOpacity>
+              <Input
+                label="Confirm Password"
+                placeholder="Confirm your password"
+                value={formData.confirmPassword}
+                onChangeText={(text) => handleFieldChange('confirmPassword', text)}
+                secureTextEntry
+                error={errors.confirmPassword}
+                containerStyle={styles.input}
+              />
 
               <Button
-                title="Sign In"
-                onPress={handleLogin}
+                title="Create Account"
+                onPress={handleSignup}
                 variant="primary"
                 size="large"
-                style={styles.signInButton}
+                style={styles.signUpButton}
               />
 
               <View style={styles.divider}>
@@ -252,18 +299,18 @@ export default function LoginScreen() {
 
               <Button
                 title="Continue with Google"
-                onPress={handleGoogleLogin}
+                onPress={handleGoogleSignup}
                 variant="outline"
                 size="large"
                 style={styles.googleButton}
               />
 
-              <View style={styles.signupContainer}>
-                <Text style={styles.signupText}>Don't have an account? </Text>
+              <View style={styles.loginContainer}>
+                <Text style={styles.loginText}>Already have an account? </Text>
                 <TouchableOpacity 
-                  onPress={() => router.push('/(auth)/signup')}
+                  onPress={() => router.push('/auth/login')}
                 >
-                  <Text style={styles.signupLinkText}>Create account</Text>
+                  <Text style={styles.loginLinkText}>Sign in</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -356,16 +403,7 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: Spacing.lg,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: Spacing.xl,
-  },
-  forgotPasswordText: {
-    fontSize: 14,
-    color: ProfessionalColors.primary,
-    fontWeight: '600',
-  },
-  signInButton: {
+  signUpButton: {
     marginBottom: Spacing.lg,
     backgroundColor: ProfessionalColors.primary,
     shadowColor: ProfessionalColors.primary,
@@ -395,21 +433,22 @@ const styles = StyleSheet.create({
     borderColor: ProfessionalColors.border,
     backgroundColor: ProfessionalColors.white,
   },
-  signupContainer: {
+  loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 'auto',
     paddingTop: Spacing.xl,
   },
-  signupText: {
+  loginText: {
     fontSize: 15,
     color: ProfessionalColors.textSecondary,
     fontWeight: '400',
   },
-  signupLinkText: {
+  loginLinkText: {
     fontSize: 15,
     color: ProfessionalColors.primary,
     fontWeight: '600',
   },
 });
+
