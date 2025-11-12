@@ -1,18 +1,19 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Animated,
-    Easing,
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Animated,
+  Easing,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { updateTopicProgress } from '../../utils/progressStorage';
+import { getSafeAreaTopPadding, getSpacing } from '../../utils/responsive';
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -1900,7 +1901,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: Spacing.lg,
+    padding: getSpacing(Spacing.lg),
+    paddingTop: getSafeAreaTopPadding() + getSpacing(Spacing.lg),
     backgroundColor: ProfessionalColors.white,
     borderBottomWidth: 1,
     borderBottomColor: ProfessionalColors.border,
@@ -1957,8 +1959,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    padding: getSpacing(Spacing.lg),
+    paddingBottom: getSpacing(Spacing.xxl),
   },
   lessonHeader: {
     marginBottom: Spacing.xl,

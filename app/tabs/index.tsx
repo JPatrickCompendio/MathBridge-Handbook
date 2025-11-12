@@ -2,18 +2,20 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    Animated,
-    Easing,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Animated,
+  Easing,
+  ImageBackground,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { getTopicProgress } from '../../utils/progressStorage';
+import { getSafeAreaTopPadding, getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -33,7 +35,7 @@ const ProfessionalColors = {
 
 // Example data
 const EXAMPLE_USER = {
-  name: 'John Doe',
+  name: 'John Patrick',
   averageProgress: 67,
   streak: 5,
   level: 12,
@@ -52,6 +54,19 @@ const EXAMPLE_TOPICS = [
 const TOPIC_COLORS = [
   '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFA726', '#AB47BC'
 ];
+
+// Helper function to get image path based on topic name
+const getTopicImage = (topicName: string): any => {
+  const imageMap: { [key: string]: any } = {
+    'Geometry': require('../../assets/images/geometry.png'),
+    'Algebra': require('../../assets/images/algebra.png'),
+    'Statistics': require('../../assets/images/statistics.png'),
+    'Trigonometry': require('../../assets/images/trigonometry.png'),
+    'Calculus': require('../../assets/images/calculus.png'),
+    'Probability': require('../../assets/images/probality.png'), // Note: filename has typo
+  };
+  return imageMap[topicName] || require('../../assets/images/geometry.png'); // fallback
+};
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -137,10 +152,10 @@ export default function HomeScreen() {
     }, [progress, progressWidth]);
 
     return (
-      <View style={[styles.topicProgressBarBackground, style]}>
+      <View style={style ? [styles.topicProgressBarBackground, style] : styles.topicProgressBarBackground}>
         <Animated.View
           style={[
-            styles.topicProgressBarFill,
+            styles.topicProgressBarFill as any,
             {
               width: progressWidth.interpolate({
                 inputRange: [0, 100],
@@ -163,7 +178,7 @@ export default function HomeScreen() {
         {/* Enhanced Profile Header with Animations */}
         <Animated.View 
           style={[
-            styles.profileHeader,
+            styles.profileHeader as any,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
@@ -175,7 +190,7 @@ export default function HomeScreen() {
             <View style={styles.avatarContainer}>
               <Animated.View 
                 style={[
-                  styles.avatar,
+                  styles.avatar as any,
                   {
                     transform: [{
                       scale: fadeAnim.interpolate({
@@ -232,7 +247,7 @@ export default function HomeScreen() {
               <View style={styles.progressBarBackground}>
                 <Animated.View
                   style={[
-                    styles.progressBarFill,
+                    styles.progressBarFill as any,
                     {
                       width: progressAnim.interpolate({
                         inputRange: [0, 100],
@@ -254,7 +269,7 @@ export default function HomeScreen() {
         {/* Animated Search Bar */}
         <Animated.View 
           style={[
-            styles.searchSection,
+            styles.searchSection as any,
             {
               opacity: fadeAnim,
               transform: [{
@@ -286,7 +301,7 @@ export default function HomeScreen() {
         {/* Animated Section Header */}
         <Animated.View 
           style={[
-            styles.sectionHeader,
+            styles.sectionHeader as any,
             {
               opacity: fadeAnim,
               transform: [{
@@ -323,42 +338,52 @@ export default function HomeScreen() {
                 }}
               >
                 <TouchableOpacity
+                  onPress={() => handleTopicPress(topic.id)}
+                  activeOpacity={0.85}
                   style={[
-                    styles.topicCard,
+                    styles.topicCardTouchable,
                     { 
-                      backgroundColor: TOPIC_COLORS[index % TOPIC_COLORS.length],
-                      borderLeftWidth: 6,
-                      borderLeftColor: ProfessionalColors.white,
                       shadowColor: TOPIC_COLORS[index % TOPIC_COLORS.length],
                     },
                   ]}
-                  onPress={() => handleTopicPress(topic.id)}
-                  activeOpacity={0.85}
                 >
-                  <View style={styles.topicHeader}>
-                    <View style={styles.topicIconContainer}>
-                      <Text style={styles.topicIcon}>{topic.icon}</Text>
+                  {/* Orange left border strip */}
+                  <View style={styles.topicCardBorder} />
+                  
+                  <ImageBackground
+                    source={getTopicImage(topic.name)}
+                    style={styles.topicCard}
+                    imageStyle={styles.topicCardImage}
+                    resizeMode="cover"
+                  >
+                    {/* Overlay for better text readability */}
+                    <View style={styles.topicCardOverlay} />
+                    
+                    <View style={styles.topicHeader}>
+                      <View style={styles.topicIconContainer}>
+                        <Text style={styles.topicIcon}>{topic.icon}</Text>
+                      </View>
+                      <View style={styles.topicInfo}>
+                        <Text style={styles.topicName}>{topic.name}</Text>
+                        <Text style={styles.topicSubtitle}>{topic.subtitle}</Text>
+                      </View>
+                      <View style={styles.topicPercentage}>
+                        <Text style={styles.percentageText}>{Math.round(clampedProgress)}%</Text>
+                      </View>
                     </View>
-                    <View style={styles.topicInfo}>
-                      <Text style={styles.topicName}>{topic.name}</Text>
-                      <Text style={styles.topicSubtitle}>{topic.subtitle}</Text>
-                    </View>
-                    <View style={styles.topicPercentage}>
-                      <Text style={styles.percentageText}>{Math.round(clampedProgress)}%</Text>
-                    </View>
-                  </View>
 
-                  {/* Animated Progress Bar */}
-                  <View style={styles.topicProgressContainer}>
-                    <View style={styles.progressLabels}>
-                      <Text style={styles.topicProgressLabel}>Progress</Text>
-                      <Text style={styles.topicProgressValue}>{Math.round(clampedProgress)}%</Text>
+                    {/* Animated Progress Bar */}
+                    <View style={styles.topicProgressContainer}>
+                      <View style={styles.progressLabels}>
+                        <Text style={styles.topicProgressLabel}>Progress</Text>
+                        <Text style={styles.topicProgressValue}>{Math.round(clampedProgress)}%</Text>
+                      </View>
+                      <AnimatedProgressBar 
+                        progress={clampedProgress} 
+                        style={styles.topicProgressBarBackground}
+                      />
                     </View>
-                    <AnimatedProgressBar 
-                      progress={clampedProgress} 
-                      style={styles.topicProgressBarBackground}
-                    />
-                  </View>
+                  </ImageBackground>
                 </TouchableOpacity>
               </Animated.View>
             );
@@ -368,7 +393,7 @@ export default function HomeScreen() {
         {/* Animated Quick Stats */}
         <Animated.View 
           style={[
-            styles.quickStats,
+            styles.quickStats as any,
             {
               opacity: fadeAnim,
               transform: [{
@@ -402,6 +427,45 @@ export default function HomeScreen() {
   );
 }
 
+// Compute responsive values before StyleSheet
+const cardWidthValue = isTablet() ? '90%' : '100%';
+const topicCardWidthValue = isTablet() ? '95%' : '100%';
+
+const responsiveValues = {
+  paddingH: isTablet() ? wp(5) : wp(4),
+  cardMaxWidth: isTablet() ? 800 : undefined,
+  cardWidth: cardWidthValue,
+  topicCardWidth: topicCardWidthValue,
+  topicCardMarginH: isTablet() ? wp(2) : 0,
+  avatarSize: isTablet() ? 90 : isSmallDevice() ? 60 : 70,
+  avatarRadius: isTablet() ? 45 : isSmallDevice() ? 30 : 35,
+  avatarFont: isTablet() ? 36 : isSmallDevice() ? 24 : 28,
+  titleFont: isTablet() ? 28 : isSmallDevice() ? 18 : 22,
+  welcomeFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
+  progressCircleSize: isTablet() ? 90 : isSmallDevice() ? 60 : 70,
+  progressFont: isTablet() ? 22 : isSmallDevice() ? 14 : 18,
+  progressLabelFont: isTablet() ? 12 : isSmallDevice() ? 8 : 10,
+  sectionTitleFont: isTablet() ? 30 : isSmallDevice() ? 20 : 24,
+  sectionSubtitleFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
+  topicIconSize: isTablet() ? 60 : isSmallDevice() ? 40 : 50,
+  topicIconRadius: isTablet() ? 30 : isSmallDevice() ? 20 : 25,
+  topicIconFont: isTablet() ? 28 : isSmallDevice() ? 18 : 22,
+  topicNameFont: isTablet() ? 22 : isSmallDevice() ? 16 : 18,
+  topicSubtitleFont: isTablet() ? 14 : isSmallDevice() ? 10 : 12,
+  statCardMaxWidth: isTablet() ? 250 : undefined,
+  statNumberFont: isTablet() ? 26 : isSmallDevice() ? 16 : 20,
+  statLabelFont: isTablet() ? 14 : isSmallDevice() ? 10 : 12,
+  searchFont: isTablet() ? 18 : isSmallDevice() ? 14 : 16,
+  searchIconFont: isTablet() ? 20 : isSmallDevice() ? 16 : 18,
+  progressTitleFont: isTablet() ? 20 : isSmallDevice() ? 14 : 16,
+  progressSubtitleFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
+  progressBarHeight: isTablet() ? 14 : isSmallDevice() ? 10 : 12,
+  topicProgressBarHeight: isTablet() ? 10 : isSmallDevice() ? 6 : 8,
+  levelFont: isTablet() ? 12 : isSmallDevice() ? 8 : 10,
+  streakFont: isTablet() ? 14 : isSmallDevice() ? 10 : 12,
+  streakIconFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -411,64 +475,70 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 0,
-    paddingBottom: Spacing.xl,
+    paddingTop: getSafeAreaTopPadding(),
+    paddingBottom: getSpacing(Spacing.xl),
+    
   },
   // Enhanced Profile Header
   profileHeader: {
     backgroundColor: ProfessionalColors.white,
-    padding: Spacing.xl,
-    marginTop: Spacing.md,
-    borderRadius: 32,
+    padding: getSpacing(Spacing.xl),
+    marginTop: getSpacing(Spacing.md),
+    marginHorizontal: responsiveValues.paddingH,
+    borderRadius: scaleSize(32),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: scaleSize(10) },
     shadowOpacity: 0.1,
-    shadowRadius: 20,
+    shadowRadius: scaleSize(20),
     elevation: 10,
+    maxWidth: responsiveValues.cardMaxWidth,
+    alignSelf: 'center',
+    width: responsiveValues.cardWidth as any,
   },
   profileTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
+    flexDirection: isSmallDevice() ? 'column' : 'row',
+    alignItems: isSmallDevice() ? 'flex-start' : 'center',
+    marginBottom: getSpacing(Spacing.xl),
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: Spacing.md,
+    marginRight: isSmallDevice() ? 0 : getSpacing(Spacing.md),
+    marginBottom: isSmallDevice() ? getSpacing(Spacing.md) : 0,
   },
   avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: scaleSize(responsiveValues.avatarSize),
+    height: scaleSize(responsiveValues.avatarSize),
+    borderRadius: scaleSize(responsiveValues.avatarRadius),
     backgroundColor: ProfessionalColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: ProfessionalColors.primary,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: scaleSize(8) },
     shadowOpacity: 0.4,
-    shadowRadius: 12,
+    shadowRadius: scaleSize(12),
     elevation: 8,
   },
   avatarText: {
-    fontSize: 28,
+    fontSize: scaleFont(responsiveValues.avatarFont),
     fontWeight: 'bold',
     color: ProfessionalColors.white,
   },
   levelBadge: {
     position: 'absolute',
-    bottom: -5,
-    right: -5,
+    bottom: -scaleSize(5),
+    right: -scaleSize(5),
     backgroundColor: ProfessionalColors.warning,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
+    paddingHorizontal: getSpacing(Spacing.sm),
+    paddingVertical: scaleSize(4),
     borderRadius: BorderRadius.full,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleSize(2) },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 3,
   },
   levelText: {
-    fontSize: 10,
+    fontSize: scaleFont(responsiveValues.levelFont),
     fontWeight: 'bold',
     color: ProfessionalColors.white,
   },
@@ -476,96 +546,98 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   welcomeText: {
-    fontSize: 14,
+    fontSize: scaleFont(responsiveValues.welcomeFont),
     color: ProfessionalColors.textSecondary,
-    marginBottom: 2,
+    marginBottom: scaleSize(2),
     fontWeight: '500',
   },
   userName: {
-    fontSize: 22,
+    fontSize: scaleFont(responsiveValues.titleFont),
     fontWeight: 'bold',
     color: ProfessionalColors.text,
-    marginBottom: Spacing.xs,
+    marginBottom: getSpacing(Spacing.xs),
   },
   streakContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 107, 107, 0.1)',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: getSpacing(Spacing.sm),
+    paddingVertical: scaleSize(4),
+    borderRadius: scaleSize(12),
     alignSelf: 'flex-start',
   },
   streakIcon: {
-    fontSize: 14,
-    marginRight: 4,
+    fontSize: scaleFont(responsiveValues.streakIconFont),
+    marginRight: scaleSize(4),
   },
   streakText: {
-    fontSize: 12,
+    fontSize: scaleFont(responsiveValues.streakFont),
     color: ProfessionalColors.text,
     fontWeight: '600',
   },
   progressCircle: {
     alignItems: 'center',
     backgroundColor: 'rgba(255, 102, 0, 0.1)',
-    padding: Spacing.md,
-    borderRadius: 20,
-    minWidth: 70,
+    padding: getSpacing(Spacing.md),
+    borderRadius: scaleSize(20),
+    minWidth: scaleSize(responsiveValues.progressCircleSize),
     shadowColor: ProfessionalColors.primary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scaleSize(4) },
     shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowRadius: scaleSize(8),
     elevation: 4,
+    marginTop: isSmallDevice() ? getSpacing(Spacing.md) : 0,
   },
   progressPercentage: {
-    fontSize: 18,
+    fontSize: scaleFont(responsiveValues.progressFont),
     fontWeight: 'bold',
     color: ProfessionalColors.primary,
   },
   progressLabel: {
-    fontSize: 10,
+    fontSize: scaleFont(responsiveValues.progressLabelFont),
     color: ProfessionalColors.textSecondary,
     fontWeight: '600',
   },
   progressSection: {
-    marginTop: Spacing.md,
+    marginTop: getSpacing(Spacing.md),
   },
   progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
+    flexDirection: isSmallDevice() ? 'column' : 'row',
+    justifyContent: isSmallDevice() ? 'flex-start' : 'space-between',
+    alignItems: isSmallDevice() ? 'flex-start' : 'center',
+    marginBottom: getSpacing(Spacing.md),
   },
   progressTitle: {
-    fontSize: 16,
+    fontSize: scaleFont(responsiveValues.progressTitleFont),
     fontWeight: '700',
     color: ProfessionalColors.text,
+    marginBottom: isSmallDevice() ? getSpacing(Spacing.xs) : 0,
   },
   progressSubtitle: {
-    fontSize: 14,
+    fontSize: scaleFont(responsiveValues.progressSubtitleFont),
     color: ProfessionalColors.primary,
     fontWeight: '600',
   },
   progressBarContainer: {
-    marginTop: Spacing.sm,
+    marginTop: getSpacing(Spacing.sm),
   },
   progressLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: Spacing.xs,
+    marginBottom: getSpacing(Spacing.xs),
   },
   progressMin: {
-    fontSize: 12,
+    fontSize: scaleFont(responsiveValues.progressLabelFont),
     color: ProfessionalColors.textSecondary,
     fontWeight: '500',
   },
   progressMax: {
-    fontSize: 12,
+    fontSize: scaleFont(responsiveValues.progressLabelFont),
     color: ProfessionalColors.textSecondary,
     fontWeight: '500',
   },
   progressBarBackground: {
-    height: 12,
+    height: scaleSize(responsiveValues.progressBarHeight),
     backgroundColor: ProfessionalColors.border,
     borderRadius: BorderRadius.full,
     overflow: 'hidden',
@@ -577,151 +649,202 @@ const styles = StyleSheet.create({
   },
   progressMarker: {
     alignItems: 'center',
-    marginTop: Spacing.xs,
+    marginTop: getSpacing(Spacing.xs),
   },
   progressMarkerText: {
-    fontSize: 12,
+    fontSize: scaleFont(responsiveValues.progressLabelFont),
     color: ProfessionalColors.primary,
     fontWeight: '700',
   },
   // Search Section
   searchSection: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing.md,
+    padding: getSpacing(Spacing.lg),
+    paddingBottom: getSpacing(Spacing.md),
+    paddingHorizontal: responsiveValues.paddingH,
   },
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: ProfessionalColors.white,
     borderRadius: BorderRadius.xl,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: getSpacing(Spacing.lg),
+    paddingVertical: getSpacing(Spacing.md),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scaleSize(4) },
     shadowOpacity: 0.15,
-    shadowRadius: 12,
+    shadowRadius: scaleSize(12),
     elevation: 6,
+    maxWidth: responsiveValues.cardMaxWidth,
+    alignSelf: 'center',
+    width: '100%',
   },
   searchIcon: {
-    fontSize: 18,
+    fontSize: scaleFont(responsiveValues.searchIconFont),
     color: ProfessionalColors.textSecondary,
-    marginRight: Spacing.sm,
+    marginRight: getSpacing(Spacing.sm),
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: scaleFont(responsiveValues.searchFont),
     color: ProfessionalColors.text,
     fontWeight: '500',
   },
   clearIcon: {
-    fontSize: 18,
+    fontSize: scaleFont(responsiveValues.searchIconFont),
     color: ProfessionalColors.textSecondary,
     fontWeight: 'bold',
   },
   // Section Header
   sectionHeader: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
+    paddingHorizontal: responsiveValues.paddingH,
+    marginBottom: getSpacing(Spacing.md),
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: scaleFont(responsiveValues.sectionTitleFont),
     fontWeight: 'bold',
     color: ProfessionalColors.text,
-    marginBottom: Spacing.xs,
+    marginBottom: getSpacing(Spacing.xs),
   },
   sectionSubtitle: {
-    fontSize: 14,
+    fontSize: scaleFont(responsiveValues.sectionSubtitleFont),
     color: ProfessionalColors.textSecondary,
     fontWeight: '500',
   },
   // Topics List
   topicsList: {
-    paddingHorizontal: Spacing.sm,
-    gap: Spacing.md,
+    paddingHorizontal: wp(isTablet() ? 5 : 2),
+    gap: getSpacing(Spacing.md),
+  },
+  topicCardTouchable: {
+    marginHorizontal: responsiveValues.topicCardMarginH,
+    maxWidth: responsiveValues.cardMaxWidth,
+    alignSelf: 'center',
+    width: responsiveValues.topicCardWidth as any,
+    borderRadius: BorderRadius.lg - 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scaleSize(6) },
+    shadowOpacity: 0.25,
+    shadowRadius: scaleSize(12),
+    elevation: 8,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  topicCardBorder: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: scaleSize(6),
+    backgroundColor: ProfessionalColors.primary,
+    zIndex: 10,
+    borderTopLeftRadius: BorderRadius.lg - 1,
+    borderBottomLeftRadius: BorderRadius.lg - 1,
   },
   topicCard: {
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
+    flex: 1,
+    padding: getSpacing(Spacing.lg),
+    paddingLeft: getSpacing(Spacing.lg) + scaleSize(6),
+    overflow: 'hidden',
+    minHeight: scaleSize(140),
+    borderTopRightRadius: BorderRadius.lg - 1,
+    borderBottomRightRadius: BorderRadius.lg - 1,
+  },
+  topicCardImage: {
+    borderTopRightRadius: BorderRadius.lg - 1,
+    borderBottomRightRadius: BorderRadius.lg - 1,
+    opacity: 0.7,
+  },
+  topicCardOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: scaleSize(6),
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderTopRightRadius: BorderRadius.lg - 1,
+    borderBottomRightRadius: BorderRadius.lg - 1,
   },
   topicHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    marginBottom: getSpacing(Spacing.md),
+    flexWrap: isSmallDevice() ? 'wrap' : 'nowrap',
+    zIndex: 1,
   },
   topicIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: scaleSize(responsiveValues.topicIconSize),
+    height: scaleSize(responsiveValues.topicIconSize),
+    borderRadius: scaleSize(responsiveValues.topicIconRadius),
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: Spacing.md,
+    marginRight: getSpacing(Spacing.md),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleSize(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 2,
+    marginBottom: isSmallDevice() ? getSpacing(Spacing.xs) : 0,
   },
   topicIcon: {
-    fontSize: 22,
+    fontSize: scaleFont(responsiveValues.topicIconFont),
   },
   topicInfo: {
     flex: 1,
+    marginTop: isSmallDevice() ? getSpacing(Spacing.xs) : 0,
   },
   topicName: {
-    fontSize: 18,
+    fontSize: scaleFont(responsiveValues.topicNameFont),
     fontWeight: 'bold',
     color: ProfessionalColors.white,
-    marginBottom: 2,
+    marginBottom: scaleSize(2),
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
   topicSubtitle: {
-    fontSize: 12,
+    fontSize: scaleFont(responsiveValues.topicSubtitleFont),
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
   },
   topicPercentage: {
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
+    paddingHorizontal: getSpacing(Spacing.sm),
+    paddingVertical: scaleSize(6),
     borderRadius: BorderRadius.sm,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleSize(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 2,
+    marginTop: isSmallDevice() ? getSpacing(Spacing.xs) : 0,
+    alignSelf: isSmallDevice() ? 'flex-start' : 'auto',
   },
   percentageText: {
-    fontSize: 14,
+    fontSize: scaleFont(responsiveValues.topicSubtitleFont),
     fontWeight: 'bold',
     color: ProfessionalColors.white,
   },
   topicProgressContainer: {
-    marginTop: Spacing.sm,
+    marginTop: getSpacing(Spacing.sm),
+    zIndex: 1,
   },
   topicProgressLabel: {
-    fontSize: 12,
+    fontSize: scaleFont(responsiveValues.topicSubtitleFont),
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '600',
   },
   topicProgressValue: {
-    fontSize: 12,
+    fontSize: scaleFont(responsiveValues.topicSubtitleFont),
     color: ProfessionalColors.white,
     fontWeight: '700',
   },
   topicProgressBarBackground: {
-    height: 8,
+    height: scaleSize(responsiveValues.topicProgressBarHeight),
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: BorderRadius.full,
     overflow: 'hidden',
-    marginTop: Spacing.xs,
+    marginTop: getSpacing(Spacing.xs),
   },
   topicProgressBarFill: {
     height: '100%',
@@ -731,30 +854,33 @@ const styles = StyleSheet.create({
   // Quick Stats
   quickStats: {
     flexDirection: 'row',
-    paddingHorizontal: Spacing.lg,
-    marginTop: Spacing.lg,
-    gap: Spacing.md,
+    paddingHorizontal: responsiveValues.paddingH,
+    marginTop: getSpacing(Spacing.lg),
+    gap: getSpacing(Spacing.md),
+    flexWrap: isSmallDevice() ? 'wrap' : 'nowrap',
   },
   statCard: {
-    flex: 1,
+    flex: isSmallDevice() ? 0 : 1,
     backgroundColor: ProfessionalColors.white,
-    padding: Spacing.lg,
+    padding: getSpacing(Spacing.lg),
     borderRadius: BorderRadius.lg,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scaleSize(4) },
     shadowOpacity: 0.15,
-    shadowRadius: 10,
+    shadowRadius: scaleSize(10),
     elevation: 6,
+    minWidth: isSmallDevice() ? '45%' : undefined,
+    maxWidth: responsiveValues.statCardMaxWidth,
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: scaleFont(responsiveValues.statNumberFont),
     fontWeight: 'bold',
     color: ProfessionalColors.primary,
-    marginBottom: 4,
+    marginBottom: scaleSize(4),
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: scaleFont(responsiveValues.statLabelFont),
     color: ProfessionalColors.textSecondary,
     fontWeight: '600',
     textAlign: 'center',

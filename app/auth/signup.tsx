@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Spacing } from '../../constants/colors';
+import { getSafeAreaTopPadding, getSpacing, hp, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -321,6 +322,23 @@ export default function SignupScreen() {
   );
 }
 
+// Compute responsive values (same as login screen)
+const authResponsiveValues = {
+  headerPaddingTop: hp(isTablet() ? 8 : isSmallDevice() ? 4 : 6),
+  headerPaddingH: wp(isTablet() ? 15 : 8),
+  formCardPaddingH: wp(isTablet() ? 20 : 8),
+  formCardMaxWidth: isTablet() ? 600 : undefined,
+  logoSize: isTablet() ? 120 : isSmallDevice() ? 80 : 100,
+  symbolSize: isTablet() ? 100 : isSmallDevice() ? 60 : 80,
+  symbolRadius: isTablet() ? 50 : isSmallDevice() ? 30 : 40,
+  symbolFont: isTablet() ? 40 : isSmallDevice() ? 24 : 32,
+  titleFont: isTablet() ? 40 : isSmallDevice() ? 26 : 32,
+  subtitleFont: isTablet() ? 18 : isSmallDevice() ? 14 : 16,
+  subtitleLineHeight: isTablet() ? 28 : isSmallDevice() ? 20 : 24,
+  textFont: isTablet() ? 17 : isSmallDevice() ? 13 : 15,
+  smallTextFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -331,80 +349,89 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: hp(2),
   },
   header: {
     alignItems: 'center',
-    paddingTop: Spacing.xxl * 2,
-    paddingBottom: Spacing.xxl,
-    paddingHorizontal: Spacing.xl,
+    paddingTop: getSafeAreaTopPadding() + authResponsiveValues.headerPaddingTop,
+    paddingBottom: getSpacing(Spacing.xxl),
+    paddingHorizontal: authResponsiveValues.headerPaddingH,
     backgroundColor: ProfessionalColors.white,
+    maxWidth: authResponsiveValues.formCardMaxWidth,
+    alignSelf: 'center',
+    width: '100%',
   },
   logoContainer: {
-    marginBottom: Spacing.xl,
+    marginBottom: getSpacing(Spacing.xl),
     alignItems: 'center',
     justifyContent: 'center',
   },
   mathContainer: {
-    width: 100,
-    height: 100,
+    width: scaleSize(authResponsiveValues.logoSize),
+    height: scaleSize(authResponsiveValues.logoSize),
     alignItems: 'center',
     justifyContent: 'center',
   },
   mathSymbol: {
-    width: 80,
-    height: 80,
+    width: scaleSize(authResponsiveValues.symbolSize),
+    height: scaleSize(authResponsiveValues.symbolSize),
     backgroundColor: ProfessionalColors.primary,
-    borderRadius: 40,
+    borderRadius: scaleSize(authResponsiveValues.symbolRadius),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: ProfessionalColors.primary,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: scaleSize(8) },
     shadowOpacity: 0.3,
-    shadowRadius: 12,
+    shadowRadius: scaleSize(12),
     elevation: 8,
   },
   symbolText: {
-    fontSize: 32,
+    fontSize: scaleFont(authResponsiveValues.symbolFont),
     color: ProfessionalColors.white,
     fontWeight: 'bold',
   },
   title: {
-    fontSize: 32,
+    fontSize: scaleFont(authResponsiveValues.titleFont),
     fontWeight: '700',
     color: ProfessionalColors.text,
-    marginBottom: Spacing.sm,
+    marginBottom: getSpacing(Spacing.sm),
     textAlign: 'center',
     letterSpacing: -0.5,
+    paddingHorizontal: wp(5),
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: scaleFont(authResponsiveValues.subtitleFont),
     color: ProfessionalColors.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: scaleFont(authResponsiveValues.subtitleLineHeight),
     fontWeight: '400',
+    paddingHorizontal: wp(8),
   },
   formCard: {
     flex: 1,
     backgroundColor: ProfessionalColors.background,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xxl,
-    paddingBottom: Spacing.xl,
+    borderTopLeftRadius: scaleSize(32),
+    borderTopRightRadius: scaleSize(32),
+    paddingHorizontal: authResponsiveValues.formCardPaddingH,
+    paddingTop: getSpacing(Spacing.xxl),
+    paddingBottom: getSpacing(Spacing.xl),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.05,
     shadowRadius: 12,
     elevation: 8,
+    maxWidth: authResponsiveValues.formCardMaxWidth,
+    alignSelf: 'center',
+    width: '100%',
   },
   form: {
     flex: 1,
   },
   input: {
-    marginBottom: Spacing.lg,
+    marginBottom: getSpacing(Spacing.lg),
   },
   signUpButton: {
-    marginBottom: Spacing.lg,
+    marginBottom: getSpacing(Spacing.lg),
     backgroundColor: ProfessionalColors.primary,
     shadowColor: ProfessionalColors.primary,
     shadowOffset: { width: 0, height: 4 },
@@ -415,7 +442,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: Spacing.lg,
+    marginVertical: getSpacing(Spacing.lg),
   },
   dividerLine: {
     flex: 1,
@@ -423,13 +450,13 @@ const styles = StyleSheet.create({
     backgroundColor: ProfessionalColors.border,
   },
   dividerText: {
-    marginHorizontal: Spacing.md,
-    fontSize: 14,
+    marginHorizontal: getSpacing(Spacing.md),
+    fontSize: scaleFont(authResponsiveValues.smallTextFont),
     color: ProfessionalColors.textSecondary,
     fontWeight: '500',
   },
   googleButton: {
-    marginBottom: Spacing.xl,
+    marginBottom: getSpacing(Spacing.xl),
     borderColor: ProfessionalColors.border,
     backgroundColor: ProfessionalColors.white,
   },
@@ -438,15 +465,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 'auto',
-    paddingTop: Spacing.xl,
+    paddingTop: getSpacing(Spacing.xl),
+    flexWrap: 'wrap',
+    paddingHorizontal: wp(2),
   },
   loginText: {
-    fontSize: 15,
+    fontSize: scaleFont(authResponsiveValues.textFont),
     color: ProfessionalColors.textSecondary,
     fontWeight: '400',
   },
   loginLinkText: {
-    fontSize: 15,
+    fontSize: scaleFont(authResponsiveValues.textFont),
     color: ProfessionalColors.primary,
     fontWeight: '600',
   },
