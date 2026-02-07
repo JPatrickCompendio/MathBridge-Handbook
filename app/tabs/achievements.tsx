@@ -1,18 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Animated,
+    Easing,
     FlatList,
     Modal,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
+    useWindowDimensions,
     View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BorderRadius, Spacing } from '../../constants/colors';
-import { getCardWidth, getSafeAreaTopPadding, getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
+import { getTopicProgress } from '../../utils/progressStorage';
+import { getCardWidth, getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -51,6 +56,47 @@ type Achievement = {
   points: number;
 };
 
+type TopicProgressMap = { [topicId: number]: number };
+
+type UnlockRule =
+  | { type: 'topic_100'; topicId: number }
+  | { type: 'any_topic_min'; minProgress: number }
+  | { type: 'all_topics_min'; minProgress: number }
+  | { type: 'topic_count_at_least'; count: number; minProgress: number }
+  | { type: 'streak'; days: number };
+
+function checkUnlock(rule: UnlockRule, progress: TopicProgressMap): { earned: boolean; progress: number } {
+  const topicIds = [1, 2, 3, 4, 5];
+  const values = topicIds.map((id) => progress[id] ?? 0);
+  const maxP = Math.max(0, ...values);
+  const minP = values.length ? Math.min(...values) : 0;
+  const countAtLeast = (min: number) => values.filter((p) => p >= min).length;
+
+  switch (rule.type) {
+    case 'topic_100': {
+      const p = progress[rule.topicId] ?? 0;
+      return { earned: p >= 100, progress: p };
+    }
+    case 'any_topic_min': {
+      const p = maxP;
+      return { earned: p >= rule.minProgress, progress: p };
+    }
+    case 'all_topics_min': {
+      const p = values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
+      return { earned: minP >= rule.minProgress, progress: p };
+    }
+    case 'topic_count_at_least': {
+      const n = countAtLeast(rule.minProgress);
+      const p = topicIds.length ? Math.round((n / topicIds.length) * 100) : 0;
+      return { earned: n >= rule.count, progress: p };
+    }
+    case 'streak':
+      return { earned: false, progress: 0 };
+    default:
+      return { earned: false, progress: 0 };
+  }
+}
+
 type UserStats = {
   totalAchievements: number;
   unlockedCount: number;
@@ -60,23 +106,151 @@ type UserStats = {
   totalPoints: number;
 };
 
-const SAMPLE_ACHIEVEMENTS: Achievement[] = [
+type AchievementDefinition = Omit<Achievement, 'earned' | 'progress'> & { unlockRule: UnlockRule };
+
+const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   {
-    id: 'geometry_master',
-    title: 'Geometry Master',
-    description: 'Complete all Geometry topics with 100% mastery',
+    id: 'topic_1_master',
+    title: 'Quadratic Equations Master',
+    description: 'Complete all Quadratic Equations content and activities (100%)',
     type: 'badge',
     category: 'topic_mastery',
     icon: '📐',
     color: '#4ECDC4',
-    earned: true,
-    dateEarned: '2024-01-15',
+    earned: false,
     rarity: 'rare',
-    requirements: ['Complete 5 geometry lessons', 'Score 90%+ on geometry quiz'],
+    requirements: ['Read all Quadratic Equations content', 'Complete Take Activities for this topic'],
     points: 50,
+    unlockRule: { type: 'topic_100', topicId: 1 },
   },
   {
-    id: 'streak_7',
+    id: 'topic_2_master',
+    title: 'Pythagorean Triples Master',
+    description: 'Complete all Pythagorean Triples content and activities (100%)',
+    type: 'badge',
+    category: 'topic_mastery',
+    icon: '🔺',
+    color: '#45B7D1',
+    earned: false,
+    rarity: 'rare',
+    requirements: ['Read all Pythagorean Triples content', 'Complete Take Activities for this topic'],
+    points: 50,
+    unlockRule: { type: 'topic_100', topicId: 2 },
+  },
+  {
+    id: 'topic_3_master',
+    title: 'Triangle Measures Master',
+    description: 'Complete all Triangle Measures content and activities (100%)',
+    type: 'certificate',
+    category: 'topic_mastery',
+    icon: '△',
+    color: '#9B59B6',
+    earned: false,
+    rarity: 'epic',
+    requirements: ['Read all Triangle Measures content', 'Complete Take Activities for this topic'],
+    points: 75,
+    unlockRule: { type: 'topic_100', topicId: 3 },
+  },
+  {
+    id: 'topic_4_master',
+    title: 'Area of Triangles Master',
+    description: 'Complete all Area of Triangles content and activities (100%)',
+    type: 'certificate',
+    category: 'topic_mastery',
+    icon: '📐',
+    color: '#4ECDC4',
+    earned: false,
+    rarity: 'rare',
+    requirements: ['Read all Area of Triangles content', 'Complete Take Activities for this topic'],
+    points: 50,
+    unlockRule: { type: 'topic_100', topicId: 4 },
+  },
+  {
+    id: 'topic_5_master',
+    title: 'Variation Master',
+    description: 'Complete all Variation content and activities (100%)',
+    type: 'certificate',
+    category: 'topic_mastery',
+    icon: '📊',
+    color: '#FF6600',
+    earned: false,
+    rarity: 'rare',
+    requirements: ['Read all Variation content', 'Complete Take Activities for this topic'],
+    points: 50,
+    unlockRule: { type: 'topic_100', topicId: 5 },
+  },
+  {
+    id: 'first_steps',
+    title: 'First Steps',
+    description: 'Reach at least 25% progress on any topic',
+    type: 'badge',
+    category: 'special',
+    icon: '🌟',
+    color: '#61E35D',
+    earned: false,
+    rarity: 'common',
+    requirements: ['Get 25% or more on any topic'],
+    points: 25,
+    unlockRule: { type: 'any_topic_min', minProgress: 25 },
+  },
+  {
+    id: 'half_way',
+    title: 'Half Way',
+    description: 'Reach at least 50% progress on any topic',
+    type: 'medal',
+    category: 'special',
+    icon: '📖',
+    color: '#FFA726',
+    earned: false,
+    rarity: 'common',
+    requirements: ['Get 50% or more on any topic'],
+    points: 30,
+    unlockRule: { type: 'any_topic_min', minProgress: 50 },
+  },
+  {
+    id: 'dedicated_learner',
+    title: 'Dedicated Learner',
+    description: 'Reach at least 50% progress on 3 or more topics',
+    type: 'medal',
+    category: 'consistency',
+    icon: '👑',
+    color: '#AB47BC',
+    earned: false,
+    rarity: 'rare',
+    requirements: ['Get 50% or more on at least 3 topics'],
+    points: 60,
+    unlockRule: { type: 'topic_count_at_least', count: 3, minProgress: 50 },
+  },
+  {
+    id: 'bookworm',
+    title: 'Bookworm',
+    description: 'Reach at least 50% progress on all 5 topics',
+    type: 'trophy',
+    category: 'consistency',
+    icon: '📚',
+    color: '#5D4E75',
+    earned: false,
+    rarity: 'epic',
+    requirements: ['Get 50% or more on all topics'],
+    points: 80,
+    unlockRule: { type: 'all_topics_min', minProgress: 50 },
+  },
+  {
+    id: 'perfect_five',
+    title: 'Perfect Five',
+    description: 'Complete all 5 topics to 100%',
+    type: 'trophy',
+    category: 'topic_mastery',
+    icon: '💯',
+    color: '#FFD700',
+    earned: false,
+    rarity: 'legendary',
+    requirements: ['Reach 100% on every topic'],
+    points: 150,
+    unlockRule: { type: 'all_topics_min', minProgress: 100 },
+  },
+  {
+    id: 'weekly_warrior',
     title: 'Weekly Warrior',
     description: 'Maintain a 7-day learning streak',
     type: 'medal',
@@ -84,41 +258,13 @@ const SAMPLE_ACHIEVEMENTS: Achievement[] = [
     icon: '🔥',
     color: '#FF6B6B',
     earned: false,
-    progress: 85,
     rarity: 'common',
-    requirements: ['Study for 7 consecutive days'],
+    requirements: ['Study for 7 consecutive days (coming soon)'],
     points: 25,
+    unlockRule: { type: 'streak', days: 7 },
   },
   {
-    id: 'algebra_expert',
-    title: 'Algebra Expert',
-    description: 'Solve 100 algebra problems',
-    type: 'certificate',
-    category: 'topic_mastery',
-    icon: '🧮',
-    color: '#45B7D1',
-    earned: true,
-    dateEarned: '2024-01-10',
-    rarity: 'epic',
-    requirements: ['Solve 100 algebra problems', 'Maintain 80% accuracy'],
-    points: 75,
-  },
-  {
-    id: 'speed_demon',
-    title: 'Speed Demon',
-    description: 'Complete exercises with 95% accuracy in under 2 minutes',
-    type: 'trophy',
-    category: 'speed',
-    icon: '⚡',
-    color: '#FFA726',
-    earned: false,
-    progress: 40,
-    rarity: 'legendary',
-    requirements: ['Complete 10 exercises under 2 minutes', 'Maintain 95% accuracy'],
-    points: 100,
-  },
-  {
-    id: 'streak_30',
+    id: 'monthly_champion',
     title: 'Monthly Champion',
     description: 'Maintain a 30-day learning streak',
     type: 'trophy',
@@ -126,118 +272,52 @@ const SAMPLE_ACHIEVEMENTS: Achievement[] = [
     icon: '🏆',
     color: '#FFD700',
     earned: false,
-    progress: 16,
     rarity: 'legendary',
-    requirements: ['Study for 30 consecutive days'],
+    requirements: ['Study for 30 consecutive days (coming soon)'],
     points: 150,
-  },
-  {
-    id: 'level_10',
-    title: 'Level Up',
-    description: 'Reach level 10',
-    type: 'badge',
-    category: 'level',
-    icon: '⭐',
-    color: '#FF6600',
-    earned: true,
-    dateEarned: '2024-01-08',
-    rarity: 'common',
-    requirements: ['Reach level 10'],
-    points: 30,
-  },
-  {
-    id: 'perfect_score',
-    title: 'Perfect Score',
-    description: 'Get 100% on any quiz',
-    type: 'medal',
-    category: 'special',
-    icon: '💯',
-    color: '#61E35D',
-    earned: true,
-    dateEarned: '2024-01-12',
-    rarity: 'rare',
-    requirements: ['Score 100% on any quiz'],
-    points: 40,
-  },
-  {
-    id: 'statistics_master',
-    title: 'Statistics Master',
-    description: 'Complete all Statistics topics',
-    type: 'certificate',
-    category: 'topic_mastery',
-    icon: '📊',
-    color: '#9B59B6',
-    earned: true,
-    dateEarned: '2024-01-18',
-    rarity: 'epic',
-    requirements: ['Complete all statistics lessons', 'Score 85%+ on statistics quiz'],
-    points: 75,
-  },
-  {
-    id: 'consistency_king',
-    title: 'Consistency King',
-    description: 'Study every day for 2 weeks',
-    type: 'badge',
-    category: 'consistency',
-    icon: '👑',
-    color: '#AB47BC',
-    earned: false,
-    progress: 71,
-    rarity: 'epic',
-    requirements: ['Study every day for 14 days'],
-    points: 60,
-  },
-  {
-    id: 'fast_learner',
-    title: 'Fast Learner',
-    description: 'Complete 5 topics in one day',
-    type: 'medal',
-    category: 'speed',
-    icon: '🚀',
-    color: '#FF6600',
-    earned: false,
-    progress: 60,
-    rarity: 'rare',
-    requirements: ['Complete 5 topics in a single day'],
-    points: 50,
-  },
-  {
-    id: 'trigonometry_expert',
-    title: 'Trigonometry Expert',
-    description: 'Master all trigonometry concepts',
-    type: 'certificate',
-    category: 'topic_mastery',
-    icon: '📏',
-    color: '#4ECDC4',
-    earned: false,
-    progress: 65,
-    rarity: 'rare',
-    requirements: ['Complete trigonometry lessons', 'Score 90%+ on trigonometry quiz'],
-    points: 60,
-  },
-  {
-    id: 'night_owl',
-    title: 'Night Owl',
-    description: 'Complete 10 exercises after 10 PM',
-    type: 'badge',
-    category: 'special',
-    icon: '🦉',
-    color: '#5D4E75',
-    earned: true,
-    dateEarned: '2024-01-14',
-    rarity: 'common',
-    requirements: ['Complete 10 exercises after 10 PM'],
-    points: 20,
+    unlockRule: { type: 'streak', days: 30 },
   },
 ];
 
-const USER_STATS: UserStats = {
-  totalAchievements: 24,
-  unlockedCount: 8,
-  completionPercentage: 33,
-  nextMilestone: 'Master (15 achievements)',
-  rank: 'Scholar',
-  totalPoints: 450,
+function buildAchievements(progress: TopicProgressMap): Achievement[] {
+  return ACHIEVEMENT_DEFINITIONS.map((def) => {
+    const { earned, progress: prog } = checkUnlock(def.unlockRule, progress);
+    const { unlockRule: _, ...rest } = def;
+    return {
+      ...rest,
+      earned,
+      progress: prog,
+      dateEarned: earned ? new Date().toISOString().slice(0, 10) : undefined,
+    };
+  });
+}
+
+function computeUserStats(achievements: Achievement[]): UserStats {
+  const unlocked = achievements.filter((a) => a.earned).length;
+  const total = achievements.length;
+  const totalPoints = achievements.filter((a) => a.earned).reduce((s, a) => s + a.points, 0);
+  const pct = total ? Math.round((unlocked / total) * 100) : 0;
+  const milestones = [3, 6, 10, 15, 20];
+  const next = milestones.find((m) => unlocked < m);
+  const rankIndex = [0, 3, 6, 10, 15].findIndex((m) => unlocked < m);
+  const ranks: UserStats['rank'][] = ['Beginner', 'Explorer', 'Scholar', 'Master', 'Grandmaster'];
+  return {
+    totalAchievements: total,
+    unlockedCount: unlocked,
+    completionPercentage: pct,
+    nextMilestone: next != null ? `${ranks[Math.min(rankIndex + 1, 4)]} (${next} achievements)` : 'Grandmaster',
+    rank: ranks[rankIndex >= 0 ? rankIndex : 4],
+    totalPoints,
+  };
+}
+
+const DEFAULT_USER_STATS: UserStats = {
+  totalAchievements: 0,
+  unlockedCount: 0,
+  completionPercentage: 0,
+  nextMilestone: '—',
+  rank: 'Beginner',
+  totalPoints: 0,
 };
 
 const CATEGORIES = [
@@ -250,53 +330,425 @@ const CATEGORIES = [
   { id: 'locked', label: 'Locked', icon: '🔒' },
 ];
 
-const NUM_COLUMNS = isTablet() ? 3 : 2;
-const CARD_WIDTH = getCardWidth(NUM_COLUMNS, getSpacing(Spacing.lg));
+const NUM_COLUMNS_FALLBACK = isTablet() ? 3 : 2;
+const CARD_WIDTH_FALLBACK = getCardWidth(NUM_COLUMNS_FALLBACK, getSpacing(Spacing.lg));
+const GRID_MAX_WIDTH = 1400;
+const GRID_GAP = getSpacing(Spacing.md);
+
+// Animated Header Background Component
+function AnimatedHeaderBackground() {
+  const particles = Array.from({ length: 6 }, (_, i) => ({
+    translateX: useRef(new Animated.Value(0)).current,
+    translateY: useRef(new Animated.Value(0)).current,
+    opacity: useRef(new Animated.Value(0.2)).current,
+    scale: useRef(new Animated.Value(0.5)).current,
+    rotate: useRef(new Animated.Value(0)).current,
+    delay: i * 600,
+  }));
+
+  useEffect(() => {
+    particles.forEach((particle) => {
+      const translateXAnim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(particle.translateX, {
+            toValue: 1,
+            duration: 5000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particle.translateX, {
+            toValue: 0,
+            duration: 5000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const translateYAnim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(particle.translateY, {
+            toValue: 1,
+            duration: 6000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particle.translateY, {
+            toValue: 0,
+            duration: 6000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const opacityAnim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(particle.opacity, {
+            toValue: 0.5,
+            duration: 3000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particle.opacity, {
+            toValue: 0.2,
+            duration: 3000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const scaleAnim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(particle.scale, {
+            toValue: 1,
+            duration: 4000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particle.scale, {
+            toValue: 0.5,
+            duration: 4000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const rotateAnim = Animated.loop(
+        Animated.timing(particle.rotate, {
+          toValue: 1,
+          duration: 10000 + particle.delay,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      );
+
+      Animated.parallel([translateXAnim, translateYAnim, opacityAnim, scaleAnim, rotateAnim]).start();
+    });
+  }, []);
+
+  return (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
+      {particles.map((particle, index) => {
+        const translateX = particle.translateX.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-40, 40],
+        });
+
+        const translateY = particle.translateY.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-30, 30],
+        });
+
+        const rotate = particle.rotate.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '360deg'],
+        });
+
+        const size = (index % 3 === 0 ? 10 : index % 3 === 1 ? 14 : 8) * scaleSize(1);
+        const positions = [
+          { left: '15%', top: '25%' },
+          { left: '85%', top: '20%' },
+          { left: '25%', top: '65%' },
+          { left: '80%', top: '75%' },
+          { left: '10%', top: '85%' },
+          { left: '90%', top: '55%' },
+        ];
+
+        return (
+          <Animated.View
+            key={index}
+            style={[
+              {
+                position: 'absolute' as const,
+                ...positions[index],
+                width: size,
+                height: size,
+                backgroundColor: ProfessionalColors.primary,
+                borderRadius: size / 2,
+              } as any,
+              {
+                opacity: particle.opacity,
+                transform: [
+                  { translateX },
+                  { translateY },
+                  { scale: particle.scale },
+                  { rotate },
+                ],
+              },
+            ]}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+// Animated Category Tab Component
+function AnimatedCategoryTab({
+  category,
+  isActive,
+  onPress,
+  index,
+}: {
+  category: typeof CATEGORIES[0];
+  isActive: boolean;
+  onPress: () => void;
+  index: number;
+}) {
+  const tabScale = useRef(new Animated.Value(0)).current;
+  const tabOpacity = useRef(new Animated.Value(0)).current;
+  const pressScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(tabScale, {
+        toValue: 1,
+        delay: index * 100,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(tabOpacity, {
+        toValue: 1,
+        delay: index * 100,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [index]);
+
+  const handlePressIn = () => {
+    Animated.spring(pressScale, {
+      toValue: 0.9,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(pressScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+  };
+
+  const combinedScale = Animated.multiply(tabScale, pressScale);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: tabOpacity,
+        transform: [{ scale: combinedScale }],
+      }}
+    >
+      <TouchableOpacity
+        style={[
+          styles.categoryTab,
+          isActive && styles.categoryTabActive,
+        ]}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <Text style={styles.categoryTabIcon}>{category.icon}</Text>
+        <Text
+          style={[
+            styles.categoryTabText,
+            isActive && styles.categoryTabTextActive,
+          ]}
+        >
+          {category.label}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 // Achievement Card Component (separate component to use hooks properly)
 function AchievementCard({
   item,
   index,
   onPress,
+  cardWidth,
 }: {
   item: Achievement;
   index: number;
   onPress: (item: Achievement) => void;
+  cardWidth?: number;
 }) {
   const rarityColor = RarityColors[item.rarity];
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const cardScale = useRef(new Animated.Value(0.9)).current;
+  const cardSlideY = useRef(new Animated.Value(30)).current;
+  const pressScale = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const shineAnim = useRef(new Animated.Value(0)).current;
+  const iconRotate = useRef(new Animated.Value(0)).current;
+  const iconScale = useRef(new Animated.Value(0.5)).current;
+  const progressWidth = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Entrance animations
     Animated.parallel([
       Animated.timing(cardOpacity, {
         toValue: 1,
-        duration: 400,
-        delay: index * 50,
+        duration: 500,
+        delay: index * 60,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.spring(cardScale, {
         toValue: 1,
         tension: 50,
         friction: 7,
-        delay: index * 50,
+        delay: index * 60,
+        useNativeDriver: true,
+      }),
+      Animated.timing(cardSlideY, {
+        toValue: 0,
+        duration: 500,
+        delay: index * 60,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(iconScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 6,
+        delay: index * 60 + 200,
         useNativeDriver: true,
       }),
     ]).start();
-  }, [index, cardOpacity, cardScale]);
+
+    // Continuous animations for earned achievements
+    if (item.earned) {
+      // Glow animation
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: false,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 0,
+            duration: 2000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: false,
+          }),
+        ])
+      ).start();
+
+      // Shining animation - sweeps across the card
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(shineAnim, {
+            toValue: 1,
+            duration: 2500,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shineAnim, {
+            toValue: 0,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+
+      // Icon rotation animation
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(iconRotate, {
+            toValue: 1,
+            duration: 3000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(iconRotate, {
+            toValue: 0,
+            duration: 3000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+
+    // Progress bar animation
+    if (item.progress !== undefined && !item.earned) {
+      Animated.timing(progressWidth, {
+        toValue: item.progress,
+        duration: 1000,
+        delay: index * 60 + 300,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [index, item.earned, item.progress]);
+
+  const handlePressIn = () => {
+    Animated.spring(pressScale, {
+      toValue: 0.95,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(pressScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+  };
+
+  const glowOpacity = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.2, 0.5],
+  });
+
+  const shineTranslateX = shineAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-200, 200],
+  });
+
+  const shineOpacity = shineAnim.interpolate({
+    inputRange: [0, 0.3, 0.5, 0.7, 1],
+    outputRange: [0, 0.8, 1, 0.8, 0],
+  });
+
+  const rotate = iconRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['-5deg', '5deg'],
+  });
 
   return (
     <Animated.View
       style={[
         {
           opacity: cardOpacity,
-          transform: [{ scale: cardScale }],
+          transform: [
+            { scale: Animated.multiply(cardScale, pressScale) },
+            { translateY: cardSlideY },
+          ],
         },
       ]}
     >
       <TouchableOpacity
         style={[
           styles.achievementCard,
+          cardWidth != null && { width: cardWidth },
           {
             borderColor: item.earned ? rarityColor : ProfessionalColors.border,
             borderWidth: item.earned ? 2 : 1,
@@ -304,36 +756,71 @@ function AchievementCard({
           },
         ]}
         onPress={() => onPress(item)}
-        activeOpacity={0.8}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
       >
-        {/* Rarity Glow Effect */}
+        {/* Rarity Glow Effect - Animated */}
         {item.earned && (
-          <View
+          <Animated.View
             style={[
               styles.rarityGlow,
               {
-                backgroundColor: `${rarityColor}20`,
+                backgroundColor: rarityColor,
+                opacity: glowOpacity,
               },
             ]}
           />
         )}
 
-        {/* Icon Container */}
-        <View
+        {/* Shining Effect - Animated */}
+        {item.earned && (
+          <Animated.View
+            style={[
+              styles.shineEffect,
+              {
+                transform: [{ translateX: shineTranslateX }, { rotate: '45deg' }],
+                opacity: shineOpacity,
+              },
+            ]}
+            pointerEvents="none"
+          >
+            <LinearGradient
+              colors={['transparent', 'rgba(255, 255, 255, 0.6)', 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
+        )}
+
+        {/* Icon Container - Animated */}
+        <Animated.View
           style={[
             styles.iconContainer,
             {
               backgroundColor: item.earned ? `${item.color}20` : ProfessionalColors.background,
+              transform: [
+                { scale: iconScale },
+                { rotate: item.earned ? rotate : '0deg' },
+              ],
             },
           ]}
         >
           <Text style={styles.achievementIcon}>{item.icon}</Text>
           {item.earned && (
-            <View style={styles.earnedBadge}>
+            <Animated.View
+              style={[
+                styles.earnedBadge,
+                {
+                  transform: [{ scale: iconScale }],
+                },
+              ]}
+            >
               <Text style={styles.earnedBadgeText}>✓</Text>
-            </View>
+            </Animated.View>
           )}
-        </View>
+        </Animated.View>
 
         {/* Achievement Info */}
         <View style={styles.cardContent}>
@@ -346,22 +833,37 @@ function AchievementCard({
             </Text>
           </View>
 
-          {/* Progress Bar - Always render to maintain consistent spacing */}
+          {/* Progress Bar - Animated */}
           <View style={styles.progressBarContainer}>
             {!item.earned && item.progress !== undefined ? (
               <>
                 <View style={styles.progressBarBackground}>
-                  <View
+                  <Animated.View
                     style={[
                       styles.progressBarFill,
                       {
-                        width: `${item.progress}%`,
+                        width: progressWidth.interpolate({
+                          inputRange: [0, 100],
+                          outputRange: ['0%', '100%'],
+                        }),
                         backgroundColor: rarityColor,
                       },
                     ]}
                   />
                 </View>
-                <Text style={styles.progressText}>{item.progress}%</Text>
+                <Animated.Text
+                  style={[
+                    styles.progressText,
+                    {
+                      opacity: progressWidth.interpolate({
+                        inputRange: [0, 100],
+                        outputRange: [0, 1],
+                      }),
+                    },
+                  ]}
+                >
+                  {Math.round(item.progress ?? 0)}%
+                </Animated.Text>
               </>
             ) : null}
           </View>
@@ -403,22 +905,111 @@ function AchievementCard({
 }
 
 export default function AchievementsScreen() {
+  const { width: windowWidth } = useWindowDimensions();
+  const [achievements, setAchievements] = useState<Achievement[]>(() => buildAchievements({}));
+  const [userStats, setUserStats] = useState<UserStats>(DEFAULT_USER_STATS);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  useFocusEffect(
+    useCallback(() => {
+      getTopicProgress().then((saved) => {
+        const progress: TopicProgressMap = (saved && typeof saved === 'object' ? saved : {}) as TopicProgressMap;
+        const next = buildAchievements(progress);
+        setAchievements(next);
+        setUserStats(computeUserStats(next));
+      });
+    }, [])
+  );
+
+  const horizontalPadding = getSpacing(Spacing.lg);
+  const contentWidth = Math.min(
+    Math.max(windowWidth - 2 * horizontalPadding, 320),
+    GRID_MAX_WIDTH
+  );
+  const numColumns = contentWidth >= 900 ? 4 : contentWidth >= 600 ? 3 : 2;
+  const cardWidth = (contentWidth - (numColumns + 1) * GRID_GAP) / numColumns;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const rankScale = useRef(new Animated.Value(1)).current;
+  const pointsScale = useRef(new Animated.Value(1)).current;
+  const modalScale = useRef(new Animated.Value(0.8)).current;
+  const modalOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Entrance animations
+    Animated.parallel([
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 600,
+        easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
-    }).start();
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(progressAnim, {
+        toValue: userStats.completionPercentage,
+        duration: 1200,
+        delay: 300,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }),
+      Animated.spring(rankScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+      Animated.spring(pointsScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        delay: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: userStats.completionPercentage,
+      duration: 800,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [userStats.completionPercentage]);
+
+  // Modal animations
+  useEffect(() => {
+    if (modalVisible) {
+      modalScale.setValue(0.8);
+      modalOpacity.setValue(0);
+      Animated.parallel([
+        Animated.spring(modalScale, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.timing(modalOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [modalVisible]);
+
   const getFilteredAchievements = () => {
-    let filtered = SAMPLE_ACHIEVEMENTS;
+    let filtered = achievements;
 
     // Filter by category
     if (selectedCategory === 'locked') {
@@ -445,61 +1036,156 @@ export default function AchievementsScreen() {
     setModalVisible(true);
   };
 
+  const handleCloseModal = () => {
+    Animated.parallel([
+      Animated.timing(modalScale, {
+        toValue: 0.8,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(modalOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setModalVisible(false);
+      setSelectedAchievement(null);
+    });
+  };
+
   const handleShare = () => {
     console.log('Share achievement:', selectedAchievement?.title);
     // TODO: Implement share functionality
   };
 
   const renderHeader = () => (
-    <Animated.View style={{ opacity: fadeAnim }}>
-      {/* Header Stats Section */}
+    <Animated.View 
+      style={{ 
+        width: '100%',
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+      }}
+    >
+      {/* Header Stats Section with Gradient */}
       <View style={styles.headerStats}>
+        <LinearGradient
+          colors={[ProfessionalColors.primary + '20', ProfessionalColors.primary + '10', ProfessionalColors.white, ProfessionalColors.white]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Animated background particles */}
+        <AnimatedHeaderBackground />
+        <View style={styles.headerStatsContent}>
         <View style={styles.statsRow}>
-          {/* Rank Badge */}
-          <View style={styles.rankBadge}>
+          {/* Rank Badge - Animated */}
+          <Animated.View 
+            style={[
+              styles.rankBadge,
+              {
+                transform: [{ scale: rankScale }],
+              },
+            ]}
+          >
+            <Animated.View
+              style={{
+                transform: [
+                  {
+                    rotate: rankScale.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['-10deg', '0deg'],
+                    }),
+                  },
+                ],
+              }}
+            >
             <Text style={styles.rankIcon}>🏅</Text>
-            <Text style={styles.rankText}>{USER_STATS.rank}</Text>
-          </View>
+            </Animated.View>
+            <Text style={styles.rankText}>{userStats.rank}</Text>
+          </Animated.View>
 
-          {/* Progress Circle */}
+          {/* Progress Circle - Animated */}
           <View style={styles.progressCircleContainer}>
             <View style={styles.progressCircleWrapper}>
-              <View style={styles.progressCircle}>
+              <Animated.View
+                style={[
+                  styles.progressCircle,
+                  {
+                    borderColor: progressAnim.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: [ProfessionalColors.border, ProfessionalColors.primary],
+                    }),
+                  },
+                ]}
+              >
                 <View style={styles.progressCircleInner}>
                   <Text style={styles.progressPercentage}>
-                    {USER_STATS.completionPercentage}%
+                    {Math.round(userStats.completionPercentage)}%
                   </Text>
                   <Text style={styles.progressLabel}>Complete</Text>
                 </View>
-              </View>
+              </Animated.View>
               {/* Progress Ring Background */}
               <View style={styles.progressRingBackground} />
             </View>
           </View>
 
-          {/* Points */}
-          <View style={styles.pointsContainer}>
-            <Text style={styles.pointsValue}>{USER_STATS.totalPoints}</Text>
+          {/* Points - Animated */}
+          <Animated.View 
+            style={[
+              styles.pointsContainer,
+              {
+                transform: [{ scale: pointsScale }],
+              },
+            ]}
+          >
+            <Animated.Text 
+              style={[
+                styles.pointsValue,
+                {
+                  opacity: pointsScale,
+                },
+              ]}
+            >
+              {userStats.totalPoints}
+            </Animated.Text>
             <Text style={styles.pointsLabel}>Points</Text>
-          </View>
+          </Animated.View>
         </View>
 
         {/* Achievement Count and Next Milestone */}
         <View style={styles.statsFooter}>
           <View style={styles.achievementCount}>
             <Text style={styles.countText}>
-              {USER_STATS.unlockedCount}/{USER_STATS.totalAchievements} Unlocked
+              {userStats.unlockedCount}/{userStats.totalAchievements} Unlocked
             </Text>
           </View>
           <View style={styles.milestoneContainer}>
             <Text style={styles.milestoneLabel}>Next:</Text>
-            <Text style={styles.milestoneText}>{USER_STATS.nextMilestone}</Text>
+            <Text style={styles.milestoneText}>{userStats.nextMilestone}</Text>
+          </View>
           </View>
         </View>
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
+      {/* Search Bar - Animated */}
+      <Animated.View 
+        style={[
+          styles.searchContainer,
+          {
+            opacity: fadeAnim,
+            transform: [
+              {
+                translateX: slideAnim.interpolate({
+                  inputRange: [0, 50],
+                  outputRange: [0, -20],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
         <TextInput
           style={styles.searchInput}
           placeholder="Search achievements..."
@@ -507,53 +1193,72 @@ export default function AchievementsScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        <Animated.View
+          style={{
+            transform: [
+              {
+                rotate: searchQuery.length > 0 
+                  ? slideAnim.interpolate({
+                      inputRange: [0, 50],
+                      outputRange: ['0deg', '360deg'],
+                    })
+                  : '0deg',
+              },
+            ],
+          }}
+        >
         <Text style={styles.searchIcon}>🔍</Text>
-      </View>
+        </Animated.View>
+      </Animated.View>
 
-      {/* Category Filter Tabs */}
+      {/* Category Filter Tabs - Animated */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.categoryTabs}
         contentContainerStyle={styles.categoryTabsContent}
       >
-        {CATEGORIES.map((category) => (
-          <TouchableOpacity
+        {CATEGORIES.map((category, index) => (
+          <AnimatedCategoryTab
             key={category.id}
-            style={[
-              styles.categoryTab,
-              selectedCategory === category.id && styles.categoryTabActive,
-            ]}
+            category={category}
+            isActive={selectedCategory === category.id}
             onPress={() => setSelectedCategory(category.id)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.categoryTabIcon}>{category.icon}</Text>
-            <Text
-              style={[
-                styles.categoryTabText,
-                selectedCategory === category.id && styles.categoryTabTextActive,
-              ]}
-            >
-              {category.label}
-            </Text>
-          </TouchableOpacity>
+            index={index}
+          />
         ))}
       </ScrollView>
     </Animated.View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <FlatList
         data={filteredAchievements}
         renderItem={({ item, index }) => (
-          <AchievementCard item={item} index={index} onPress={handleAchievementPress} />
+          <AchievementCard
+            item={item}
+            index={index}
+            onPress={handleAchievementPress}
+            cardWidth={cardWidth}
+          />
         )}
         keyExtractor={(item) => item.id}
-        numColumns={NUM_COLUMNS}
+        numColumns={numColumns}
         ListHeaderComponent={renderHeader}
-        contentContainerStyle={styles.achievementGrid}
-        columnWrapperStyle={styles.achievementRow}
+        contentContainerStyle={[
+          styles.achievementGrid,
+          {
+            width: contentWidth,
+            maxWidth: contentWidth,
+            alignSelf: 'center',
+            paddingHorizontal: GRID_GAP,
+          },
+        ]}
+        columnWrapperStyle={[
+          styles.achievementRow,
+          { paddingHorizontal: 0, gap: GRID_GAP },
+        ]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -563,126 +1268,266 @@ export default function AchievementsScreen() {
         }
       />
 
-      {/* Achievement Detail Modal */}
+      {/* Achievement Detail Modal - Animated */}
       <Modal
         visible={modalVisible}
         transparent
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
+        animationType="none"
+        onRequestClose={handleCloseModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <Animated.View 
+          style={[
+            styles.modalOverlay,
+            {
+              opacity: modalOpacity,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={handleCloseModal}
+          />
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                transform: [{ scale: modalScale }],
+                opacity: modalOpacity,
+              },
+            ]}
+          >
             {selectedAchievement && (
-              <>
-                <View
-                  style={[
-                    styles.modalIconContainer,
-                    {
-                      backgroundColor: `${selectedAchievement.color}20`,
-                    },
-                  ]}
-                >
-                  <Text style={styles.modalIcon}>{selectedAchievement.icon}</Text>
-                </View>
-
-                <Text style={styles.modalTitle}>{selectedAchievement.title}</Text>
-                <Text style={styles.modalDescription}>{selectedAchievement.description}</Text>
-
-                {/* Rarity and Points */}
-                <View style={styles.modalBadges}>
-                  <View
-                    style={[
-                      styles.modalRarityBadge,
-                      {
-                        backgroundColor: `${RarityColors[selectedAchievement.rarity]}20`,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.modalRarityText,
-                        {
-                          color: RarityColors[selectedAchievement.rarity],
-                        },
-                      ]}
-                    >
-                      {selectedAchievement.rarity.toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.modalPointsBadge}>
-                    <Text style={styles.modalPointsText}>
-                      +{selectedAchievement.points} Points
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Progress */}
-                {!selectedAchievement.earned && selectedAchievement.progress !== undefined && (
-                  <View style={styles.modalProgress}>
-                    <Text style={styles.modalProgressLabel}>Progress</Text>
-                    <View style={styles.modalProgressBar}>
-                      <View
-                        style={[
-                          styles.modalProgressFill,
-                          {
-                            width: `${selectedAchievement.progress}%`,
-                            backgroundColor: RarityColors[selectedAchievement.rarity],
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.modalProgressText}>
-                      {selectedAchievement.progress}%
-                    </Text>
-                  </View>
-                )}
-
-                {/* Date Earned */}
-                {selectedAchievement.earned && selectedAchievement.dateEarned && (
-                  <View style={styles.modalDateContainer}>
-                    <Text style={styles.modalDateLabel}>Earned on:</Text>
-                    <Text style={styles.modalDate}>
-                      {new Date(selectedAchievement.dateEarned).toLocaleDateString()}
-                    </Text>
-                  </View>
-                )}
-
-                {/* Requirements */}
-                <View style={styles.modalRequirements}>
-                  <Text style={styles.modalRequirementsTitle}>Requirements:</Text>
-                  {selectedAchievement.requirements.map((req, index) => (
-                    <View key={index} style={styles.modalRequirementItem}>
-                      <Text style={styles.modalRequirementBullet}>•</Text>
-                      <Text style={styles.modalRequirementText}>{req}</Text>
-                    </View>
-                  ))}
-                </View>
-
-                {/* Actions */}
-                <View style={styles.modalActions}>
-                  {selectedAchievement.earned && (
-                    <TouchableOpacity
-                      style={styles.modalShareButton}
-                      onPress={handleShare}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.modalShareButtonText}>Share</Text>
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    style={styles.modalCloseButton}
-                    onPress={() => setModalVisible(false)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.modalCloseButtonText}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
+              <AnimatedModalContent 
+                achievement={selectedAchievement}
+                onClose={handleCloseModal}
+                onShare={handleShare}
+              />
             )}
-          </View>
-        </View>
+          </Animated.View>
+        </Animated.View>
       </Modal>
     </SafeAreaView>
+  );
+}
+
+// Animated Modal Content Component
+function AnimatedModalContent({ 
+  achievement,
+  onClose,
+  onShare,
+}: { 
+  achievement: Achievement;
+  onClose: () => void;
+  onShare: () => void;
+}) {
+  const iconScale = useRef(new Animated.Value(0)).current;
+  const iconRotate = useRef(new Animated.Value(0)).current;
+  const contentFade = useRef(new Animated.Value(0)).current;
+  const progressWidth = useRef(new Animated.Value(0)).current;
+  const rarityColor = RarityColors[achievement.rarity];
+
+  useEffect(() => {
+    // Reset values - start icon visible immediately
+    iconScale.setValue(1); // Start at 1 so icon is visible
+    iconRotate.setValue(0);
+    contentFade.setValue(0);
+    progressWidth.setValue(0);
+
+    // Start animations immediately
+    // Icon animation with bounce effect
+    Animated.parallel([
+      Animated.sequence([
+        Animated.spring(iconScale, {
+          toValue: 1.2,
+          tension: 50,
+          friction: 6,
+          useNativeDriver: true,
+        }),
+        Animated.spring(iconScale, {
+          toValue: 1,
+          tension: 50,
+          friction: 6,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.timing(iconRotate, {
+        toValue: 1,
+        duration: 500,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(contentFade, {
+        toValue: 1,
+        duration: 500,
+        delay: 150,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Continuous icon rotation for earned achievements
+    if (achievement.earned) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(iconRotate, {
+            toValue: 2,
+            duration: 3000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(iconRotate, {
+            toValue: 0,
+            duration: 3000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+
+    // Progress bar animation
+    if (achievement.progress !== undefined && !achievement.earned) {
+      Animated.timing(progressWidth, {
+        toValue: achievement.progress,
+        duration: 1000,
+        delay: 500,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [achievement]);
+
+  const rotate = iconRotate.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: ['0deg', '360deg', '360deg'],
+  });
+
+  return (
+    <View style={{ width: '100%' }}>
+      <Animated.View
+        style={[
+          styles.modalIconContainer,
+          {
+            backgroundColor: `${achievement.color}20`,
+            transform: [
+              { scale: iconScale },
+              { rotate: achievement.earned ? rotate : '0deg' },
+            ],
+          },
+        ]}
+      >
+        <Text style={styles.modalIcon}>{achievement.icon}</Text>
+      </Animated.View>
+
+      <View style={{ width: '100%', opacity: 1 }}>
+        <Text style={styles.modalTitle}>{achievement.title}</Text>
+        <Text style={styles.modalDescription}>{achievement.description}</Text>
+
+        {/* Rarity and Points */}
+        <View style={styles.modalBadges}>
+          <View
+            style={[
+              styles.modalRarityBadge,
+              {
+                backgroundColor: `${rarityColor}20`,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.modalRarityText,
+                {
+                  color: rarityColor,
+                },
+              ]}
+            >
+              {achievement.rarity.toUpperCase()}
+            </Text>
+          </View>
+          <View style={styles.modalPointsBadge}>
+            <Text style={styles.modalPointsText}>
+              +{achievement.points} Points
+            </Text>
+          </View>
+        </View>
+
+        {/* Progress */}
+        {!achievement.earned && achievement.progress !== undefined && (
+          <View style={styles.modalProgress}>
+            <Text style={styles.modalProgressLabel}>Progress</Text>
+            <View style={styles.modalProgressBar}>
+              <Animated.View
+                style={[
+                  styles.modalProgressFill,
+                  {
+                    width: progressWidth.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: ['0%', '100%'],
+                    }),
+                    backgroundColor: rarityColor,
+                  },
+                ]}
+              />
+            </View>
+            <Animated.Text
+              style={[
+                styles.modalProgressText,
+                {
+                  opacity: progressWidth.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: [0, 1],
+                  }),
+                },
+              ]}
+            >
+              {Math.round(achievement.progress ?? 0)}%
+            </Animated.Text>
+          </View>
+        )}
+
+        {/* Date Earned */}
+        {achievement.earned && achievement.dateEarned && (
+          <View style={styles.modalDateContainer}>
+            <Text style={styles.modalDateLabel}>Earned on:</Text>
+            <Text style={styles.modalDate}>
+              {new Date(achievement.dateEarned).toLocaleDateString()}
+            </Text>
+          </View>
+        )}
+
+        {/* Requirements */}
+        <View style={styles.modalRequirements}>
+          <Text style={styles.modalRequirementsTitle}>Requirements:</Text>
+          {achievement.requirements.map((req, index) => (
+            <View key={index} style={styles.modalRequirementItem}>
+              <Text style={styles.modalRequirementBullet}>•</Text>
+              <Text style={styles.modalRequirementText}>{req}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Actions */}
+      <View style={styles.modalActions}>
+        {achievement.earned && (
+          <TouchableOpacity
+            style={styles.modalShareButton}
+            onPress={onShare}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.modalShareButtonText}>Share</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={styles.modalCloseButton}
+          onPress={onClose}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.modalCloseButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
@@ -707,22 +1552,22 @@ const responsiveValues = {
   searchIconFont: isTablet() ? 20 : isSmallDevice() ? 16 : 18,
   categoryTabIconFont: isTablet() ? 18 : isSmallDevice() ? 14 : 16,
   categoryTabTextFont: isTablet() ? 14 : isSmallDevice() ? 10 : 12,
-  cardHeight: isTablet() ? 240 : isSmallDevice() ? 180 : 200,
-  iconContainerSize: isTablet() ? 75 : isSmallDevice() ? 50 : 60,
-  iconContainerRadius: isTablet() ? 37.5 : isSmallDevice() ? 25 : 30,
-  achievementIconFont: isTablet() ? 40 : isSmallDevice() ? 28 : 32,
-  earnedBadgeSize: isTablet() ? 24 : isSmallDevice() ? 18 : 20,
-  earnedBadgeRadius: isTablet() ? 12 : isSmallDevice() ? 9 : 10,
-  earnedBadgeTextFont: isTablet() ? 12 : isSmallDevice() ? 8 : 10,
-  achievementTitleFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
-  achievementTitleMinHeight: isTablet() ? 44 : isSmallDevice() ? 32 : 36,
-  achievementDescFont: isTablet() ? 13 : isSmallDevice() ? 10 : 11,
-  achievementDescMinHeight: isTablet() ? 38 : isSmallDevice() ? 28 : 32,
-  progressBarHeight: isTablet() ? 5 : isSmallDevice() ? 3 : 4,
-  progressTextFont: isTablet() ? 12 : isSmallDevice() ? 8 : 10,
-  rarityTextFont: isTablet() ? 10 : isSmallDevice() ? 7 : 8,
-  pointsTextFont: isTablet() ? 12 : isSmallDevice() ? 8 : 10,
-  lockedIconFont: isTablet() ? 30 : isSmallDevice() ? 20 : 24,
+  cardHeight: isTablet() ? 268 : isSmallDevice() ? 200 : 228,
+  iconContainerSize: isTablet() ? 82 : isSmallDevice() ? 56 : 68,
+  iconContainerRadius: isTablet() ? 41 : isSmallDevice() ? 28 : 34,
+  achievementIconFont: isTablet() ? 44 : isSmallDevice() ? 30 : 36,
+  earnedBadgeSize: isTablet() ? 26 : isSmallDevice() ? 20 : 22,
+  earnedBadgeRadius: isTablet() ? 13 : isSmallDevice() ? 10 : 11,
+  earnedBadgeTextFont: isTablet() ? 13 : isSmallDevice() ? 9 : 11,
+  achievementTitleFont: isTablet() ? 17 : isSmallDevice() ? 13 : 15,
+  achievementTitleMinHeight: isTablet() ? 48 : isSmallDevice() ? 36 : 40,
+  achievementDescFont: isTablet() ? 14 : isSmallDevice() ? 11 : 12,
+  achievementDescMinHeight: isTablet() ? 42 : isSmallDevice() ? 32 : 36,
+  progressBarHeight: isTablet() ? 6 : isSmallDevice() ? 4 : 5,
+  progressTextFont: isTablet() ? 13 : isSmallDevice() ? 9 : 11,
+  rarityTextFont: isTablet() ? 11 : isSmallDevice() ? 8 : 9,
+  pointsTextFont: isTablet() ? 13 : isSmallDevice() ? 9 : 11,
+  lockedIconFont: isTablet() ? 32 : isSmallDevice() ? 22 : 26,
   emptyIconFont: isTablet() ? 60 : isSmallDevice() ? 40 : 48,
   emptyTextFont: isTablet() ? 20 : isSmallDevice() ? 14 : 16,
   modalMaxWidth: isTablet() ? 500 : 400,
@@ -756,30 +1601,36 @@ const styles = StyleSheet.create({
   // Header Stats
   headerStats: {
     backgroundColor: ProfessionalColors.white,
-    padding: getSpacing(Spacing.lg),
     marginBottom: getSpacing(Spacing.md),
     marginTop: getSpacing(Spacing.md),
     marginHorizontal: responsiveValues.paddingH,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: scaleSize(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: scaleSize(8),
-    elevation: 4,
+    shadowColor: ProfessionalColors.primary,
+    shadowOffset: { width: 0, height: scaleSize(4) },
+    shadowOpacity: 0.15,
+    shadowRadius: scaleSize(12),
+    elevation: 8,
     maxWidth: responsiveValues.cardMaxWidth,
     alignSelf: 'center',
     width: '100%',
     borderRadius: scaleSize(BorderRadius.lg),
+    borderWidth: 1,
+    borderColor: ProfessionalColors.border,
+    overflow: 'hidden',
+  },
+  headerStatsContent: {
+    padding: getSpacing(Spacing.lg),
   },
   statsRow: {
-    flexDirection: isSmallDevice() ? 'column' : 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: getSpacing(Spacing.md),
-    gap: isSmallDevice() ? getSpacing(Spacing.md) : 0,
+    gap: getSpacing(Spacing.md),
   },
   rankBadge: {
     alignItems: 'center',
     flex: 1,
+    minWidth: 0,
   },
   rankIcon: {
     fontSize: scaleFont(responsiveValues.rankIconFont),
@@ -793,6 +1644,8 @@ const styles = StyleSheet.create({
   progressCircleContainer: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 0,
   },
   progressCircleWrapper: {
     width: scaleSize(responsiveValues.progressCircleWrapperSize),
@@ -800,6 +1653,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    flexShrink: 0,
   },
   progressCircle: {
     width: scaleSize(responsiveValues.progressCircleSize),
@@ -838,6 +1692,7 @@ const styles = StyleSheet.create({
   pointsContainer: {
     alignItems: 'center',
     flex: 1,
+    minWidth: 0,
   },
   pointsValue: {
     fontSize: scaleFont(responsiveValues.pointsValueFont),
@@ -850,16 +1705,17 @@ const styles = StyleSheet.create({
     color: ProfessionalColors.textSecondary,
   },
   statsFooter: {
-    flexDirection: isSmallDevice() ? 'column' : 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: isSmallDevice() ? 'flex-start' : 'center',
+    alignItems: 'center',
     paddingTop: getSpacing(Spacing.md),
     borderTopWidth: 1,
     borderTopColor: ProfessionalColors.border,
-    gap: isSmallDevice() ? getSpacing(Spacing.sm) : 0,
+    gap: getSpacing(Spacing.md),
   },
   achievementCount: {
     flex: 1,
+    minWidth: 0,
   },
   countText: {
     fontSize: scaleFont(responsiveValues.countTextFont),
@@ -869,12 +1725,13 @@ const styles = StyleSheet.create({
   milestoneContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
+    flexShrink: 0,
+    gap: getSpacing(Spacing.xs),
   },
   milestoneLabel: {
     fontSize: scaleFont(responsiveValues.milestoneLabelFont),
     color: ProfessionalColors.textSecondary,
-    marginRight: getSpacing(Spacing.xs),
   },
   milestoneText: {
     fontSize: scaleFont(responsiveValues.milestoneTextFont),
@@ -930,10 +1787,20 @@ const styles = StyleSheet.create({
     marginRight: getSpacing(Spacing.sm),
     borderWidth: 1,
     borderColor: ProfessionalColors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scaleSize(1) },
+    shadowOpacity: 0.05,
+    shadowRadius: scaleSize(2),
+    elevation: 2,
   },
   categoryTabActive: {
     backgroundColor: ProfessionalColors.primary,
     borderColor: ProfessionalColors.primary,
+    shadowColor: ProfessionalColors.primary,
+    shadowOffset: { width: 0, height: scaleSize(2) },
+    shadowOpacity: 0.3,
+    shadowRadius: scaleSize(4),
+    elevation: 4,
   },
   categoryTabIcon: {
     fontSize: scaleFont(responsiveValues.categoryTabIconFont),
@@ -950,41 +1817,61 @@ const styles = StyleSheet.create({
   // Achievement Grid
   achievementGrid: {
     padding: getSpacing(Spacing.lg),
-    paddingTop: getSafeAreaTopPadding() + getSpacing(Spacing.md),
-    paddingBottom: getSpacing(Spacing.xl),
+    paddingTop: getSpacing(Spacing.md),
+    paddingBottom: getSpacing(Spacing.xxl) + 80,
     paddingHorizontal: responsiveValues.paddingH,
     maxWidth: responsiveValues.cardMaxWidth,
     alignSelf: 'center',
     width: '100%',
   },
   achievementRow: {
-    justifyContent: 'space-between',
-    marginBottom: getSpacing(Spacing.md),
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    marginBottom: getSpacing(Spacing.lg),
   },
   achievementCard: {
-    width: CARD_WIDTH,
+    width: CARD_WIDTH_FALLBACK,
     height: scaleSize(responsiveValues.cardHeight),
     backgroundColor: ProfessionalColors.white,
-    borderRadius: scaleSize(BorderRadius.lg),
-    padding: getSpacing(Spacing.md),
-    marginBottom: getSpacing(Spacing.md),
+    borderRadius: scaleSize(BorderRadius.xl),
+    padding: getSpacing(Spacing.lg),
+    marginBottom: getSpacing(Spacing.sm),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scaleSize(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: scaleSize(8),
-    elevation: 4,
+    shadowOffset: { width: 0, height: scaleSize(4) },
+    shadowOpacity: 0.14,
+    shadowRadius: scaleSize(14),
+    elevation: 8,
     position: 'relative',
     overflow: 'hidden',
     justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: ProfessionalColors.border,
+    borderLeftWidth: scaleSize(4),
+    borderLeftColor: ProfessionalColors.primary,
   },
   rarityGlow: {
     position: 'absolute',
-    top: scaleSize(-20),
-    right: scaleSize(-20),
-    width: scaleSize(60),
-    height: scaleSize(60),
-    borderRadius: scaleSize(30),
-    opacity: 0.3,
+    top: scaleSize(-30),
+    right: scaleSize(-30),
+    width: scaleSize(100),
+    height: scaleSize(100),
+    borderRadius: scaleSize(50),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: scaleSize(20),
+    elevation: 10,
+  },
+  shineEffect: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '150%',
+    height: '200%',
+    backgroundColor: 'transparent',
+    zIndex: 1,
   },
   iconContainer: {
     width: scaleSize(responsiveValues.iconContainerSize),
@@ -1039,7 +1926,7 @@ const styles = StyleSheet.create({
     color: ProfessionalColors.textSecondary,
     textAlign: 'center',
     marginBottom: getSpacing(Spacing.sm),
-    lineHeight: scaleSize(16),
+    lineHeight: scaleSize(19),
     minHeight: scaleSize(responsiveValues.achievementDescMinHeight),
   },
   progressBarContainer: {
@@ -1127,6 +2014,13 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: scaleSize(responsiveValues.modalMaxWidth),
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scaleSize(10) },
+    shadowOpacity: 0.3,
+    shadowRadius: scaleSize(20),
+    elevation: 20,
+    borderWidth: 2,
+    borderColor: ProfessionalColors.primary + '30',
   },
   modalIconContainer: {
     width: scaleSize(responsiveValues.modalIconContainerSize),
@@ -1263,6 +2157,11 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(BorderRadius.md),
     backgroundColor: ProfessionalColors.primary,
     alignItems: 'center',
+    shadowColor: ProfessionalColors.primary,
+    shadowOffset: { width: 0, height: scaleSize(4) },
+    shadowOpacity: 0.4,
+    shadowRadius: scaleSize(8),
+    elevation: 8,
   },
   modalShareButtonText: {
     fontSize: scaleFont(responsiveValues.modalButtonTextFont),
@@ -1275,6 +2174,13 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(BorderRadius.md),
     backgroundColor: ProfessionalColors.background,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: ProfessionalColors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scaleSize(2) },
+    shadowOpacity: 0.1,
+    shadowRadius: scaleSize(4),
+    elevation: 2,
   },
   modalCloseButtonText: {
     fontSize: scaleFont(responsiveValues.modalButtonTextFont),

@@ -2,20 +2,30 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Easing,
-  ImageBackground,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Animated,
+    Easing,
+    ImageBackground,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import TopicModal from '../../components/TopicModal';
+import PracticeActivitiesModal from '../../components/PracticeActivitiesModal';
 import { BorderRadius, Spacing } from '../../constants/colors';
+import { TRIANGLE_SIMILARITY_DATA } from '../../data/lessons/module3_triangle_similarity';
+import { OBLIQUE_TRIANGLE_PRACTICE } from '../../data/lessons/module3b_oblique_triangle';
+import { PYTHAGOREAN_TRIPLES_DATA } from '../../data/lessons/module2_triangle_triples';
+import { QUADRATIC_EQUATIONS_DATA } from '../../data/lessons/module1_quadratic';
+import { AREA_OF_TRIANGLE_DATA } from '../../data/lessons/module4_area_of_triangle';
+import { VARIATION_DATA } from '../../data/lessons/module5_variation';
+import { database } from '../../services/database';
 import { getTopicProgress } from '../../utils/progressStorage';
-import { getSafeAreaTopPadding, getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
+import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize, useResponsive, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -42,12 +52,11 @@ const EXAMPLE_USER = {
 };
 
 const EXAMPLE_TOPICS = [
-  { id: 1, name: 'Geometry', progress: 67, icon: '📐', subtitle: 'Shapes & Angles' },
-  { id: 2, name: 'Algebra', progress: 45, icon: '🧮', subtitle: 'Equations & Functions' },
-  { id: 3, name: 'Statistics', progress: 80, icon: '📊', subtitle: 'Data Analysis' },
-  { id: 4, name: 'Trigonometry', progress: 55, icon: '📏', subtitle: 'Triangles & Waves' },
-  { id: 5, name: 'Calculus', progress: 30, icon: '⚖️', subtitle: 'Rates & Changes' },
-  { id: 6, name: 'Probability', progress: 25, icon: '🎯', subtitle: 'Chance & Predictions' },
+  { id: 1, name: 'Quadratic Equations', progress: 0, icon: '📐', subtitle: 'Solving Quadratic Equations' },
+  { id: 2, name: 'Pythagorean Triples', progress: 0, icon: '🔺', subtitle: 'Identifying Triangle Triples' },
+  { id: 3, name: 'Triangle Measures', progress: 0, icon: '△', subtitle: 'Similar Triangles & Oblique' },
+  { id: 4, name: 'Area of Triangles', progress: 0, icon: '📐', subtitle: 'Area Formula & Problems' },
+  { id: 5, name: 'Variation', progress: 0, icon: '📊', subtitle: 'Direct, Inverse, Joint & Combined' },
 ];
 
 // Predefined colors for topics with better contrast
@@ -58,23 +67,846 @@ const TOPIC_COLORS = [
 // Helper function to get image path based on topic name
 const getTopicImage = (topicName: string): any => {
   const imageMap: { [key: string]: any } = {
+    'Quadratic Equations': require('../../assets/images/geometry.png'),
     'Geometry': require('../../assets/images/geometry.png'),
+    'Pythagorean Triples': require('../../assets/images/geometry.png'),
     'Algebra': require('../../assets/images/algebra.png'),
+    'Triangle Measures': require('../../assets/images/geometry.png'),
     'Statistics': require('../../assets/images/statistics.png'),
+    'Area of Triangles': require('../../assets/images/trigonometry.png'),
     'Trigonometry': require('../../assets/images/trigonometry.png'),
-    'Calculus': require('../../assets/images/calculus.png'),
-    'Probability': require('../../assets/images/probality.png'), // Note: filename has typo
+    'Variation': require('../../assets/images/calculus.png'),
   };
   return imageMap[topicName] || require('../../assets/images/geometry.png'); // fallback
 };
+
+// Animated Search Bar Component
+function AnimatedSearchBar({ 
+  fadeAnim, 
+  searchQuery, 
+  setSearchQuery, 
+  styles, 
+  colors 
+}: { 
+  fadeAnim: Animated.Value; 
+  searchQuery: string; 
+  setSearchQuery: (value: string) => void; 
+  styles: any; 
+  colors: any;
+}) {
+  const searchFocusAnim = useRef(new Animated.Value(0)).current;
+  const searchScaleAnim = useRef(new Animated.Value(1)).current;
+  
+  const handleSearchFocus = () => {
+    Animated.parallel([
+      Animated.timing(searchFocusAnim, {
+        toValue: 1,
+        duration: 200,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false,
+      }),
+      Animated.spring(searchScaleAnim, {
+        toValue: 1.02,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 8,
+      }),
+    ]).start();
+  };
+  
+  const handleSearchBlur = () => {
+    Animated.parallel([
+      Animated.timing(searchFocusAnim, {
+        toValue: 0,
+        duration: 200,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false,
+      }),
+      Animated.spring(searchScaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 8,
+      }),
+    ]).start();
+  };
+  
+  const borderColor = searchFocusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.border, colors.primary],
+  });
+  
+  const shadowOpacity = searchFocusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.1],
+  });
+  
+  const elevationValue = searchFocusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 4],
+    extrapolate: 'clamp',
+  });
+  
+  return (
+    <Animated.View 
+      style={[
+        styles.searchSection as any,
+        {
+          opacity: fadeAnim,
+          transform: [{
+            translateX: fadeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [-50, 0],
+            }),
+          }],
+        },
+      ]}
+    >
+      {/* Outer wrapper for shadow/elevation (non-native driver) */}
+      <Animated.View
+        style={[
+          {
+            shadowOpacity: shadowOpacity,
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 2 },
+            shadowRadius: 8,
+            elevation: elevationValue,
+          },
+        ]}
+      >
+        {/* Inner wrapper for transform (native driver) */}
+        <Animated.View
+          style={[
+            styles.searchBarContainer,
+            {
+              transform: [{ scale: searchScaleAnim }],
+              borderColor: borderColor,
+            },
+          ]}
+        >
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search topics..."
+            placeholderTextColor={colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onFocus={handleSearchFocus}
+            onBlur={handleSearchBlur}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity 
+              onPress={() => setSearchQuery('')}
+              style={styles.clearButton}
+            >
+              <Text style={styles.clearIcon}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+// Animated Stat Card Component with 3D effects
+function AnimatedStatCard({ 
+  value, 
+  label, 
+  delay, 
+  styles 
+}: { 
+  value: number | string; 
+  label: string; 
+  delay: number; 
+  styles: any;
+}) {
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const rotateX = useRef(new Animated.Value(0)).current;
+  const rotateY = useRef(new Animated.Value(0)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        delay: delay,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        delay: delay,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Continuous pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // 3D tilt animation
+    const tiltAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(rotateX, {
+            toValue: 0.03,
+            duration: 3000 + delay * 50,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateY, {
+            toValue: 0.03,
+            duration: 4000 + delay * 50,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(rotateX, {
+            toValue: -0.03,
+            duration: 3000 + delay * 50,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateY, {
+            toValue: -0.03,
+            duration: 4000 + delay * 50,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+      { iterations: -1 }
+    );
+
+    // Floating animation
+    const floatAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: 1,
+          duration: 2000 + delay * 100,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 2000 + delay * 100,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+      { iterations: -1 }
+    );
+
+    tiltAnimation.start();
+    floatAnimation.start();
+
+    return () => {
+      tiltAnimation.stop();
+      floatAnimation.stop();
+    };
+  }, [delay]);
+
+  const combinedScale = Animated.multiply(scaleAnim, pulseAnim);
+
+  const rotateXInterpolate = rotateX.interpolate({
+    inputRange: [-0.05, 0.05],
+    outputRange: ['-3deg', '3deg'],
+  });
+
+  const rotateYInterpolate = rotateY.interpolate({
+    inputRange: [-0.05, 0.05],
+    outputRange: ['-3deg', '3deg'],
+  });
+
+  const translateYFloat = floatAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -4],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.statCard,
+        {
+          opacity: fadeAnim,
+          transform: [
+            { scale: combinedScale },
+            { rotateX: rotateXInterpolate },
+            { rotateY: rotateYInterpolate },
+            { translateY: translateYFloat },
+            { perspective: 1000 },
+          ],
+        },
+      ]}
+    >
+      <View style={styles.statCardBorder} />
+      <Text style={styles.statNumber}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </Animated.View>
+  );
+}
+
+// Animated Progress Bar Component (moved outside for reuse)
+function AnimatedProgressBar({ progress, style, styles }: { progress: number; style?: any; styles: any }) {
+  const progressWidth = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progressWidth, {
+      toValue: progress,
+      duration: 800,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [progress, progressWidth]);
+
+  return (
+    <View style={style ? [styles.topicProgressBarBackground, style] : styles.topicProgressBarBackground}>
+      <Animated.View
+        style={[
+          styles.topicProgressBarFill as any,
+          {
+            width: progressWidth.interpolate({
+              inputRange: [0, 100],
+              outputRange: ['0%', '100%'],
+            }),
+          },
+        ]}
+      />
+    </View>
+  );
+}
+
+// Animated Background Component for Profile Header
+function AnimatedProfileBackground() {
+  const particles = Array.from({ length: 8 }, (_, i) => ({
+    translateX: useRef(new Animated.Value(0)).current,
+    translateY: useRef(new Animated.Value(0)).current,
+    opacity: useRef(new Animated.Value(0.3)).current,
+    scale: useRef(new Animated.Value(0.5)).current,
+    rotate: useRef(new Animated.Value(0)).current,
+    delay: i * 500,
+  }));
+
+  useEffect(() => {
+    // Animate floating particles
+    particles.forEach((particle) => {
+      const translateXAnim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(particle.translateX, {
+            toValue: 1,
+            duration: 4000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particle.translateX, {
+            toValue: 0,
+            duration: 4000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        { iterations: -1 }
+      );
+
+      const translateYAnim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(particle.translateY, {
+            toValue: 1,
+            duration: 5000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particle.translateY, {
+            toValue: 0,
+            duration: 5000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        { iterations: -1 }
+      );
+
+      const opacityAnim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(particle.opacity, {
+            toValue: 0.6,
+            duration: 3000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particle.opacity, {
+            toValue: 0.3,
+            duration: 3000 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        { iterations: -1 }
+      );
+
+      const scaleAnim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(particle.scale, {
+            toValue: 1,
+            duration: 3500 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(particle.scale, {
+            toValue: 0.5,
+            duration: 3500 + particle.delay,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        { iterations: -1 }
+      );
+
+      const rotateAnim = Animated.loop(
+        Animated.timing(particle.rotate, {
+          toValue: 1,
+          duration: 8000 + particle.delay,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        { iterations: -1 }
+      );
+
+      Animated.parallel([translateXAnim, translateYAnim, opacityAnim, scaleAnim, rotateAnim]).start();
+    });
+  }, []);
+
+  return (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', borderRadius: scaleSize(24) }}>
+      {/* Floating Particles */}
+      {particles.map((particle, index) => {
+        const translateX = particle.translateX.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-30, 30],
+        });
+
+        const translateY = particle.translateY.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-20, 20],
+        });
+
+        const rotate = particle.rotate.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '360deg'],
+        });
+
+        const size = (index % 3 === 0 ? 8 : index % 3 === 1 ? 12 : 6) * scaleSize(1);
+        const positions = [
+          { left: '10%', top: '20%' },
+          { left: '80%', top: '15%' },
+          { left: '20%', top: '60%' },
+          { left: '75%', top: '70%' },
+          { left: '5%', top: '80%' },
+          { left: '90%', top: '50%' },
+          { left: '50%', top: '10%' },
+          { left: '60%', top: '85%' },
+        ];
+
+        return (
+          <Animated.View
+            key={index}
+            style={[
+              {
+                position: 'absolute' as const,
+                ...positions[index],
+                width: size,
+                height: size,
+                backgroundColor: ProfessionalColors.primary,
+                borderRadius: size / 2,
+              } as any,
+              {
+                opacity: particle.opacity,
+                transform: [
+                  { translateX },
+                  { translateY },
+                  { scale: particle.scale },
+                  { rotate },
+                ],
+              },
+            ]}
+          />
+        );
+      })}
+
+      {/* Overlay to ensure content is visible */}
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        }}
+      />
+    </View>
+  );
+}
+
+// 3D Rotating Icon Component
+function Rotating3DIcon({ icon, delay = 0 }: { icon: string; delay?: number }) {
+  const rotateX = useRef(new Animated.Value(0)).current;
+  const rotateY = useRef(new Animated.Value(0)).current;
+  const rotateZ = useRef(new Animated.Value(0)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Infinite 3D rotation
+    const rotateAnimation = Animated.loop(
+      Animated.parallel([
+        Animated.timing(rotateX, {
+          toValue: 1,
+          duration: 4000 + delay * 200,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(rotateY, {
+          toValue: 1,
+          duration: 5000 + delay * 200,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(rotateZ, {
+          toValue: 1,
+          duration: 6000 + delay * 200,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ]),
+      { iterations: -1 }
+    );
+
+    // Floating animation
+    const floatAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: 1,
+          duration: 2000 + delay * 100,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 2000 + delay * 100,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+      { iterations: -1 }
+    );
+
+    rotateAnimation.start();
+    floatAnimation.start();
+
+    return () => {
+      rotateAnimation.stop();
+      floatAnimation.stop();
+    };
+  }, [delay]);
+
+  const rotateXInterpolate = rotateX.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const rotateYInterpolate = rotateY.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const rotateZInterpolate = rotateZ.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const translateY = floatAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -8],
+  });
+
+  return (
+    <Animated.View
+      style={{
+        transform: [
+          { rotateX: rotateXInterpolate },
+          { rotateY: rotateYInterpolate },
+          { rotateZ: rotateZInterpolate },
+          { translateY: translateY },
+          { perspective: 1000 },
+        ],
+      }}
+    >
+      <Text style={{ fontSize: scaleFont(isTablet() ? 28 : isSmallDevice() ? 18 : 22) }}>
+        {icon}
+      </Text>
+    </Animated.View>
+  );
+}
+
+// Animated Topic Card Component
+function AnimatedTopicCard({ 
+  topic, 
+  index, 
+  fadeAnim, 
+  onPress, 
+  styles, 
+  colors 
+}: { 
+  topic: typeof EXAMPLE_TOPICS[0]; 
+  index: number; 
+  fadeAnim: Animated.Value; 
+  onPress: (id: number) => void; 
+  styles: any; 
+  colors: any;
+}) {
+  const cardScale = useRef(new Animated.Value(1)).current;
+  const cardOpacity = useRef(new Animated.Value(1)).current;
+  const rotateX = useRef(new Animated.Value(0)).current;
+  const rotateY = useRef(new Animated.Value(0)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const clampedProgress = Math.max(0, Math.min(100, topic.progress));
+  
+  useEffect(() => {
+    // Subtle 3D tilt animation
+    const tiltAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(rotateX, {
+            toValue: 0.05,
+            duration: 3000 + index * 200,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateY, {
+            toValue: 0.05,
+            duration: 4000 + index * 200,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(rotateX, {
+            toValue: -0.05,
+            duration: 3000 + index * 200,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateY, {
+            toValue: -0.05,
+            duration: 4000 + index * 200,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+      { iterations: -1 }
+    );
+
+    // Floating animation
+    const floatAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: 1,
+          duration: 2500 + index * 150,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 2500 + index * 150,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+      { iterations: -1 }
+    );
+
+    tiltAnimation.start();
+    floatAnimation.start();
+
+    return () => {
+      tiltAnimation.stop();
+      floatAnimation.stop();
+    };
+  }, [index]);
+  
+  const handlePressIn = () => {
+    Animated.parallel([
+      Animated.spring(cardScale, {
+        toValue: 0.97,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 10,
+      }),
+      Animated.timing(cardOpacity, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+  
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.spring(cardScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 10,
+      }),
+      Animated.timing(cardOpacity, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const rotateXInterpolate = rotateX.interpolate({
+    inputRange: [-0.1, 0.1],
+    outputRange: ['-5deg', '5deg'],
+  });
+
+  const rotateYInterpolate = rotateY.interpolate({
+    inputRange: [-0.1, 0.1],
+    outputRange: ['-5deg', '5deg'],
+  });
+
+  const translateYFloat = floatAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -5],
+  });
+  
+  return (
+    <Animated.View
+      style={{
+        opacity: fadeAnim,
+        transform: [
+          {
+            translateY: fadeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [30, 0],
+            }),
+          },
+        ],
+      }}
+    >
+      <Animated.View
+        style={{
+          transform: [
+            { translateY: translateYFloat },
+            { perspective: 1000 },
+          ],
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => onPress(topic.id)}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          activeOpacity={1}
+          style={[
+            styles.topicCardTouchable,
+            { 
+              shadowColor: TOPIC_COLORS[index % TOPIC_COLORS.length],
+            },
+          ]}
+        >
+          <Animated.View 
+            style={{ 
+              opacity: cardOpacity, 
+              flex: 1,
+              transform: [
+                { scale: cardScale },
+                { rotateX: rotateXInterpolate },
+                { rotateY: rotateYInterpolate },
+                { perspective: 1000 },
+              ],
+            }}
+          >
+            {/* Orange left border strip */}
+            <View style={styles.topicCardBorder} />
+            
+            <ImageBackground
+              source={getTopicImage(topic.name)}
+              style={styles.topicCard}
+              imageStyle={styles.topicCardImage}
+              resizeMode="cover"
+            >
+              {/* Overlay for better text readability */}
+              <View style={styles.topicCardOverlay} />
+              
+              <View style={styles.topicHeader}>
+                <View style={styles.topicIconContainer}>
+                  <Rotating3DIcon icon={topic.icon} delay={index * 100} />
+                </View>
+                <View style={styles.topicInfo}>
+                  <Text style={styles.topicName}>{topic.name}</Text>
+                  <Text style={styles.topicSubtitle}>{topic.subtitle}</Text>
+                </View>
+                <View style={styles.topicPercentage}>
+                  <Text style={styles.percentageText}>{Math.round(clampedProgress)}%</Text>
+                </View>
+              </View>
+
+              {/* Animated Progress Bar */}
+              <View style={styles.topicProgressContainer}>
+                <View style={styles.progressLabels}>
+                  <Text style={styles.topicProgressLabel}>Progress</Text>
+                  <Text style={styles.topicProgressValue}>{Math.round(clampedProgress)}%</Text>
+                </View>
+                <AnimatedProgressBar 
+                  progress={clampedProgress} 
+                  style={styles.topicProgressBarBackground}
+                  styles={styles}
+                />
+              </View>
+            </ImageBackground>
+          </Animated.View>
+        </TouchableOpacity>
+      </Animated.View>
+    </Animated.View>
+  );
+}
 
 export default function HomeScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [topics, setTopics] = useState(EXAMPLE_TOPICS);
+  const [selectedTopic, setSelectedTopic] = useState<typeof EXAMPLE_TOPICS[0] | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
+  const [triangleMeasuresChoiceVisible, setTriangleMeasuresChoiceVisible] = useState(false);
+  const [triangleMeasuresModule, setTriangleMeasuresModule] = useState<'3A' | '3B' | null>(null);
+  const [displayName, setDisplayName] = useState(EXAMPLE_USER.name);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+
+  const averageProgress = topics.length ? Math.round(topics.reduce((s, t) => s + t.progress, 0) / topics.length) : 0;
 
   useEffect(() => {
     // Entrance animations
@@ -90,46 +922,103 @@ export default function HomeScreen() {
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      Animated.timing(progressAnim, {
-        toValue: EXAMPLE_USER.averageProgress,
-        duration: 1200,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: false,
-      }),
     ]).start();
   }, []);
 
-  // Load progress when screen comes into focus
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: averageProgress,
+      duration: 600,
+      useNativeDriver: false,
+    }).start();
+  }, [averageProgress]);
+
+  // Load progress and user when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      const loadProgress = async () => {
+      const load = async () => {
         try {
           const savedProgress = await getTopicProgress();
           if (savedProgress && typeof savedProgress === 'object') {
             setTopics((prevTopics) =>
               prevTopics.map((topic) => ({
                 ...topic,
-                progress: savedProgress[topic.id] || topic.progress,
+                progress: (savedProgress && typeof savedProgress === 'object' ? savedProgress[topic.id] : undefined) ?? 0,
               }))
             );
           }
+          const user = await database.getUserData();
+          setDisplayName(user?.username ?? EXAMPLE_USER.name);
         } catch (error) {
           console.log('Error loading progress:', error);
         }
       };
-      loadProgress();
+      load();
     }, [])
   );
 
   const handleTopicPress = (topicId: number) => {
-    // Navigate to topic detail page
-    router.push(`/topic/${topicId}` as any);
+    // Show modal with topic details
+    const topic = topics.find((t) => t.id === topicId);
+    if (topic) {
+      setSelectedTopic(topic);
+      setModalVisible(true);
+    }
+  };
+
+  const handleEnterTopic = () => {
+    if (selectedTopic) {
+      setModalVisible(false);
+      setTimeout(() => {
+        if (selectedTopic.name === 'Quadratic Equations') {
+          router.push('/lesson-menu/quadratic-equations' as any);
+        } else if (selectedTopic.name === 'Pythagorean Triples') {
+          router.push('/lesson-menu/pythagorean-triples' as any);
+        } else if (selectedTopic.name === 'Triangle Measures') {
+          router.push('/lesson-menu/triangle-measures' as any);
+        } else if (selectedTopic.name === 'Area of Triangles') {
+          router.push('/lesson-menu/area-of-triangle' as any);
+        } else if (selectedTopic.name === 'Variation') {
+          router.push('/lesson-menu/variation' as any);
+        } else {
+          router.push(`/topic/${selectedTopic.id}` as any);
+        }
+      }, 200);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedTopic(null);
+  };
+
+  const handleTakeActivities = () => {
+    if (!selectedTopic) return;
+    if (selectedTopic.name === 'Triangle Measures') {
+      setModalVisible(false);
+      setTimeout(() => setTriangleMeasuresChoiceVisible(true), 200);
+      return;
+    }
+    if (selectedTopic.name === 'Quadratic Equations' || selectedTopic.name === 'Pythagorean Triples' || selectedTopic.name === 'Area of Triangles' || selectedTopic.name === 'Variation') {
+      setModalVisible(false);
+      setTimeout(() => setActivitiesModalVisible(true), 200);
+    }
+  };
+
+  const handleTriangleMeasuresModuleChoice = (module: '3A' | '3B') => {
+    setTriangleMeasuresModule(module);
+    setTriangleMeasuresChoiceVisible(false);
+    setTimeout(() => setActivitiesModalVisible(true), 150);
   };
 
   // Filter topics based on search query
   const filteredTopics = topics.filter((topic) =>
     topic.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const { isWeb, isWideScreen, width: windowWidth } = useResponsive();
+  const useWebLayout = isWeb && isWideScreen;
+  const useThreeColGrid = useWebLayout && windowWidth >= 1100;
 
   const getProgressLabel = (progress: number) => {
     if (progress >= 90) return 'Excellent! 🎉';
@@ -139,164 +1028,120 @@ export default function HomeScreen() {
     return 'Start learning! 🌟';
   };
 
-  const AnimatedProgressBar = ({ progress, style }: { progress: number; style?: any }) => {
-    const progressWidth = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-      Animated.timing(progressWidth, {
-        toValue: progress,
-        duration: 800,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: false,
-      }).start();
-    }, [progress, progressWidth]);
-
-    return (
-      <View style={style ? [styles.topicProgressBarBackground, style] : styles.topicProgressBarBackground}>
-        <Animated.View
-          style={[
-            styles.topicProgressBarFill as any,
-            {
-              width: progressWidth.interpolate({
-                inputRange: [0, 100],
-                outputRange: ['0%', '100%'],
-              }),
-            },
-          ]}
-        />
-      </View>
-    );
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, useWebLayout && styles.scrollContentWeb]}
         showsVerticalScrollIndicator={false}
       >
+        <View style={useWebLayout ? styles.webContentWrap : undefined}>
         {/* Enhanced Profile Header with Animations */}
         <Animated.View 
           style={[
             styles.profileHeader as any,
+            useWebLayout && styles.profileHeaderWeb,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
           ]}
         >
-          {/* Top Row: Avatar, Name, and Stats */}
-          <View style={styles.profileTopRow}>
-            <View style={styles.avatarContainer}>
-              <Animated.View 
-                style={[
-                  styles.avatar as any,
-                  {
-                    transform: [{
-                      scale: fadeAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.8, 1],
-                      }),
-                    }],
-                  },
-                ]}
-              >
-                <Text style={styles.avatarText}>
-                  {EXAMPLE_USER.name.charAt(0).toUpperCase()}
-                </Text>
-              </Animated.View>
-              <View style={styles.levelBadge}>
-                <Text style={styles.levelText}>Lvl {EXAMPLE_USER.level}</Text>
-              </View>
-            </View>
+          {/* Animated Background */}
+          <AnimatedProfileBackground />
 
-            <View style={styles.userInfo}>
-              <Text style={styles.welcomeText}>Welcome back,</Text>
-              <Text style={styles.userName}>{EXAMPLE_USER.name}</Text>
-              <View style={styles.streakContainer}>
-                <Text style={styles.streakIcon}>🔥</Text>
-                <Text style={styles.streakText}>{EXAMPLE_USER.streak} day streak</Text>
-              </View>
-            </View>
-
-            <View style={styles.progressCircle}>
-              <Animated.Text style={styles.progressPercentage}>
-                {progressAnim.interpolate({
-                  inputRange: [0, 100],
-                  outputRange: ['0%', '100%'],
-                })}
-              </Animated.Text>
-              <Text style={styles.progressLabel}>Overall</Text>
-            </View>
-          </View>
-
-          {/* Progress Section with Animated Bar */}
-          <View style={styles.progressSection}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressTitle}>Your Learning Progress</Text>
-              <Text style={styles.progressSubtitle}>
-                {getProgressLabel(EXAMPLE_USER.averageProgress)}
-              </Text>
-            </View>
-            
-            <View style={styles.progressBarContainer}>
-              <View style={styles.progressLabels}>
-                <Text style={styles.progressMin}>0%</Text>
-                <Text style={styles.progressMax}>100%</Text>
-              </View>
-              <View style={styles.progressBarBackground}>
-                <Animated.View
+          {/* Content Container with zIndex to appear above background */}
+          <View style={[styles.profileContentInner, useWebLayout && styles.profileContentInnerWeb]}>
+            {/* Top Row: Avatar, Name, and Stats */}
+            <View style={[styles.profileTopRow, useWebLayout && styles.profileTopRowWeb]}>
+              <View style={styles.avatarContainer}>
+                <Animated.View 
                   style={[
-                    styles.progressBarFill as any,
+                    styles.avatar as any,
                     {
-                      width: progressAnim.interpolate({
-                        inputRange: [0, 100],
-                        outputRange: ['0%', '100%'],
-                      }),
+                      transform: [{
+                        scale: fadeAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.8, 1],
+                        }),
+                      }],
                     },
                   ]}
-                />
+                >
+                  <Text style={styles.avatarText}>
+                    {(displayName || 'L').charAt(0).toUpperCase()}
+                  </Text>
+                </Animated.View>
+                <View style={styles.levelBadge}>
+                  <Text style={styles.levelText}>Lvl {EXAMPLE_USER.level}</Text>
+                </View>
               </View>
-              <View style={styles.progressMarker}>
-                <Text style={styles.progressMarkerText}>
-                  {EXAMPLE_USER.averageProgress}% Complete
+
+              <View style={styles.userInfo}>
+                <Text style={styles.welcomeText}>Welcome back,</Text>
+                <Text style={styles.userName} numberOfLines={1}>{displayName || EXAMPLE_USER.name}</Text>
+                <View style={styles.streakContainer}>
+                  <Text style={styles.streakIcon}>🔥</Text>
+                  <Text style={styles.streakText}>{EXAMPLE_USER.streak} day streak</Text>
+                </View>
+              </View>
+
+              <View style={styles.progressCircle}>
+                <Animated.Text style={styles.progressPercentage}>
+                  {progressAnim.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%'],
+                  })}
+                </Animated.Text>
+                <Text style={styles.progressLabel}>Overall</Text>
+              </View>
+            </View>
+
+            {/* Progress Section with Animated Bar — on web sits beside top row for wide compact header */}
+            <View style={[styles.progressSection, useWebLayout && styles.progressSectionWeb]}>
+              <View style={[styles.progressHeader, useWebLayout && styles.progressHeaderWeb]}>
+                <Text style={styles.progressTitle}>Your Learning Progress</Text>
+                <Text style={styles.progressSubtitle}>
+                  {getProgressLabel(Math.round(averageProgress))}
                 </Text>
+              </View>
+              
+              <View style={styles.progressBarContainer}>
+                <View style={styles.progressLabels}>
+                  <Text style={styles.progressMin}>0%</Text>
+                  <Text style={styles.progressMax}>100%</Text>
+                </View>
+                <View style={styles.progressBarBackground}>
+                  <Animated.View
+                    style={[
+                      styles.progressBarFill as any,
+                      {
+                        width: progressAnim.interpolate({
+                          inputRange: [0, 100],
+                          outputRange: ['0%', '100%'],
+                        }),
+                      },
+                    ]}
+                  />
+                </View>
+                <View style={styles.progressMarker}>
+                  <Text style={styles.progressMarkerText}>
+                    {Math.round(averageProgress)}% Complete
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
         </Animated.View>
 
-        {/* Animated Search Bar */}
-        <Animated.View 
-          style={[
-            styles.searchSection as any,
-            {
-              opacity: fadeAnim,
-              transform: [{
-                translateX: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-50, 0],
-                }),
-              }],
-            },
-          ]}
-        >
-          <View style={styles.searchBarContainer}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search topics..."
-              placeholderTextColor={ProfessionalColors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Text style={styles.clearIcon}>✕</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </Animated.View>
+        {/* Animated Search Bar with Focus Animation */}
+        <AnimatedSearchBar 
+          fadeAnim={fadeAnim}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          styles={styles}
+          colors={ProfessionalColors}
+        />
 
         {/* Animated Section Header */}
         <Animated.View 
@@ -319,75 +1164,20 @@ export default function HomeScreen() {
           </Text>
         </Animated.View>
 
-        {/* Animated Topics List */}
-        <View style={styles.topicsList}>
-          {filteredTopics.map((topic, index) => {
-            const clampedProgress = Math.max(0, Math.min(100, topic.progress));
-            
-            return (
-              <Animated.View
-                key={topic.id}
-                style={{
-                  opacity: fadeAnim,
-                  transform: [{
-                    translateY: fadeAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [30, 0],
-                    }),
-                  }],
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => handleTopicPress(topic.id)}
-                  activeOpacity={0.85}
-                  style={[
-                    styles.topicCardTouchable,
-                    { 
-                      shadowColor: TOPIC_COLORS[index % TOPIC_COLORS.length],
-                    },
-                  ]}
-                >
-                  {/* Orange left border strip */}
-                  <View style={styles.topicCardBorder} />
-                  
-                  <ImageBackground
-                    source={getTopicImage(topic.name)}
-                    style={styles.topicCard}
-                    imageStyle={styles.topicCardImage}
-                    resizeMode="cover"
-                  >
-                    {/* Overlay for better text readability */}
-                    <View style={styles.topicCardOverlay} />
-                    
-                    <View style={styles.topicHeader}>
-                      <View style={styles.topicIconContainer}>
-                        <Text style={styles.topicIcon}>{topic.icon}</Text>
-                      </View>
-                      <View style={styles.topicInfo}>
-                        <Text style={styles.topicName}>{topic.name}</Text>
-                        <Text style={styles.topicSubtitle}>{topic.subtitle}</Text>
-                      </View>
-                      <View style={styles.topicPercentage}>
-                        <Text style={styles.percentageText}>{Math.round(clampedProgress)}%</Text>
-                      </View>
-                    </View>
-
-                    {/* Animated Progress Bar */}
-                    <View style={styles.topicProgressContainer}>
-                      <View style={styles.progressLabels}>
-                        <Text style={styles.topicProgressLabel}>Progress</Text>
-                        <Text style={styles.topicProgressValue}>{Math.round(clampedProgress)}%</Text>
-                      </View>
-                      <AnimatedProgressBar 
-                        progress={clampedProgress} 
-                        style={styles.topicProgressBarBackground}
-                      />
-                    </View>
-                  </ImageBackground>
-                </TouchableOpacity>
-              </Animated.View>
-            );
-          })}
+        {/* Animated Topics List — grid on web for landscape/website layout */}
+        <View style={[styles.topicsList, useWebLayout && styles.topicsListWeb]}>
+          {filteredTopics.map((topic, index) => (
+            <View key={topic.id} style={useWebLayout ? (useThreeColGrid ? styles.topicCardWrapperWeb3Col : styles.topicCardWrapperWeb) : undefined}>
+              <AnimatedTopicCard
+                topic={topic}
+                index={index}
+                fadeAnim={fadeAnim}
+                onPress={handleTopicPress}
+                styles={styles}
+                colors={ProfessionalColors}
+              />
+            </View>
+          ))}
         </View>
 
         {/* Animated Quick Stats */}
@@ -405,65 +1195,152 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{topics.length}</Text>
-            <Text style={styles.statLabel}>Total Topics</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>
-              {topics.filter(t => t.progress >= 100).length}
-            </Text>
-            <Text style={styles.statLabel}>Completed</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>
-              {Math.round(EXAMPLE_USER.averageProgress)}%
-            </Text>
-            <Text style={styles.statLabel}>Avg. Progress</Text>
-          </View>
+          {[
+            { value: topics.length, label: 'Total Topics', delay: 0 },
+            { value: topics.filter(t => t.progress >= 100).length, label: 'Completed', delay: 100 },
+            { value: Math.round(averageProgress) + '%', label: 'Avg. Progress', delay: 200 },
+          ].map((stat, index) => (
+            <AnimatedStatCard
+              key={index}
+              value={stat.value}
+              label={stat.label}
+              delay={stat.delay}
+              styles={styles}
+            />
+          ))}
         </Animated.View>
+        </View>
       </ScrollView>
+
+      {/* Topic Selection Modal */}
+      <TopicModal
+        visible={modalVisible}
+        topic={selectedTopic}
+        onClose={handleCloseModal}
+        onEnter={handleEnterTopic}
+        onTakeActivities={
+          selectedTopic?.name === 'Quadratic Equations' || selectedTopic?.name === 'Pythagorean Triples' || selectedTopic?.name === 'Triangle Measures' || selectedTopic?.name === 'Area of Triangles' || selectedTopic?.name === 'Variation'
+            ? handleTakeActivities
+            : undefined
+        }
+        getTopicImage={getTopicImage}
+      />
+
+      {/* Practice Activities Modal */}
+      {selectedTopic?.name === 'Quadratic Equations' && (
+        <PracticeActivitiesModal
+          visible={activitiesModalVisible}
+          onClose={() => setActivitiesModalVisible(false)}
+          practiceData={QUADRATIC_EQUATIONS_DATA.practiceActivities}
+        />
+      )}
+      {selectedTopic?.name === 'Pythagorean Triples' && (
+        <PracticeActivitiesModal
+          visible={activitiesModalVisible}
+          onClose={() => setActivitiesModalVisible(false)}
+          practiceData={PYTHAGOREAN_TRIPLES_DATA.practiceActivities}
+        />
+      )}
+      {selectedTopic?.name === 'Triangle Measures' && (
+        <PracticeActivitiesModal
+          visible={activitiesModalVisible}
+          onClose={() => {
+            setActivitiesModalVisible(false);
+            setTriangleMeasuresModule(null);
+          }}
+          practiceData={triangleMeasuresModule === '3B' ? OBLIQUE_TRIANGLE_PRACTICE : TRIANGLE_SIMILARITY_DATA.practiceActivities}
+        />
+      )}
+      {selectedTopic?.name === 'Area of Triangles' && (
+        <PracticeActivitiesModal
+          visible={activitiesModalVisible}
+          onClose={() => setActivitiesModalVisible(false)}
+          practiceData={AREA_OF_TRIANGLE_DATA.practiceActivities}
+        />
+      )}
+      {selectedTopic?.name === 'Variation' && (
+        <PracticeActivitiesModal
+          visible={activitiesModalVisible}
+          onClose={() => setActivitiesModalVisible(false)}
+          practiceData={VARIATION_DATA.practiceActivities}
+        />
+      )}
+
+      {/* Triangle Measures: choose MODULE 3A or 3B before opening practice */}
+      <Modal
+        visible={triangleMeasuresChoiceVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTriangleMeasuresChoiceVisible(false)}
+      >
+        <View style={styles.triangleChoiceOverlay}>
+          <View style={styles.triangleChoiceCard}>
+            <Text style={styles.triangleChoiceTitle}>Practice Activities</Text>
+            <Text style={styles.triangleChoiceSubtitle}>Choose a module</Text>
+            <TouchableOpacity
+              style={styles.triangleChoiceOption}
+              onPress={() => handleTriangleMeasuresModuleChoice('3A')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.triangleChoiceOptionLabel}>MODULE 3A</Text>
+              <Text style={styles.triangleChoiceOptionTitle}>Triangle Similarity</Text>
+              <Text style={styles.triangleChoiceOptionDesc}>Similar triangles, SAS, ASA, SSS</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.triangleChoiceOption}
+              onPress={() => handleTriangleMeasuresModuleChoice('3B')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.triangleChoiceOptionLabel}>MODULE 3B</Text>
+              <Text style={styles.triangleChoiceOptionTitle}>Oblique Triangle</Text>
+              <Text style={styles.triangleChoiceOptionDesc}>Law of Sines & Cosines</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.triangleChoiceCancel}
+              onPress={() => setTriangleMeasuresChoiceVisible(false)}
+            >
+              <Text style={styles.triangleChoiceCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-// Compute responsive values before StyleSheet
-const cardWidthValue = isTablet() ? '90%' : '100%';
-const topicCardWidthValue = isTablet() ? '95%' : '100%';
-
+// Web: compact sizes so UI doesn't look "zoomed in"; mobile/tablet unchanged
 const responsiveValues = {
-  paddingH: isTablet() ? wp(5) : wp(4),
-  cardMaxWidth: isTablet() ? 800 : undefined,
-  cardWidth: cardWidthValue,
-  topicCardWidth: topicCardWidthValue,
+  paddingH: isWeb() ? getSpacing(Spacing.md) : (isTablet() ? wp(5) : getSpacing(Spacing.md)),
+  cardMaxWidth: isWeb() ? undefined : isTablet() ? 800 : undefined,
   topicCardMarginH: isTablet() ? wp(2) : 0,
-  avatarSize: isTablet() ? 90 : isSmallDevice() ? 60 : 70,
-  avatarRadius: isTablet() ? 45 : isSmallDevice() ? 30 : 35,
-  avatarFont: isTablet() ? 36 : isSmallDevice() ? 24 : 28,
-  titleFont: isTablet() ? 28 : isSmallDevice() ? 18 : 22,
-  welcomeFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
-  progressCircleSize: isTablet() ? 90 : isSmallDevice() ? 60 : 70,
-  progressFont: isTablet() ? 22 : isSmallDevice() ? 14 : 18,
-  progressLabelFont: isTablet() ? 12 : isSmallDevice() ? 8 : 10,
-  sectionTitleFont: isTablet() ? 30 : isSmallDevice() ? 20 : 24,
-  sectionSubtitleFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
-  topicIconSize: isTablet() ? 60 : isSmallDevice() ? 40 : 50,
-  topicIconRadius: isTablet() ? 30 : isSmallDevice() ? 20 : 25,
-  topicIconFont: isTablet() ? 28 : isSmallDevice() ? 18 : 22,
-  topicNameFont: isTablet() ? 22 : isSmallDevice() ? 16 : 18,
-  topicSubtitleFont: isTablet() ? 14 : isSmallDevice() ? 10 : 12,
+  avatarSize: isWeb() ? 44 : (isTablet() ? 90 : isSmallDevice() ? 60 : 70),
+  avatarRadius: isWeb() ? 22 : (isTablet() ? 45 : isSmallDevice() ? 30 : 35),
+  avatarFont: isWeb() ? 20 : (isTablet() ? 36 : isSmallDevice() ? 24 : 28),
+  titleFont: isWeb() ? 18 : (isTablet() ? 28 : isSmallDevice() ? 18 : 22),
+  welcomeFont: isWeb() ? 12 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+  progressCircleSize: isWeb() ? 52 : (isTablet() ? 90 : isSmallDevice() ? 60 : 70),
+  progressFont: isWeb() ? 14 : (isTablet() ? 22 : isSmallDevice() ? 14 : 18),
+  progressLabelFont: isWeb() ? 10 : (isTablet() ? 12 : isSmallDevice() ? 8 : 10),
+  sectionTitleFont: isWeb() ? 20 : (isTablet() ? 30 : isSmallDevice() ? 20 : 24),
+  sectionSubtitleFont: isWeb() ? 13 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+  topicIconSize: isWeb() ? 40 : (isTablet() ? 60 : isSmallDevice() ? 40 : 50),
+  topicIconRadius: isWeb() ? 20 : (isTablet() ? 30 : isSmallDevice() ? 20 : 25),
+  topicIconFont: isWeb() ? 18 : (isTablet() ? 28 : isSmallDevice() ? 18 : 22),
+  topicNameFont: isWeb() ? 15 : (isTablet() ? 22 : isSmallDevice() ? 16 : 18),
+  topicSubtitleFont: isWeb() ? 11 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
   statCardMaxWidth: isTablet() ? 250 : undefined,
-  statNumberFont: isTablet() ? 26 : isSmallDevice() ? 16 : 20,
-  statLabelFont: isTablet() ? 14 : isSmallDevice() ? 10 : 12,
-  searchFont: isTablet() ? 18 : isSmallDevice() ? 14 : 16,
-  searchIconFont: isTablet() ? 20 : isSmallDevice() ? 16 : 18,
-  progressTitleFont: isTablet() ? 20 : isSmallDevice() ? 14 : 16,
-  progressSubtitleFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
-  progressBarHeight: isTablet() ? 14 : isSmallDevice() ? 10 : 12,
-  topicProgressBarHeight: isTablet() ? 10 : isSmallDevice() ? 6 : 8,
-  levelFont: isTablet() ? 12 : isSmallDevice() ? 8 : 10,
-  streakFont: isTablet() ? 14 : isSmallDevice() ? 10 : 12,
-  streakIconFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
+  statNumberFont: isWeb() ? 18 : (isTablet() ? 26 : isSmallDevice() ? 16 : 20),
+  statLabelFont: isWeb() ? 11 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
+  searchFont: isWeb() ? 14 : (isTablet() ? 18 : isSmallDevice() ? 14 : 16),
+  searchIconFont: isWeb() ? 16 : (isTablet() ? 20 : isSmallDevice() ? 16 : 18),
+  progressTitleFont: isWeb() ? 14 : (isTablet() ? 20 : isSmallDevice() ? 14 : 16),
+  progressSubtitleFont: isWeb() ? 12 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+  progressBarHeight: isWeb() ? 8 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
+  topicProgressBarHeight: isWeb() ? 6 : (isTablet() ? 10 : isSmallDevice() ? 6 : 8),
+  levelFont: isWeb() ? 10 : (isTablet() ? 12 : isSmallDevice() ? 8 : 10),
+  streakFont: isWeb() ? 11 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
+  streakIconFont: isWeb() ? 12 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+  topicCardMinHeight: isWeb() ? 128 : 160,
 };
 
 const styles = StyleSheet.create({
@@ -475,35 +1352,74 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: getSafeAreaTopPadding(),
-    paddingBottom: getSpacing(Spacing.xl),
-    
+    paddingBottom: getSpacing(Spacing.xxl) + 80,
+  },
+  scrollContentWeb: {
+    alignItems: 'center',
+  },
+  webContentWrap: {
+    width: '100%',
+    maxWidth: 1400,
+    paddingHorizontal: getSpacing(Spacing.xl),
+    alignSelf: 'center',
   },
   // Enhanced Profile Header
   profileHeader: {
     backgroundColor: ProfessionalColors.white,
-    padding: getSpacing(Spacing.xl),
+    padding: getSpacing(Spacing.lg),
     marginTop: getSpacing(Spacing.md),
     marginHorizontal: responsiveValues.paddingH,
-    borderRadius: scaleSize(32),
+    borderRadius: scaleSize(24),
+    minHeight: scaleSize(140),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: scaleSize(10) },
-    shadowOpacity: 0.1,
-    shadowRadius: scaleSize(20),
-    elevation: 10,
+    shadowOffset: { width: 0, height: scaleSize(4) },
+    shadowOpacity: 0.08,
+    shadowRadius: scaleSize(12),
+    elevation: 6,
     maxWidth: responsiveValues.cardMaxWidth,
-    alignSelf: 'center',
-    width: responsiveValues.cardWidth as any,
+    alignSelf: 'stretch',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  profileHeaderWeb: {
+    padding: getSpacing(Spacing.lg),
+    marginTop: getSpacing(Spacing.sm),
+    borderRadius: scaleSize(16),
+    minHeight: scaleSize(120),
+  },
+  profileContentInner: {
+    position: 'relative',
+    zIndex: 1,
+  },
+  profileContentInnerWeb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getSpacing(Spacing.lg),
   },
   profileTopRow: {
-    flexDirection: isSmallDevice() ? 'column' : 'row',
-    alignItems: isSmallDevice() ? 'flex-start' : 'center',
-    marginBottom: getSpacing(Spacing.xl),
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: getSpacing(Spacing.lg),
+    gap: getSpacing(Spacing.md),
+  },
+  profileTopRowWeb: {
+    marginBottom: 0,
+    flex: 1,
+    minWidth: 260,
+    maxWidth: 380,
+    gap: getSpacing(Spacing.sm),
+  },
+  progressSectionWeb: {
+    marginTop: 0,
+    flex: 1.2,
+    minWidth: 0,
+  },
+  progressHeaderWeb: {
+    marginBottom: getSpacing(Spacing.xs),
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: isSmallDevice() ? 0 : getSpacing(Spacing.md),
-    marginBottom: isSmallDevice() ? getSpacing(Spacing.md) : 0,
+    marginRight: 0,
   },
   avatar: {
     width: scaleSize(responsiveValues.avatarSize),
@@ -544,6 +1460,7 @@ const styles = StyleSheet.create({
   },
   userInfo: {
     flex: 1,
+    minWidth: 0,
   },
   welcomeText: {
     fontSize: scaleFont(responsiveValues.welcomeFont),
@@ -560,7 +1477,7 @@ const styles = StyleSheet.create({
   streakContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    backgroundColor: 'rgba(255, 102, 0, 0.1)',
     paddingHorizontal: getSpacing(Spacing.sm),
     paddingVertical: scaleSize(4),
     borderRadius: scaleSize(12),
@@ -577,16 +1494,17 @@ const styles = StyleSheet.create({
   },
   progressCircle: {
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: 'rgba(255, 102, 0, 0.1)',
     padding: getSpacing(Spacing.md),
     borderRadius: scaleSize(20),
     minWidth: scaleSize(responsiveValues.progressCircleSize),
+    flexShrink: 0,
     shadowColor: ProfessionalColors.primary,
     shadowOffset: { width: 0, height: scaleSize(4) },
     shadowOpacity: 0.2,
     shadowRadius: scaleSize(8),
     elevation: 4,
-    marginTop: isSmallDevice() ? getSpacing(Spacing.md) : 0,
   },
   progressPercentage: {
     fontSize: scaleFont(responsiveValues.progressFont),
@@ -602,16 +1520,16 @@ const styles = StyleSheet.create({
     marginTop: getSpacing(Spacing.md),
   },
   progressHeader: {
-    flexDirection: isSmallDevice() ? 'column' : 'row',
-    justifyContent: isSmallDevice() ? 'flex-start' : 'space-between',
-    alignItems: isSmallDevice() ? 'flex-start' : 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: getSpacing(Spacing.md),
   },
   progressTitle: {
     fontSize: scaleFont(responsiveValues.progressTitleFont),
     fontWeight: '700',
     color: ProfessionalColors.text,
-    marginBottom: isSmallDevice() ? getSpacing(Spacing.xs) : 0,
+    flex: 1,
   },
   progressSubtitle: {
     fontSize: scaleFont(responsiveValues.progressSubtitleFont),
@@ -658,7 +1576,7 @@ const styles = StyleSheet.create({
   },
   // Search Section
   searchSection: {
-    padding: getSpacing(Spacing.lg),
+    paddingTop: getSpacing(Spacing.md),
     paddingBottom: getSpacing(Spacing.md),
     paddingHorizontal: responsiveValues.paddingH,
   },
@@ -675,8 +1593,7 @@ const styles = StyleSheet.create({
     shadowRadius: scaleSize(12),
     elevation: 6,
     maxWidth: responsiveValues.cardMaxWidth,
-    alignSelf: 'center',
-    width: '100%',
+    alignSelf: 'stretch',
   },
   searchIcon: {
     fontSize: scaleFont(responsiveValues.searchIconFont),
@@ -688,6 +1605,10 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(responsiveValues.searchFont),
     color: ProfessionalColors.text,
     fontWeight: '500',
+  },
+  clearButton: {
+    padding: scaleSize(4),
+    marginLeft: getSpacing(Spacing.xs),
   },
   clearIcon: {
     fontSize: scaleFont(responsiveValues.searchIconFont),
@@ -712,14 +1633,27 @@ const styles = StyleSheet.create({
   },
   // Topics List
   topicsList: {
-    paddingHorizontal: wp(isTablet() ? 5 : 2),
+    paddingHorizontal: responsiveValues.paddingH,
     gap: getSpacing(Spacing.md),
+    paddingBottom: getSpacing(Spacing.sm),
+  },
+  topicsListWeb: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  topicCardWrapperWeb: {
+    width: '48%',
+    marginBottom: getSpacing(Spacing.md),
+  },
+  topicCardWrapperWeb3Col: {
+    width: '31%',
+    marginBottom: getSpacing(Spacing.md),
   },
   topicCardTouchable: {
-    marginHorizontal: responsiveValues.topicCardMarginH,
+    marginHorizontal: 0,
     maxWidth: responsiveValues.cardMaxWidth,
-    alignSelf: 'center',
-    width: responsiveValues.topicCardWidth as any,
+    alignSelf: 'stretch',
     borderRadius: BorderRadius.lg - 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: scaleSize(6) },
@@ -745,7 +1679,7 @@ const styles = StyleSheet.create({
     padding: getSpacing(Spacing.lg),
     paddingLeft: getSpacing(Spacing.lg) + scaleSize(6),
     overflow: 'hidden',
-    minHeight: scaleSize(140),
+    minHeight: scaleSize(responsiveValues.topicCardMinHeight),
     borderTopRightRadius: BorderRadius.lg - 1,
     borderBottomRightRadius: BorderRadius.lg - 1,
   },
@@ -857,21 +1791,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsiveValues.paddingH,
     marginTop: getSpacing(Spacing.lg),
     gap: getSpacing(Spacing.md),
-    flexWrap: isSmallDevice() ? 'wrap' : 'nowrap',
+    flexWrap: 'nowrap',
   },
   statCard: {
-    flex: isSmallDevice() ? 0 : 1,
+    flex: 1,
     backgroundColor: ProfessionalColors.white,
-    padding: getSpacing(Spacing.lg),
+    padding: getSpacing(Spacing.md),
+    paddingLeft: getSpacing(Spacing.md) + scaleSize(6),
     borderRadius: BorderRadius.lg,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: scaleSize(4) },
     shadowOpacity: 0.15,
     shadowRadius: scaleSize(10),
     elevation: 6,
-    minWidth: isSmallDevice() ? '45%' : undefined,
+    minWidth: 0,
     maxWidth: responsiveValues.statCardMaxWidth,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  statCardBorder: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: scaleSize(6),
+    backgroundColor: ProfessionalColors.primary,
+    zIndex: 10,
+    borderTopLeftRadius: BorderRadius.lg,
+    borderBottomLeftRadius: BorderRadius.lg,
   },
   statNumber: {
     fontSize: scaleFont(responsiveValues.statNumberFont),
@@ -884,5 +1833,67 @@ const styles = StyleSheet.create({
     color: ProfessionalColors.textSecondary,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  triangleChoiceOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: getSpacing(Spacing.lg),
+  },
+  triangleChoiceCard: {
+    backgroundColor: ProfessionalColors.white,
+    borderRadius: scaleSize(16),
+    padding: getSpacing(Spacing.lg),
+    width: '100%',
+    maxWidth: 360,
+  },
+  triangleChoiceTitle: {
+    fontSize: scaleFont(20),
+    fontWeight: '700',
+    color: ProfessionalColors.text,
+    marginBottom: getSpacing(Spacing.xs),
+    textAlign: 'center',
+  },
+  triangleChoiceSubtitle: {
+    fontSize: scaleFont(14),
+    color: ProfessionalColors.textSecondary,
+    marginBottom: getSpacing(Spacing.md),
+    textAlign: 'center',
+  },
+  triangleChoiceOption: {
+    backgroundColor: ProfessionalColors.background,
+    borderRadius: scaleSize(12),
+    padding: getSpacing(Spacing.md),
+    marginBottom: getSpacing(Spacing.sm),
+    borderLeftWidth: scaleSize(4),
+    borderLeftColor: ProfessionalColors.primary,
+  },
+  triangleChoiceOptionLabel: {
+    fontSize: scaleFont(12),
+    fontWeight: '700',
+    color: ProfessionalColors.primary,
+    letterSpacing: 0.5,
+    marginBottom: getSpacing(Spacing.xs),
+  },
+  triangleChoiceOptionTitle: {
+    fontSize: scaleFont(16),
+    fontWeight: '700',
+    color: ProfessionalColors.text,
+    marginBottom: getSpacing(Spacing.xs),
+  },
+  triangleChoiceOptionDesc: {
+    fontSize: scaleFont(13),
+    color: ProfessionalColors.textSecondary,
+  },
+  triangleChoiceCancel: {
+    marginTop: getSpacing(Spacing.sm),
+    paddingVertical: getSpacing(Spacing.sm),
+    alignItems: 'center',
+  },
+  triangleChoiceCancelText: {
+    fontSize: scaleFont(15),
+    color: ProfessionalColors.textSecondary,
+    fontWeight: '600',
   },
 });

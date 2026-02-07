@@ -1,12 +1,16 @@
-import { Stack } from "expo-router";
+import { Stack } from 'expo-router';
+import React from 'react';
+import ResponsiveScreenWrapper from '../components/ResponsiveScreenWrapper';
 
 export default function RootLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right',
-      }}
-    />
+    <ResponsiveScreenWrapper>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'slide_from_right',
+        }}
+      />
+    </ResponsiveScreenWrapper>
   );
 }

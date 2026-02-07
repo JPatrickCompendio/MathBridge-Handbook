@@ -1,9 +1,11 @@
 import { Href, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+    ActivityIndicator,
     Animated,
     Easing,
     KeyboardAvoidingView,
+    Modal,
     Platform,
     ScrollView,
     StyleSheet,
@@ -15,7 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Spacing } from '../../constants/colors';
-import { getSafeAreaTopPadding, getSpacing, hp, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
+import { database } from '../../services/database';
+import { getSafeAreaTopPadding, getSpacing, hp, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -32,12 +35,172 @@ const ProfessionalColors = {
 
 const MATH_SYMBOLS = ['+', '−', '×', '÷', 'Σ', 'π', '√', '='];
 
+// Floating symbols for background (extended set for variety)
+const BG_SYMBOLS = ['+', '−', '×', '÷', 'π', '√', 'Σ', '∫', '∞', 'θ', 'α', '='];
+
+// Single floating symbol with drift animation
+function FloatingMathSymbol({
+  symbol,
+  left,
+  top,
+  size,
+  opacity,
+  delay,
+  duration,
+}: {
+  symbol: string;
+  left: number;
+  top: number;
+  size: number;
+  opacity: number;
+  delay: number;
+  duration: number;
+}) {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+  const rotate = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const driftY = Animated.loop(
+      Animated.sequence([
+        Animated.timing(translateY, {
+          toValue: 1,
+          duration: duration / 2,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: duration / 2,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+      { iterations: -1 }
+    );
+    const driftX = Animated.loop(
+      Animated.sequence([
+        Animated.timing(translateX, {
+          toValue: 1,
+          duration: duration * 0.7,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateX, {
+          toValue: 0,
+          duration: duration * 0.7,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+      { iterations: -1 }
+    );
+    const spin = Animated.loop(
+      Animated.timing(rotate, {
+        toValue: 1,
+        duration: duration * 2,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+      { iterations: -1 }
+    );
+    const timer = setTimeout(() => {
+      driftY.start();
+      driftX.start();
+      spin.start();
+    }, delay);
+    return () => {
+      clearTimeout(timer);
+      driftY.stop();
+      driftX.stop();
+      spin.stop();
+    };
+  }, [delay, duration, rotate, translateX, translateY]);
+
+  const moveY = translateY.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 25],
+  });
+  const moveX = translateX.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 15],
+  });
+  const rotation = rotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: 'absolute',
+          left: `${left}%`,
+          top: `${top}%`,
+          transform: [{ translateX: moveX }, { translateY: moveY }, { rotate: rotation }],
+        },
+      ]}
+    >
+      <Text style={{ fontSize: size, color: ProfessionalColors.primary, opacity, fontWeight: '600' }}>
+        {symbol}
+      </Text>
+    </Animated.View>
+  );
+}
+
+// Animated math background layer
+function MathBackground() {
+  const symbols = [
+    { symbol: BG_SYMBOLS[0], left: 8, top: 12, size: 48, opacity: 0.48, delay: 0, duration: 18000 },
+    { symbol: BG_SYMBOLS[1], left: 82, top: 18, size: 36, opacity: 0.42, delay: 800, duration: 22000 },
+    { symbol: BG_SYMBOLS[2], left: 15, top: 55, size: 56, opacity: 0.45, delay: 400, duration: 20000 },
+    { symbol: BG_SYMBOLS[3], left: 78, top: 48, size: 42, opacity: 0.44, delay: 1200, duration: 24000 },
+    { symbol: BG_SYMBOLS[4], left: 72, top: 72, size: 52, opacity: 0.46, delay: 600, duration: 19000 },
+    { symbol: BG_SYMBOLS[5], left: 6, top: 78, size: 44, opacity: 0.43, delay: 1000, duration: 21000 },
+    { symbol: BG_SYMBOLS[6], left: 88, top: 35, size: 38, opacity: 0.4, delay: 200, duration: 26000 },
+    { symbol: BG_SYMBOLS[7], left: 42, top: 8, size: 40, opacity: 0.44, delay: 1500, duration: 23000 },
+    { symbol: BG_SYMBOLS[8], left: 50, top: 65, size: 46, opacity: 0.42, delay: 300, duration: 25000 },
+    { symbol: BG_SYMBOLS[9], left: 28, top: 85, size: 34, opacity: 0.45, delay: 500, duration: 20000 },
+  ];
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      {symbols.map((s, i) => (
+        <FloatingMathSymbol
+          key={i}
+          symbol={s.symbol}
+          left={s.left}
+          top={s.top}
+          size={scaleSize(s.size)}
+          opacity={s.opacity}
+          delay={s.delay}
+          duration={s.duration}
+        />
+      ))}
+    </View>
+  );
+}
+
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [loginError, setLoginError] = useState('');
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
   const [currentSymbolIndex, setCurrentSymbolIndex] = useState(0);
+
+  // App-only: reset password with recovery PIN modal
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetPin, setResetPin] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   // Animation values for 3D rotation
   const rotateYAnim = useRef(new Animated.Value(0)).current;
@@ -127,8 +290,8 @@ export default function LoginScreen() {
     const newErrors: { email?: string; password?: string } = {};
 
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = isWeb() ? 'Email is required' : 'Username is required';
+    } else if (isWeb() && !/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Please enter a valid email';
     }
 
@@ -140,35 +303,112 @@ export default function LoginScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = () => {
-    if (validateForm()) {
-      // TODO: Implement actual login logic with backend
-      console.log('Login:', { email, password });
-      // Navigate to homepage after successful login
-      router.replace('/tabs' as Href);
+  const handleLogin = async () => {
+    setLoginError('');
+    if (!validateForm()) return;
+    setLoading(true);
+    try {
+      const session = await database.loginUser(email.trim(), password);
+      if (session) {
+        router.replace('/tabs' as Href);
+      } else {
+        setLoginError('Invalid email or password. Create an account if you don\'t have one.');
+      }
+    } catch (e) {
+      setLoginError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    console.log('Google login');
+  const handleForgotPassword = async () => {
+    setForgotPasswordMessage(null);
+    setLoginError('');
+    if (isWeb()) {
+      if (!email.trim()) {
+        setErrors((e) => ({ ...e, email: 'Enter your email to receive a reset link' }));
+        return;
+      }
+      setResettingPassword(true);
+      try {
+        await database.sendPasswordResetEmail(email.trim());
+        setForgotPasswordMessage({ type: 'success', text: 'Check your email for a link to reset your password.' });
+      } catch (e: unknown) {
+        const msg = e && typeof e === 'object' && 'code' in e
+          ? (e as { code: string }).code === 'auth/user-not-found'
+            ? 'No account found for this email.'
+            : (e as { message?: string }).message ?? 'Something went wrong. Please try again.'
+          : 'Something went wrong. Please try again.';
+        setForgotPasswordMessage({ type: 'error', text: msg });
+      } finally {
+        setResettingPassword(false);
+      }
+      return;
+    }
+    // App: open reset-with-PIN modal
+    setResetEmail(email.trim());
+    setResetPin('');
+    setResetNewPassword('');
+    setResetConfirmPassword('');
+    setResetError('');
+    setResetSuccess(false);
+    setShowResetModal(true);
   };
 
-  const handleForgotPassword = () => {
-    console.log('Forgot password');
+  const closeResetModal = () => {
+    setShowResetModal(false);
+    setResetError('');
+    setResetSuccess(false);
+  };
+
+  const handleResetPasswordSubmit = async () => {
+    setResetError('');
+    if (!resetEmail.trim()) {
+      setResetError('Enter your username.');
+      return;
+    }
+    if (!/^\d{4,6}$/.test(resetPin)) {
+      setResetError('Recovery PIN must be 4–6 digits.');
+      return;
+    }
+    if (resetNewPassword.length < 6) {
+      setResetError('New password must be at least 6 characters.');
+      return;
+    }
+    if (resetNewPassword !== resetConfirmPassword) {
+      setResetError('Passwords do not match.');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await database.resetPasswordWithPin(resetEmail.trim(), resetPin, resetNewPassword);
+      setResetSuccess(true);
+    } catch (e: unknown) {
+      setResetError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.backgroundWrap}>
+        <MathBackground />
+      </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isWeb() && styles.scrollContentWeb,
+          ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
+          <View style={[isWeb() && styles.webLoginContainer]}>
           {/* Header Section */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
@@ -203,14 +443,14 @@ export default function LoginScreen() {
           <View style={styles.formCard}>
             <View style={styles.form}>
               <Input
-                label="Email Address"
-                placeholder="Enter your email"
+                label={isWeb() ? 'Email Address' : 'Username'}
+                placeholder={isWeb() ? 'Enter your email' : 'Your username'}
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
                   if (errors.email) setErrors({ ...errors, email: undefined });
                 }}
-                keyboardType="email-address"
+                keyboardType={isWeb() ? 'email-address' : 'default'}
                 autoCapitalize="none"
                 autoCorrect={false}
                 error={errors.email}
@@ -233,31 +473,37 @@ export default function LoginScreen() {
               <TouchableOpacity
                 onPress={handleForgotPassword}
                 style={styles.forgotPassword}
+                disabled={resettingPassword}
               >
-                <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
+                <Text style={styles.forgotPasswordText}>
+                  {resettingPassword ? 'Sending…' : 'Forgot your password?'}
+                </Text>
               </TouchableOpacity>
 
+              {forgotPasswordMessage ? (
+                <Text style={[
+                  styles.forgotPasswordMessage,
+                  forgotPasswordMessage.type === 'success' ? styles.forgotPasswordMessageSuccess : styles.forgotPasswordMessageError,
+                ]}>
+                  {forgotPasswordMessage.text}
+                </Text>
+              ) : null}
+
+              {loginError ? (
+                <Text style={styles.loginErrorText}>{loginError}</Text>
+              ) : null}
+
               <Button
-                title="Sign In"
+                title={loading ? 'Signing in...' : 'Sign In'}
                 onPress={handleLogin}
                 variant="primary"
                 size="large"
                 style={styles.signInButton}
+                disabled={loading}
               />
-
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>Or</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <Button
-                title="Continue with Google"
-                onPress={handleGoogleLogin}
-                variant="outline"
-                size="large"
-                style={styles.googleButton}
-              />
+              {loading ? (
+                <ActivityIndicator size="small" color={ProfessionalColors.primary} style={styles.loader} />
+              ) : null}
 
               <View style={styles.signupContainer}>
                 <Text style={styles.signupText}>Don't have an account? </Text>
@@ -269,8 +515,86 @@ export default function LoginScreen() {
               </View>
             </View>
           </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {!isWeb() ? (
+        <Modal
+          visible={showResetModal}
+          animationType="slide"
+          transparent
+          onRequestClose={closeResetModal}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.modalScrollContent}
+              >
+                <Text style={styles.modalTitle}>Reset password</Text>
+                <Text style={styles.modalSubtitle}>Enter your username, recovery PIN, and a new password.</Text>
+                {resetSuccess ? (
+                  <>
+                    <Text style={styles.resetSuccessText}>Password updated. Sign in with your new password.</Text>
+                    <Button title="Close" onPress={closeResetModal} variant="primary" size="large" style={styles.modalButton} />
+                  </>
+                ) : (
+                  <>
+                    <Input
+                      label="Username"
+                      placeholder="Your username"
+                      value={resetEmail}
+                      onChangeText={setResetEmail}
+                      keyboardType="default"
+                      autoCapitalize="none"
+                      containerStyle={styles.input}
+                    />
+                    <Input
+                      label="Recovery PIN"
+                      placeholder="4–6 digits you set when signing up"
+                      value={resetPin}
+                      onChangeText={setResetPin}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      containerStyle={styles.input}
+                    />
+                    <Input
+                      label="New password"
+                      placeholder="At least 6 characters"
+                      value={resetNewPassword}
+                      onChangeText={setResetNewPassword}
+                      secureTextEntry
+                      containerStyle={styles.input}
+                    />
+                    <Input
+                      label="Confirm new password"
+                      placeholder="Re-enter new password"
+                      value={resetConfirmPassword}
+                      onChangeText={setResetConfirmPassword}
+                      secureTextEntry
+                      containerStyle={styles.input}
+                    />
+                    {resetError ? <Text style={styles.resetErrorText}>{resetError}</Text> : null}
+                    <Button
+                      title={resetLoading ? 'Updating…' : 'Update password'}
+                      onPress={handleResetPasswordSubmit}
+                      variant="primary"
+                      size="large"
+                      style={styles.modalButton}
+                      disabled={resetLoading}
+                    />
+                    <TouchableOpacity onPress={closeResetModal} style={styles.modalCancel}>
+                      <Text style={styles.modalCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -297,12 +621,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: ProfessionalColors.white,
   },
+  backgroundWrap: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
     paddingBottom: hp(2),
+  },
+  scrollContentWeb: {
+    paddingHorizontal: wp(8),
+  },
+  webLoginContainer: {
+    maxWidth: 440,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     alignItems: 'center',
@@ -393,6 +729,26 @@ const styles = StyleSheet.create({
     color: ProfessionalColors.primary,
     fontWeight: '600',
   },
+  forgotPasswordMessage: {
+    fontSize: scaleFont(authResponsiveValues.smallTextFont),
+    marginBottom: getSpacing(Spacing.md),
+    textAlign: 'center',
+  },
+  forgotPasswordMessageSuccess: {
+    color: ProfessionalColors.success,
+  },
+  forgotPasswordMessageError: {
+    color: ProfessionalColors.error,
+  },
+  loginErrorText: {
+    fontSize: scaleFont(authResponsiveValues.smallTextFont),
+    color: ProfessionalColors.error,
+    marginBottom: getSpacing(Spacing.md),
+    textAlign: 'center',
+  },
+  loader: {
+    marginTop: getSpacing(Spacing.sm),
+  },
   signInButton: {
     marginBottom: getSpacing(Spacing.lg),
     backgroundColor: ProfessionalColors.primary,
@@ -401,27 +757,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: getSpacing(Spacing.lg),
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: ProfessionalColors.border,
-  },
-  dividerText: {
-    marginHorizontal: getSpacing(Spacing.md),
-    fontSize: scaleFont(authResponsiveValues.smallTextFont),
-    color: ProfessionalColors.textSecondary,
-    fontWeight: '500',
-  },
-  googleButton: {
-    marginBottom: getSpacing(Spacing.xl),
-    borderColor: ProfessionalColors.border,
-    backgroundColor: ProfessionalColors.white,
   },
   signupContainer: {
     flexDirection: 'row',
@@ -441,6 +776,60 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(authResponsiveValues.textFont),
     color: ProfessionalColors.primary,
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: getSpacing(Spacing.xl),
+  },
+  modalContent: {
+    backgroundColor: ProfessionalColors.card,
+    borderRadius: scaleSize(20),
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '85%',
+  },
+  modalScrollContent: {
+    padding: getSpacing(Spacing.xxl),
+    paddingBottom: getSpacing(Spacing.xxl) + getSpacing(Spacing.lg),
+  },
+  modalTitle: {
+    fontSize: scaleFont(authResponsiveValues.titleFont),
+    fontWeight: '700',
+    color: ProfessionalColors.text,
+    marginBottom: getSpacing(Spacing.sm),
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: scaleFont(authResponsiveValues.smallTextFont),
+    color: ProfessionalColors.textSecondary,
+    textAlign: 'center',
+    marginBottom: getSpacing(Spacing.xl),
+  },
+  resetSuccessText: {
+    fontSize: scaleFont(authResponsiveValues.textFont),
+    color: ProfessionalColors.success,
+    textAlign: 'center',
+    marginBottom: getSpacing(Spacing.xl),
+  },
+  resetErrorText: {
+    fontSize: scaleFont(authResponsiveValues.smallTextFont),
+    color: ProfessionalColors.error,
+    textAlign: 'center',
+    marginBottom: getSpacing(Spacing.md),
+  },
+  modalButton: {
+    marginBottom: getSpacing(Spacing.md),
+  },
+  modalCancel: {
+    alignSelf: 'center',
+    paddingVertical: getSpacing(Spacing.sm),
+  },
+  modalCancelText: {
+    fontSize: scaleFont(authResponsiveValues.textFont),
+    color: ProfessionalColors.textSecondary,
   },
 });
 

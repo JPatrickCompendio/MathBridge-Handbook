@@ -1,0 +1,221 @@
+{
+  "module_id": "module_2_triangle_triples",
+  "module_title": "MODULE 2: Identifying Triangle Triples (Pythagorean Triples)",
+  "subject": "Mathematics – Grade 9",
+  "topic": "Pythagorean Triples",
+  "learning_competency": "The learner identifies and verifies sets of integers that satisfy the Pythagorean Theorem and determine whether they form right triangles.",
+  "sections": {
+    "purpose": "This module aims to develop the learners' ability to identify, verify, and apply triangle triples using the Pythagorean Theorem. It is designed to reinforce mastery of right triangle relationships and prepare learners for solving higher-level geometric problems.",
+    "learning_objectives": [
+      "Identify the parts of a right triangle correctly.",
+      "Determine whether a given set of three integers forms a triangle triple.",
+      "Solve and analyze problems involving triangle triples accurately."
+    ],
+    "theorem": {
+      "statement": "In any right-angled triangle, the square of the hypotenuse is equal to the sum of the squares of the other two sides.",
+      "formula": "a² + b² = c²"
+    },
+    "section_ii_theorem_and_triples": {
+      "theorem_definition": "The Pythagorean Theorem is a fundamental rule in geometry stating that in any right-angled triangle, the square of the hypotenuse is equal to the sum of the squares of the other two sides. If a and b are the legs and c is the hypotenuse, then:",
+      "formula": "a² + b² = c²",
+      "theorem_application": "This formula allows us to find the length of a missing side of a right triangle.",
+      "from_theorem_intro": "When the Pythagorean Theorem is satisfied using positive whole numbers, the set of numbers (a, b, c) is called a Pythagorean triple. These are special sets of integers that form the sides of a right triangle.",
+      "example_triple_set": "(3, 4, 5)",
+      "example_triple_explanation": "because 3² + 4² = 5² or (9 + 16 = 25)",
+      "connection": "Every Pythagorean triple comes from the Pythagorean Theorem. While the theorem applies to all right triangles, triples are the cases where all three sides are whole numbers, making them easy to work with and remember.",
+      "definition": "A triangle triple, also known as a Pythagorean triple, is a set of three positive whole numbers a, b, and c that can represent the side lengths of a right triangle. These numbers satisfy the equation:",
+      "formula_repeat": "a² + b² = c²",
+      "where_intro": "where:",
+      "where_bullets": [
+        "a and b are the legs of the triangle",
+        "c is the hypotenuse, the longest side opposite the right angle"
+      ],
+      "conclusion": "If the equation is satisfied, then the three numbers form a right triangle."
+    },
+    "section_iii_key_words": {
+      "terms": [
+        {
+          "term": "Right Triangle",
+          "definition": "a triangle with one right (90°) angle"
+        },
+        {
+          "term": "Legs",
+          "definition": "the two shorter sides of a right triangle"
+        },
+        {
+          "term": "Hypotenuse",
+          "definition": "the longest side opposite the right angle"
+        },
+        {
+          "term": "Pythagorean Theorem",
+          "definition": "a² + b² = c²"
+        },
+        {
+          "term": "Pythagorean Triple",
+          "definition": "three whole numbers that satisfy the theorem",
+          "subterms": [
+            {
+              "term": "Primitive Triple",
+              "definition": "a triple with no common factor greater than 1",
+              "detail": "Cannot divide all numbers by the same whole number greater than 1",
+              "example": "Example: (3, 4, 5)"
+            },
+            {
+              "term": "Non-Primitive Triple",
+              "definition": "a multiple of a basic triple that has a common factor",
+              "detail": "Can divide all numbers by the same number",
+              "example": "Example: (6, 8, 10) → divide all by 2 → (3, 4, 5)"
+            }
+          ]
+        }
+      ]
+    },
+    "keywords": [
+      "Right Triangle",
+      "Legs",
+      "Hypotenuse",
+      "Pythagorean Theorem",
+      "Pythagorean Triple",
+      "Primitive Triple",
+      "Non-Primitive Triple"
+    ],
+    "section_iv_procedure": {
+      "intro": "To determine whether three numbers form a triangle triple, follow these steps carefully:",
+      "steps": [
+        {
+          "title": "Arrange the numbers in increasing order.",
+          "detail": "Write the numbers from smallest to largest. The largest number will be the hypotenuse (c)."
+        },
+        {
+          "title": "Identify the parts of the formula.",
+          "details": [
+            "a = first smaller number",
+            "b = second smaller number",
+            "c = largest number (hypotenuse)"
+          ]
+        },
+        {
+          "title": "Write the Pythagorean equation.",
+          "formula": "a² + b² = c²"
+        },
+        {
+          "title": "Square each number.",
+          "detail": "Compute: a², b², and c²"
+        },
+        {
+          "title": "Add the squares of the two smaller numbers.",
+          "expression": "a² + b²"
+        },
+        {
+          "title": "Compare both sides of the equation.",
+          "conditions": [
+            "If a² + b² = c², then the set is a triangle triple.",
+            "If a² + b² ≠ c², then the set is NOT a triangle triple."
+          ]
+        }
+      ]
+    },
+    "procedure_steps": [
+      "Arrange the numbers in increasing order. The largest number will be the hypotenuse (c).",
+      "Identify a and b as the smaller numbers and c as the largest number.",
+      "Write the equation a² + b² = c².",
+      "Square each number.",
+      "Add the squares of the two smaller numbers.",
+      "Compare both sides of the equation."
+    ],
+    "section_v_worked_examples": [
+      {
+        "exampleNum": 1,
+        "problem": "Determine if (3, 4, 5) is a triangle triple.",
+        "steps": [
+          { "label": "Identify the longest number.", "text": "The longest number is 5, so it is the hypotenuse (c)." },
+          { "label": "Apply the Pythagorean formula.", "formula": "a² + b² = c²", "substitution": "3² + 4² = 5²" },
+          { "label": "Square each number.", "text": "3² = 9, 4² = 16, 5² = 25" },
+          { "label": "Add the squares of the two smaller numbers.", "text": "9 + 16 = 25" },
+          { "label": "Compare both sides.", "text": "25 = 25" }
+        ],
+        "conclusion": "Since 3² + 4² = 5², the set (3, 4, 5) satisfies the Pythagorean Theorem. Thus, it is a triangle triple."
+      },
+      {
+        "exampleNum": 2,
+        "problem": "Determine if (5, 12, 13) is a triangle triple.",
+        "steps": [
+          { "label": "Identify the hypotenuse.", "text": "The largest number is 13, so c = 13." },
+          { "label": "Write the formula.", "formula": "a² + b² = c²", "substitution": "5² + 12² = 13²" },
+          { "label": "Square each value.", "text": "5² = 25, 12² = 144, 13² = 169" },
+          { "label": "Add the squares of the legs.", "text": "25 + 144 = 169" },
+          { "label": "Compare with the square of the hypotenuse.", "text": "169 = 169" }
+        ],
+        "conclusion": "The equation is true, so (5, 12, 13) are sides of a right triangle. Thus, it is a triangle triple."
+      },
+      {
+        "exampleNum": 3,
+        "problem": "Determine if (6, 8, 10) is a triangle triple.",
+        "steps": [
+          { "label": "Identify the hypotenuse.", "text": "The largest number is 10, so c = 10." },
+          { "label": "Substitute into the formula.", "formula": "a² + b² = c²", "substitution": "6² + 8² = 10²" },
+          { "label": "Square each number.", "text": "6² = 36, 8² = 64, 10² = 100" },
+          { "label": "Add the squares of the legs.", "text": "36 + 64 = 100" },
+          { "label": "Compare both sides.", "text": "100 = 100" },
+          { "label": "Interpret the result.", "text": "Since the equation is true, the numbers are sides of a right triangle." }
+        ],
+        "extra": "(6, 8, 10) is obtained by multiplying (3, 4, 5) by 2. So, it is a non-primitive triangle triple.",
+        "conclusion": "(6, 8, 10) is a triangle triple."
+      },
+      {
+        "exampleNum": 4,
+        "problem": "Determine if (7, 24, 25) is a triangle triple.",
+        "steps": [
+          { "label": "Identify the hypotenuse.", "text": "The largest number is 25, so c = 25." },
+          { "label": "Write the equation.", "formula": "a² + b² = c²", "substitution": "7² + 24² = 25²" },
+          { "label": "Square each number.", "text": "7² = 49, 24² = 576, 25² = 625" },
+          { "label": "Add the squares of the legs.", "text": "49 + 576 = 625" },
+          { "label": "Compare both sides.", "text": "625 = 625" }
+        ],
+        "conclusion": "Since the equation is satisfied, (7, 24, 25) are sides of a right triangle. Therefore, it is a triangle triple."
+      },
+      {
+        "exampleNum": 5,
+        "problem": "Determine if (8, 15, 16) is a triangle triple.",
+        "steps": [
+          { "label": "Identify the hypotenuse.", "text": "The largest number is 16, so c = 16." },
+          { "label": "Apply the Pythagorean Theorem.", "formula": "a² + b² = c²", "substitution": "8² + 15² = 16²" },
+          { "label": "Square each number.", "text": "8² = 64, 15² = 225, 16² = 256" },
+          { "label": "Add the squares of the two smaller numbers.", "text": "64 + 225 = 289" },
+          { "label": "Compare the results.", "text": "289 ≠ 256" }
+        ],
+        "conclusion": "The equality is not true, so the set (8, 15, 16) does not satisfy the Pythagorean Theorem. Thus, (8, 15, 16) is NOT a triangle triple."
+      }
+    ],
+    "examples": [
+      { "set": "(3, 4, 5)", "result": "Triangle Triple" },
+      { "set": "(5, 12, 13)", "result": "Triangle Triple" },
+      { "set": "(6, 8, 10)", "result": "Triangle Triple (Non-Primitive)" },
+      { "set": "(7, 24, 25)", "result": "Triangle Triple" },
+      { "set": "(8, 15, 16)", "result": "Not a Triangle Triple" }
+    ],
+    "practice_activities": {
+      "easy": [
+        { "question": "Which is a triangle triple?", "correct_answer": "(3, 4, 5)" },
+        { "question": "Is (5, 12, 13) a triangle triple?", "correct_answer": "Yes" },
+        { "question": "Which satisfies the theorem?", "correct_answer": "(6, 8, 10)" },
+        { "question": "The hypotenuse is the?", "correct_answer": "Longest side" },
+        { "question": "Which forms a right triangle?", "correct_answer": "9, 12, 15" }
+      ],
+      "medium": [
+        { "question": "Which is a primitive triple?", "correct_answer": "(3, 4, 5)" },
+        { "question": "Is (9, 40, 41) a triple?", "correct_answer": "Yes" },
+        { "question": "Which is NOT a triple?", "correct_answer": "(8, 15, 16)" },
+        { "question": "Which set forms a right triangle?", "correct_answer": "6, 8, 10" },
+        { "question": "Which is non-primitive?", "correct_answer": "(6, 8, 10)" }
+      ],
+      "hard": [
+        { "question": "Which of these triples is right?", "correct_answer": "8, 15, 17" },
+        { "question": "Which is a triple?", "correct_answer": "(12, 35, 37)" },
+        { "question": "Which fails the theorem?", "correct_answer": "(7, 24, 26)" },
+        { "question": "Which is a multiple of (3, 4, 5)?", "correct_answer": "(6, 8, 10)" },
+        { "question": "Which set forms a right triangle?", "correct_answer": "(15, 20, 25)" }
+      ]
+    }
+  }
+}

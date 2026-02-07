@@ -2,15 +2,15 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Alert,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BorderRadius, Spacing } from '../../constants/colors';
-import { getSafeAreaTopPadding, getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
+import { getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -33,67 +33,56 @@ const ProfessionalColors = {
 const EXAMPLE_TOPICS = [
   {
     id: 1,
-    name: 'Geometry',
+    name: 'Quadratic Equations',
     icon: '📐',
-    mastery: 67,
+    mastery: 0,
     difficulties: {
-      easy: { score: '9/10', completed: true, perfect: false },
-      medium: { score: '7/10', completed: true, perfect: false },
-      hard: { score: '5/10', completed: true, perfect: false },
-    },
-  },
-  {
-    id: 2,
-    name: 'Algebra',
-    icon: '🧮',
-    mastery: 45,
-    difficulties: {
-      easy: { score: '8/10', completed: true, perfect: false },
-      medium: { score: '6/10', completed: true, perfect: false },
-      hard: { score: '3/10', completed: false, perfect: false },
-    },
-  },
-  {
-    id: 3,
-    name: 'Statistics',
-    icon: '📊',
-    mastery: 80,
-    difficulties: {
-      easy: { score: '10/10', completed: true, perfect: true },
-      medium: { score: '9/10', completed: true, perfect: false },
-      hard: { score: '7/10', completed: true, perfect: false },
-    },
-  },
-  {
-    id: 4,
-    name: 'Trigonometry',
-    icon: '📏',
-    mastery: 55,
-    difficulties: {
-      easy: { score: '8/10', completed: true, perfect: false },
-      medium: { score: '6/10', completed: true, perfect: false },
-      hard: { score: '2/10', completed: false, perfect: false },
-    },
-  },
-  {
-    id: 5,
-    name: 'Calculus',
-    icon: '⚖️',
-    mastery: 30,
-    difficulties: {
-      easy: { score: '5/10', completed: false, perfect: false },
-      medium: { score: '3/10', completed: false, perfect: false },
+      easy: { score: '0/10', completed: false, perfect: false },
+      medium: { score: '0/10', completed: false, perfect: false },
       hard: { score: '0/10', completed: false, perfect: false },
     },
   },
   {
-    id: 6,
-    name: 'Probability',
-    icon: '🎯',
-    mastery: 25,
+    id: 2,
+    name: 'Pythagorean Triples',
+    icon: '🔺',
+    mastery: 0,
     difficulties: {
-      easy: { score: '4/10', completed: false, perfect: false },
-      medium: { score: '2/10', completed: false, perfect: false },
+      easy: { score: '0/10', completed: false, perfect: false },
+      medium: { score: '0/10', completed: false, perfect: false },
+      hard: { score: '0/10', completed: false, perfect: false },
+    },
+  },
+  {
+    id: 3,
+    name: 'Triangle Measures',
+    icon: '△',
+    mastery: 0,
+    difficulties: {
+      easy: { score: '0/10', completed: false, perfect: false },
+      medium: { score: '0/10', completed: false, perfect: false },
+      hard: { score: '0/10', completed: false, perfect: false },
+    },
+  },
+  {
+    id: 4,
+    name: 'Area of Triangles',
+    icon: '📏',
+    mastery: 0,
+    difficulties: {
+      easy: { score: '0/10', completed: false, perfect: false },
+      medium: { score: '0/10', completed: false, perfect: false },
+      hard: { score: '0/10', completed: false, perfect: false },
+    },
+  },
+  {
+    id: 5,
+    name: 'Variation',
+    icon: '📊',
+    mastery: 0,
+    difficulties: {
+      easy: { score: '0/10', completed: false, perfect: false },
+      medium: { score: '0/10', completed: false, perfect: false },
       hard: { score: '0/10', completed: false, perfect: false },
     },
   },
@@ -281,7 +270,7 @@ export default function ActivitiesScreen() {
   const weakestTopic = getWeakestTopic();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -362,7 +351,7 @@ export default function ActivitiesScreen() {
                 <Text style={styles.quickCardTitle}>Weakest Topic Practice</Text>
               </View>
               <Text style={styles.quickCardDescription}>
-                Focus on {weakestTopic.name} ({weakestTopic.mastery}% mastery)
+                Focus on {weakestTopic.name} ({Math.round(weakestTopic.mastery)}% mastery)
               </Text>
               <View style={styles.topicIconsRow}>
                 <Text style={styles.topicIcon}>{weakestTopic.icon}</Text>
@@ -420,10 +409,10 @@ export default function ActivitiesScreen() {
                 >
                   <View style={styles.topicHeaderLeft}>
                     <Text style={styles.topicSectionIcon}>{topic.icon}</Text>
-                    <View>
+                    <View style={styles.topicHeaderInfo}>
                       <Text style={styles.topicSectionName}>{topic.name}</Text>
                       <Text style={styles.topicSectionMastery}>
-                        {topic.mastery}% Mastery
+                        {Math.round(topic.mastery)}% Mastery
                       </Text>
                     </View>
                   </View>
@@ -535,9 +524,12 @@ export default function ActivitiesScreen() {
   );
 }
 
+const CONTENT_MAX_WIDTH = 720;
+
 // Compute responsive values before StyleSheet
 const responsiveValues = {
-  paddingH: isTablet() ? wp(5) : wp(4),
+  paddingH: getSpacing(Spacing.xl),
+  contentMaxWidth: CONTENT_MAX_WIDTH,
   headerTitleFont: isTablet() ? 32 : isSmallDevice() ? 22 : 28,
   headerSubtitleFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
   sectionTitleFont: isTablet() ? 24 : isSmallDevice() ? 18 : 20,
@@ -562,7 +554,7 @@ const responsiveValues = {
   completionIconFont: isTablet() ? 20 : isSmallDevice() ? 16 : 18,
   difficultyScoreFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
   difficultyButtonFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
-  cardMaxWidth: isTablet() ? 800 : undefined,
+  cardMaxWidth: CONTENT_MAX_WIDTH,
 };
 
 const styles = StyleSheet.create({
@@ -574,13 +566,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: getSpacing(Spacing.lg),
-    paddingTop: getSafeAreaTopPadding() + getSpacing(Spacing.lg),
-    paddingBottom: getSpacing(Spacing.xl),
+    paddingTop: getSpacing(Spacing.lg),
+    paddingBottom: getSpacing(Spacing.xxl) + 80,
     paddingHorizontal: responsiveValues.paddingH,
+    width: '100%',
+    maxWidth: responsiveValues.contentMaxWidth,
+    alignSelf: 'center',
   },
   header: {
     marginBottom: getSpacing(Spacing.xl),
+    paddingHorizontal: getSpacing(Spacing.xs),
   },
   headerTitle: {
     fontSize: scaleFont(responsiveValues.headerTitleFont),
@@ -591,11 +586,12 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: scaleFont(responsiveValues.headerSubtitleFont),
     color: ProfessionalColors.textSecondary,
+    lineHeight: scaleFont(responsiveValues.headerSubtitleFont) * 1.35,
   },
   section: {
     marginBottom: getSpacing(Spacing.xl),
     maxWidth: responsiveValues.cardMaxWidth,
-    alignSelf: 'center',
+    alignSelf: 'stretch',
     width: '100%',
   },
   sectionTitle: {
@@ -603,6 +599,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: ProfessionalColors.text,
     marginBottom: getSpacing(Spacing.md),
+    paddingHorizontal: getSpacing(Spacing.xs),
   },
   // Quick Practice Cards
   quickPracticeGrid: {
@@ -626,17 +623,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: getSpacing(Spacing.sm),
-    flexWrap: isSmallDevice() ? 'wrap' : 'nowrap',
+    flexWrap: 'nowrap',
+    gap: getSpacing(Spacing.sm),
   },
   quickCardIcon: {
     fontSize: scaleFont(responsiveValues.quickCardIconFont),
-    marginRight: getSpacing(Spacing.sm),
+    flexShrink: 0,
   },
   quickCardTitle: {
     fontSize: scaleFont(responsiveValues.quickCardTitleFont),
     fontWeight: 'bold',
     color: ProfessionalColors.text,
     flex: 1,
+    minWidth: 0,
   },
   quickCardDescription: {
     fontSize: scaleFont(responsiveValues.quickCardDescFont),
@@ -653,10 +652,15 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(responsiveValues.topicIconFont),
   },
   startButton: {
+    alignSelf: 'center',
+    marginTop: getSpacing(Spacing.xs),
     paddingVertical: getSpacing(Spacing.sm),
-    paddingHorizontal: getSpacing(Spacing.lg),
+    paddingHorizontal: getSpacing(Spacing.xl),
+    minWidth: scaleSize(120),
+    maxWidth: scaleSize(200),
     borderRadius: scaleSize(BorderRadius.md),
     alignItems: 'center',
+    justifyContent: 'center',
   },
   startButtonText: {
     color: ProfessionalColors.white,
@@ -679,9 +683,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modeCardContent: {
-    flexDirection: isSmallDevice() ? 'column' : 'row',
-    alignItems: isSmallDevice() ? 'flex-start' : 'center',
-    gap: isSmallDevice() ? getSpacing(Spacing.md) : 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getSpacing(Spacing.md),
   },
   modeIconContainer: {
     width: scaleSize(responsiveValues.modeIconSize),
@@ -689,15 +693,14 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(responsiveValues.modeIconRadius),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: isSmallDevice() ? 0 : getSpacing(Spacing.md),
-    marginBottom: isSmallDevice() ? getSpacing(Spacing.sm) : 0,
+    flexShrink: 0,
   },
   modeIcon: {
     fontSize: scaleFont(responsiveValues.modeIconFont),
   },
   modeInfo: {
     flex: 1,
-    width: isSmallDevice() ? '100%' : undefined,
+    minWidth: 0,
   },
   modeTitle: {
     fontSize: scaleFont(responsiveValues.modeTitleFont),
@@ -712,8 +715,12 @@ const styles = StyleSheet.create({
   modeStartButton: {
     paddingVertical: getSpacing(Spacing.sm),
     paddingHorizontal: getSpacing(Spacing.lg),
+    minWidth: scaleSize(88),
+    maxWidth: scaleSize(140),
     borderRadius: scaleSize(BorderRadius.md),
-    alignSelf: isSmallDevice() ? 'stretch' : 'auto',
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modeStartButtonText: {
     color: ProfessionalColors.white,
@@ -740,17 +747,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: getSpacing(Spacing.lg),
-    flexWrap: isSmallDevice() ? 'wrap' : 'nowrap',
+    flexWrap: 'nowrap',
+    gap: getSpacing(Spacing.md),
   },
   topicHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    marginBottom: isSmallDevice() ? getSpacing(Spacing.xs) : 0,
+    minWidth: 0,
+    gap: getSpacing(Spacing.md),
   },
   topicSectionIcon: {
     fontSize: scaleFont(responsiveValues.topicSectionIconFont),
-    marginRight: getSpacing(Spacing.md),
+    flexShrink: 0,
+  },
+  topicHeaderInfo: {
+    flex: 1,
+    minWidth: 0,
   },
   topicSectionName: {
     fontSize: scaleFont(responsiveValues.topicSectionNameFont),
@@ -765,6 +778,7 @@ const styles = StyleSheet.create({
   expandIcon: {
     fontSize: scaleFont(responsiveValues.expandIconFont),
     color: ProfessionalColors.textSecondary,
+    flexShrink: 0,
   },
   difficultyContainer: {
     paddingHorizontal: getSpacing(Spacing.lg),
@@ -781,28 +795,33 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: getSpacing(Spacing.sm),
-    flexWrap: isSmallDevice() ? 'wrap' : 'nowrap',
+    flexWrap: 'nowrap',
+    gap: getSpacing(Spacing.sm),
   },
   difficultyLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    marginBottom: isSmallDevice() ? getSpacing(Spacing.xs) : 0,
+    minWidth: 0,
+    gap: getSpacing(Spacing.sm),
   },
   difficultyIndicator: {
     fontSize: scaleFont(responsiveValues.difficultyIndicatorFont),
-    marginRight: getSpacing(Spacing.sm),
+    flexShrink: 0,
   },
   difficultyLabel: {
     fontSize: scaleFont(responsiveValues.difficultyLabelFont),
     fontWeight: '600',
     color: ProfessionalColors.text,
+    flex: 1,
+    minWidth: 0,
   },
   completionBadge: {
     width: scaleSize(responsiveValues.completionBadgeSize),
     height: scaleSize(responsiveValues.completionBadgeSize),
     justifyContent: 'center',
     alignItems: 'center',
+    flexShrink: 0,
   },
   completionIcon: {
     fontSize: scaleFont(responsiveValues.completionIconFont),

@@ -1,0 +1,454 @@
+{
+  "metadata": {
+    "module_title": "MODULE 1: Identifying the Steps in Solving Quadratic Equations",
+    "subject": "Mathematics – Grade 9",
+    "topic": "Solving Quadratic Equations",
+    "learning_competency": "The learner solves quadratic equations using appropriate methods such as factoring, extracting square roots, completing the square, and the quadratic formula."
+  },
+  "sections": {
+    "I_Purpose_and_Learning_Objectives": {
+      "purpose_block": "Purpose of the Module\nThis module aims to develop the learners’ ability to correctly identify and apply the systematic steps in solving quadratic equations using different methods. It is designed to strengthen algebraic skills, promote logical thinking, and prepare learners for higher-level problem solving in mathematics.",
+      "learning_objectives_intro": "Learning Objectives\nAt the end of this lesson, the learners should be able to:",
+      "learning_objectives_list": [
+        "1. Identify the standard form of a quadratic equation.",
+        "2. Determine the correct steps in solving quadratic equations.",
+        "3. Solve quadratic equations accurately using appropriate methods."
+      ]
+    },
+    "II_What_Is_a_Quadratic_Equation": [
+      "A quadratic equation is an algebraic equation that involves the square of a variable and represents a second-degree relationship. It is called quadratic because the highest exponent of the variable is 2.",
+      "A quadratic equation is usually written in the standard form:",
+      "ax² + bx + c = 0\nwhere:\n• a is the coefficient of x² \n• b is the coefficient of x  \n• c is the constant term\n• a ≠ 0, because if a = 0, the equation becomes linear and is no longer quadratic\n\nParts of a Quadratic Equation (Standard form: ax2+bx+c=0)",
+      "1. Quadratic term (ax2)\nThis is the part with x2. It has the highest power of the variable and tells us the equation is quadratic.\n\nExample: In 9x2-9x-28=0, the quadratic term is 9x2.",
+      "2. Linear term (bx)\nThis is the part with x only (no exponent or exponent is 1).\n\nExample: In 9x2-9x-28=0, the linear term is -9x.",
+      "3. Constant term (c)\n This is the number without a variable. It stays the same and does not change with x.",
+      "Example: In 9x2-9x-28=0, the constant term is -28.",
+      "Easy trick to remember:",
+      "x2 → Quadratic",
+      "x → Linear",
+      "Number only → Constant",
+      "Identifying Quadratic Equations",
+      "Example A:\nInstructions: Identify which of the following equations are quadratic.\n1. x2+ 5x = 24            2. x - 3y2= 0           \n2. 8x2- 8 = 0              4. x+4=7",
+      "Solutions: \n1. QE, since the highest power of x is 2, and it has only one variable. \n2. QE, since it contains an x2 term, and the highest exponent of x is 2.\n3. Not, because it has two variables, x and y. A quadratic equation must have only one variable.\n4. Not, because the variable is inside a square root, not raised to the power of 2.\n\nExample B: \nConsider the equation: x² - 7x + 10 = 0",
+      "This is a quadratic equation because:\n• The highest power of x is 2\n• It follows the form ax² + bx + c = 0\n• a = 1, b = -7, and c = 10",
+      "This equation can be solved by factoring or by using the quadratic formula.",
+      "Writing Quadratic Equations in Standard Form and Identifying the Values of a, b, and c"
+    ],
+    "III_Key_Words_and_Concepts": "• Quadratic Equation – an equation of degree 2\n• Standard Form: ax² + bx + c = 0\n• Roots / Solutions – values of x that satisfy the equation\n• Factoring – expressing a quadratic as a product of two binomials\n• Extracting Square Roots – solving equations of the form x² = k\n• Completing the Square – transforming a quadratic into a perfect square\n• Quadratic Formula: x =-b ± b2- 4ac2a",
+    "IV_General_Procedure": [
+      "Before choosing a method, follow these general steps:",
+      "Step 1: Write the equation in standard form: ax² + bx + c = 0. \nStep 2: Identify the values of a, b, and c if needed.\nStep 3: Choose the most appropriate method based on the form of the equation.\nStep 4: Apply the steps of the chosen method carefully.\nStep 5: Check the solutions by substitution.",
+      "Quadratic equations can be solved using four main methods: factoring, extracting square roots, completing the square, and the quadratic formula."
+    ],
+    "V_Methods_of_Solving_Quadratic_Equations": {
+      "intro_paragraphs": [
+        "In this lesson, each method is explained using two fully worked examples."
+      ],
+      "methods": {
+        "A. Solving by Factoring": [
+          "Use this method when the quadratic expression can be factored into two binomials.",
+          "Find two numbers whose product is 10 and whose sum is -7\n\n  Which two numbers multiply to 10?\n 1× 10 = 10\n 2 × 5 = 10\n -1× -10= 10\n (-2) × (-5) = 10Then check which pair adds up to -7:\n1 + 10 = 11 ❌\n2 + 5 = 7 ❌\n-1 + -10 = -11 ❌\n-2 + -5 = -7 ✔\n   Find two numbers whose product is 10 and whose sum is -7\n\n  Which two numbers multiply to 10?\n 1× 10 = 10\n 2 × 5 = 10\n -1× -10= 10\n (-2) × (-5) = 10Then check which pair adds up to -7:\n1 + 10 = 11 ❌\n2 + 5 = 7 ❌\n-1 + -10 = -11 ❌\n-2 + -5 = -7 ✔\n🔹 Example 1                                Steps:\nSolve: x² - 7x + 10 = 0\n\n x² - 7x + 10 = 0                       Make sure that the equation is in standard form\n(x - 2)(x - 5) = 0                       Factor the quadratic expression",
+          "x - 2 = 0 or x - 5 = 0         Set each factor equal to zero\n x- 2 = 0                                    Solve the first equation\n x-2+2=0+2                          Addition Property of Equality\n x = 2",
+          "x- 5 = 0                                    Solve the second equation\n x-5+5=0+5                         Addition Property of Equality\n x = 5                                            Simplify\n x = 2 and x = 5                        State the solution set\n\nSubstitute x = 2:                           Check the solutions by substitution\n x2- 7x + 10 = 0                     Given equation\n 22- 72+ 10=0                           Substitute x = 2\n 4 - 14 + 10 = 0                        Simplify\n -10+10=0✔                            Zero Property verifies solution\n\nSubstitute x = 5:                           Check the solutions by substitution\n x2- 7x + 10 = 0                     Given equation\n 52- 75+ 10 = 0                                  Substitute x = 5\n 25 - 35 + 10 = 0                               Simplify\n 25-25=0✔                                           Correct\n\n🔹 Example 2                                Steps:\nSolve: 3x+x² - 10 = 0\n\n x² + 3x - 10 = 0                    Make sure that the equation is in standard form\n(x + 5)(x - 2) =0                             Factor the quadratic expression\n x + 5 = 0 or x - 2 = 0           Set each factor equal to zero\n x+5= 0                                       Solve the first equation\n x+5-5=0-5                          Subtraction Property of Equality\n x = -5                                          Simplify",
+          "x- 2 = 0                                    Solve the second equation\n x-2+2=0+2                         Addition Property of Equality\n x = 2                                            Simplify\n x = -5 and x = 2                       State the solution set\n\nSubstitute x = -5:                        Check the solutions by substitution\n x2+ 3x - 10 = 0                     Given equation\n -52+ 3-5- 10 =0            Substitute x = -5\n 25 - 15 - 10 = 0                       Simplify\n 25-25= 0✔                                Zero Property verifies solution\n\nSubstitute x = 2:                           Check the solutions by substitution\n x2+3x- 10 = 0                         Given equation\n 22+ 32- 10 = 0                                  Substitute x = 2\n 4+6-10 = 0                                       Simplify\n 10-10=0✔                                           Correct"
+        ],
+        "B. Solving by Extracting Square Roots": [
+          "Use this method when the equation can be written in the form x² = k.",
+          "🔹 Example 1\nSolve: x² = 16",
+          "Step 1: Isolate the term with x².\nThe squared term is already isolated:\n x² = 16",
+          "Step 2: Take the square root of both sides.\n x² = 16\n x = ±√16",
+          "Step 3: Simplify the square root.\n x = ±4",
+          "Step 4: State the solution set.\nThe solutions are x = 4 and x = -4.",
+          "Step 5: Check the solutions.\nSubstitute x = 4:\n x2= 16 \n 42= 16\n 16=16✔ \n\nSubstitute x = -4:\n x2= 16\n (-4)² = 16 \n 16=16✔\n\n🔹 Example 2\nSolve: 4x2-81=0\n\nStep 1: Isolate the term with x2.\nAdd 81 to both sides:",
+          "4x2-81+81=0+81\n 4x2=81\n\nDivide both sides by 4:",
+          "4x24=814\n x2=814",
+          "Step 2: Take the square root of both sides.",
+          "x2=814\n x=±814\n\nStep 3: Simplify the square root.",
+          "x=±92",
+          "Step 4: State the solution set.\nThe solutions are:",
+          "x=92 and x=-92",
+          "Step 5: Check the solutions.",
+          "Substitute x=92:",
+          "4x2-81=0\n 4922-81=0\n 4⋅814-81=0\n 81-81=0 ✔",
+          "Substitute x=-92:\n\n 4(-92)2-81=0\n 4⋅814-81=0\n 81-81=0 ✔"
+        ],
+        "C. Solving by Completing the Square": [
+          "Use this method when the quadratic cannot be factored easily.",
+          "🔹 Example 1\nSolve: x2+6x+5=0",
+          "Step 1: Write the equation in standard form.",
+          "x2+6x+5=0",
+          "Step 2: Move the constant term to the right side.",
+          "x2+6x=-5",
+          "Step 3: Add b22to both sides.\nHere, b=6, so 622=9",
+          "x2+6x+9=-5+9\n x2+6x+9=4",
+          "Step 4: Factor the left side as a perfect square.",
+          "x+3)2=4",
+          "Step 5: Take the square root of both sides.",
+          "x+3=±2",
+          "Step 6: Solve for x.  \n\n\n x+3=2   \n  x+3-3=2-3\n x=-1\n\n x+3=-2  \n x+3-3=-2-3\n x=-5",
+          "Step 7: State the solution set.",
+          "x=-1 and x=-5",
+          "Step 8: Check the solutions by substitution.",
+          "Substitute x=-1:",
+          "x2+6x+5=0\n (-1)2+6(-1)+5= ?\n 1-6+5=0 ✔",
+          "Substitute x=-5:",
+          "x2+6x+5=0\n (-5)2+6(-5)+5= ? \n 25-30+5=0 ✔\n\n🔹 Example 2\nSolve: x² + 5- 6x = 0",
+          "Step 1: Write the equation in standard form.\n x² - 6x + 5 = 0",
+          "Step 2: Move the constant term to the right side.\n x² - 6x = -5\nStep 3: Add b22 to both sides.\n b = -6, so -622= 9\n x² - 6x + 9 = -5 + 9\n x² - 6x + 9 = 4",
+          "Step 4: Factor the left side as a perfect square.\n (x - 3)² = 4",
+          "Step 5: Take the square root of both sides.\n x - 3 = ±2",
+          "Step 6: Solve for x.\n x - 3+3 = 2+3 \n x = 5 \n\n x- 3+3 = -2+3 \n x = 1",
+          "Step 7: State the solution set.\nThe solutions are x = 1 and x = 5.",
+          "Step 8: Check the solutions by substitution.",
+          "Substitute x=1:",
+          "x2- 6x + 5 = 0\n (1)2-6(1)+5= ?\n 1-6+5=0 ✔",
+          "Substitute x=5:",
+          "x2- 6x + 5 = 0\n (5)2-6(5)+5= ?\n 25-30+5=0 ✔"
+        ],
+        "D. Solving Using the Quadratic Formula": [
+          "This method can be used to solve any quadratic equation.",
+          "Formula:\n x =-b ± b2- 4ac2a\n\n🔹 Example 1\nSolve: 2x² + 3x - 2 = 0",
+          "Step 1: Identify the values of a, b, and c.\n a = 2, b = 3, c = -2",
+          "Step 2: Substitute into the quadratic formula.\nx =-b ± b2- 4ac2a  \n x =-3 ± 32- 42-22(2)",
+          "Step 3: Simplify the expression inside the square root.\n x =-3 ± 9 + 164\n x =-3 ± 254",
+          "Step 4: Evaluate the square root.\n x =-3 ± 54",
+          "Step 5: Find the two values of x.\n x =-3 + 54=24 or 12\n x =-3 - 54=-84=-2",
+          "Step 6: State the solution set.\nThe solutions are x =12 and x = -2.",
+          "Step 7: Check the solutions by substitution.\nSubstitute x=12:",
+          "2x² + 3x - 2 = 0 \n 2122+312-2= ?\n 2⋅14+32-2= ?\n 12+32-2= ?\n 2-2=0 ✔",
+          "Substitute x=-2:",
+          "2x2+ 3x - 2 = 0\n 2(-2)2+3(-2)-2= ?\n 2⋅4-6-2= ?\n 8-8=0 ✔",
+          "🔹 Example 2\nSolve: x² - 5x - 6 = 0",
+          "Step 1: Identify the values of a, b, and c.\n a = 1, b = -5, c = -6",
+          "Step 2: Substitute into the quadratic formula.\n x =-b ± b2- 4ac2a\n x =--5± -52- 41-62(1)",
+          "Step 3: Simplify inside the square root.\n x =5 ± 25 + 242\n x =5 ± 492",
+          "Step 4: Evaluate the square root.\n x =5 ± 72",
+          "Step 5: Find the two values of x.\n x =5 + 72= 6\n x =5 - 72= -1",
+          "Step 6: State the solution set.\nThe solutions are x = 6 and x = -1.",
+          "Step 7: Check the solutions by substitution.",
+          "Substitute x=6:",
+          "x2- 5x - 6 = 0\n 62-56-6= ?\n 6-30-6=0 ✔",
+          "Substitute x=-1:",
+          "x2- 5x - 6 = 0\n (-1)2-5(-1)-6= ?\n 1+5-6=0 ✔"
+        ]
+      }
+    },
+    "VII_Practice_Activities": {
+      "levels": {
+        "easy": [
+          {
+            "prompt": "Solve: x² - 9 = 0",
+            "options": {
+              "A": "x = 3 only",
+              "B": "x = -3 only",
+              "C": "x = ±3",
+              "D": "x = 0"
+            },
+            "correct": "C",
+            "raw": "Solve: x² - 9 = 0\nA. x = 3 only             B. x = -3 only\nC. x = ±3 ✔               D. x = 0"
+          },
+          {
+            "prompt": "Which is in standard form?",
+            "options": {
+              "A": "x(x - 3) = 0",
+              "B": "x² + 5x + 6 = 0",
+              "C": "x2= 16",
+              "D": "2x(x + 1)"
+            },
+            "correct": "B",
+            "raw": "Which is in standard form?\nA. x(x - 3) = 0       B. x² + 5x + 6 = 0 ✔\nC. x2= 16                     D. 2x(x + 1)"
+          },
+          {
+            "prompt": "Solve: x² = 16",
+            "options": {
+              "A": "x = 4 only",
+              "B": "x = -4 only",
+              "C": "x = ±4",
+              "D": "x = 0"
+            },
+            "correct": "C",
+            "raw": "Solve: x² = 16\nA. x = 4 only             B. x = -4 only\nC. x = ±4 ✔             D. x = 0"
+          },
+          {
+            "prompt": "The degree of x² - 3x + 1 = 0 is:",
+            "options": {
+              "A": "1",
+              "B": "2",
+              "C": "3",
+              "D": "0"
+            },
+            "correct": "B",
+            "raw": "The degree of x² - 3x + 1 = 0 is:\nA. 1                                B. 2 ✔\nC. 3                                 D. 0"
+          },
+          {
+            "prompt": "Which method fits x² - 4 = 0?",
+            "options": {
+              "A": "Factoring",
+              "B": "Extracting square roots",
+              "C": "Quadratic formula"
+            },
+            "correct": "B",
+            "raw": "Which method fits x² - 4 = 0?\nA. Factoring                   B. Extracting square roots ✔\nC. Quadratic formula      D. Completing the square"
+          }
+        ],
+        "medium": [
+          {
+            "prompt": "Solve by factoring: x² - 7x + 10 = 0",
+            "options": {
+              "A": "x = 2, 5",
+              "B": "x = -2, -5",
+              "C": "x = 1, 10",
+              "D": "x = 0, 7"
+            },
+            "correct": "A",
+            "raw": "Solve by factoring: x² - 7x + 10 = 0\nA. x = 2, 5 ✔                 B. x = -2, -5\nC. x = 1, 10                D. x = 0, 7"
+          },
+          {
+            "prompt": "Which equation is quadratic?",
+            "options": {
+              "A": "2x + 3 = 0",
+              "B": "x³ - 1 = 0",
+              "C": "1x = 2",
+              "D": "x² - 4x + 1 = 0"
+            },
+            "correct": "D",
+            "raw": "Which equation is quadratic?\nA. 2x + 3 = 0           B. x³ - 1 = 0\nC. 1x = 2                          D. x² - 4x + 1 = 0 ✔"
+          },
+          {
+            "prompt": "Solve: 2x² - 8 = 0",
+            "options": {
+              "A": "x = 4 only",
+              "B": "x = 2, -2",
+              "C": "x = -4 only",
+              "D": "x = 0"
+            },
+            "correct": "B",
+            "raw": "Solve: 2x² - 8 = 0\nA. x = 4 only              B. x = 2, -2 ✔\nC. x = -4 only            D. x = 0"
+          },
+          {
+            "prompt": "Which method is best for solving x2=49?",
+            "options": {
+              "A": "Factoring",
+              "C": "Quadratic formula",
+              "D": "Extracting square roots"
+            },
+            "correct": "D",
+            "raw": "Which method is best for solving x2=49?\nA. Factoring                   B. Completing the square\nC. Quadratic formula     D. Extracting square roots ✔"
+          },
+          {
+            "prompt": "Solve: x² = 25",
+            "options": {
+              "A": "x = 5 only",
+              "B": "x = -5 only",
+              "C": "x = ±5",
+              "D": "x = 0"
+            },
+            "correct": "C",
+            "raw": "Solve: x² = 25\nA. x = 5 only               B. x = -5 only\nC. x = ±5 ✔                  D. x = 0"
+          }
+        ],
+        "hard": [
+          {
+            "prompt": "Solve using formula: x² - 6x + 8 = 0",
+            "options": {
+              "A": "x = 2, 4",
+              "B": "x = -2, -4",
+              "C": "x = 1, 8",
+              "D": "x = 0, 6"
+            },
+            "correct": "A",
+            "raw": "Solve using formula: x² - 6x + 8 = 0\nA. x = 2, 4 ✔                B. x = -2, -4\nC. x = 1, 8                      D. x = 0, 6"
+          },
+          {
+            "prompt": "Solve: 2x² - 3x - 2 = 0",
+            "options": {
+              "A": "x = 2, -1/2",
+              "B": "x = -2, 1/2",
+              "C": "x = 1, -2",
+              "D": "x = 0, 3/2"
+            },
+            "correct": "A",
+            "raw": "Solve: 2x² - 3x - 2 = 0\nA. x = 2, -1/2 ✔        B. x = -2, 1/2\nC. x = 1, -2                   D. x = 0, 3/2"
+          },
+          {
+            "prompt": "The discriminant of x² + 4x + 5 = 0 is:",
+            "options": {
+              "A": "16",
+              "B": "−4",
+              "C": "4",
+              "D": "20"
+            },
+            "correct": "B",
+            "raw": "The discriminant of x² + 4x + 5 = 0 is:\nA. 16                                B. −4 ✔\nC. 4                                   D. 20"
+          },
+          {
+            "prompt": "Which of the following steps is the most appropriate way to begin solving the quadratic equation x2-7x+10=0 by factoring?",
+            "options": {
+              "A": "Subtract 10 from both sides",
+              "B": "Factor the quadratic into two binomials",
+              "D": "Use the quadratic formula"
+            },
+            "correct": "B",
+            "raw": "Which of the following steps is the most appropriate way to begin solving the quadratic equation x2-7x+10=0 by factoring?\nA. Subtract 10 from both sides\nB. Factor the quadratic into two binomials ✔\nC. Divide all terms by the coefficient of x2\nD. Use the quadratic formula"
+          },
+          {
+            "prompt": "Solve: x² + x - 6 = 0",
+            "options": {
+              "A": "x = 2, -3",
+              "B": "x = -2, 3",
+              "C": "x = 1, -6",
+              "D": "x = 0, 6"
+            },
+            "correct": "A",
+            "raw": "Solve: x² + x - 6 = 0\nA. x = 2, -3 ✔            B. x = -2, 3\nC. x = 1, -6                   D. x = 0, 6"
+          }
+        ]
+      },
+      "references": [
+        "References:\nhttps://www.scribd.com/document/508144828/MODULE-1B \nhttps://depedtambayan.net/mathematics-9-quarter-1-module-2-solving-quadratic-equations-by-extracting-square-roots-week-1-learning-code-m9al-ia-2-1/"
+      ]
+    }
+  },
+  "raw_paragraphs_in_order": [
+    "MODULE 1: Identifying the Steps in Solving Quadratic Equations",
+    "Subject: Mathematics – Grade 9\nTopic: Solving Quadratic Equations\nLearning Competency (DepEd-aligned):\nThe learner solves quadratic equations using appropriate methods such as factoring, extracting square roots, completing the square, and the quadratic formula.",
+    "I. Purpose and Learning Objectives",
+    "Purpose of the Module\nThis module aims to develop the learners’ ability to correctly identify and apply the systematic steps in solving quadratic equations using different methods. It is designed to strengthen algebraic skills, promote logical thinking, and prepare learners for higher-level problem solving in mathematics.",
+    "Learning Objectives\nAt the end of this lesson, the learners should be able to:",
+    "1. Identify the standard form of a quadratic equation.\n2. Determine the correct steps in solving quadratic equations.\n3. Solve quadratic equations accurately using appropriate methods.",
+    "II. What Is a Quadratic Equation?",
+    "A quadratic equation is an algebraic equation that involves the square of a variable and represents a second-degree relationship. It is called quadratic because the highest exponent of the variable is 2.",
+    "A quadratic equation is usually written in the standard form:",
+    "ax² + bx + c = 0\nwhere:\n• a is the coefficient of x² \n• b is the coefficient of x  \n• c is the constant term\n• a ≠ 0, because if a = 0, the equation becomes linear and is no longer quadratic\n\nParts of a Quadratic Equation (Standard form: ax2+bx+c=0)",
+    "1. Quadratic term (ax2)\nThis is the part with x2. It has the highest power of the variable and tells us the equation is quadratic.\n\nExample: In 9x2-9x-28=0, the quadratic term is 9x2.",
+    "2. Linear term (bx)\nThis is the part with x only (no exponent or exponent is 1).\n\nExample: In 9x2-9x-28=0, the linear term is -9x.",
+    "3. Constant term (c)\n This is the number without a variable. It stays the same and does not change with x.",
+    "Example: In 9x2-9x-28=0, the constant term is -28.",
+    "Easy trick to remember:",
+    "x2 → Quadratic",
+    "x → Linear",
+    "Number only → Constant",
+    "Identifying Quadratic Equations",
+    "Example A:\nInstructions: Identify which of the following equations are quadratic.\n1. x2+ 5x = 24            2. x - 3y2= 0           \n2. 8x2- 8 = 0              4. x+4=7",
+    "Solutions: \n1. QE, since the highest power of x is 2, and it has only one variable. \n2. QE, since it contains an x2 term, and the highest exponent of x is 2.\n3. Not, because it has two variables, x and y. A quadratic equation must have only one variable.\n4. Not, because the variable is inside a square root, not raised to the power of 2.\n\nExample B: \nConsider the equation: x² - 7x + 10 = 0",
+    "This is a quadratic equation because:\n• The highest power of x is 2\n• It follows the form ax² + bx + c = 0\n• a = 1, b = -7, and c = 10",
+    "This equation can be solved by factoring or by using the quadratic formula.",
+    "Writing Quadratic Equations in Standard Form and Identifying the Values of a, b, and c",
+    "Example A:\nInstructions: Write the following in standard form ax2+bx+c= 0. Identify the quadratic, linear and the constant term of each equation. Then, identify the value of a, b and c.     \n\n1. 9x+28=9x2                               Given equation\n    9x+28-9x=9x2-9x            Subtraction Property of Equality\n    28=9x2-9x                               Simplify like terms\n    28-28=9x2-9x-28            Subtraction Property of Equality\n    0=9x2-9x-28                        Simplify\n    9x2-9x-28=0                        Rewrite in standard form ax2+bx+c=0",
+    "2. 7x2- 20 = 6x                          Given equation\n    7x2- 20-6x = 6x-6x         Subtraction Property of Equality\n    7x2- 20-6x = 0                    Simplify and make one side equal to zero\n    7x2-6x-20 = 0                     Write in standard form ax2+bx+c=0",
+    "3. x2 - 4(2 +x) = 13                Given equation\n    x2 - 8-4x = 13                     Apply the Distributive Property\n    x2 - 8-4x-13= 13-13   Subtraction Property of Equality\n    x2 - 8-4x-13= 0                Simplify\n    x2-4x-21= 0                        Combine like terms and write in standard form",
+    "III. Key Words and Concepts",
+    "• Quadratic Equation – an equation of degree 2\n• Standard Form: ax² + bx + c = 0\n• Roots / Solutions – values of x that satisfy the equation\n• Factoring – expressing a quadratic as a product of two binomials\n• Extracting Square Roots – solving equations of the form x² = k\n• Completing the Square – transforming a quadratic into a perfect square\n• Quadratic Formula: x =-b ± b2- 4ac2a",
+    "IV. General Procedure in Solving Quadratic Equations",
+    "Before choosing a method, follow these general steps:",
+    "Step 1: Write the equation in standard form: ax² + bx + c = 0. \nStep 2: Identify the values of a, b, and c if needed.\nStep 3: Choose the most appropriate method based on the form of the equation.\nStep 4: Apply the steps of the chosen method carefully.\nStep 5: Check the solutions by substitution.",
+    "Quadratic equations can be solved using four main methods: factoring, extracting square roots, completing the square, and the quadratic formula.",
+    "V. Methods of Solving Quadratic Equations",
+    "In this lesson, each method is explained using two fully worked examples.",
+    "A. Solving by Factoring",
+    "Use this method when the quadratic expression can be factored into two binomials.",
+    "Find two numbers whose product is 10 and whose sum is -7\n\n  Which two numbers multiply to 10?\n 1× 10 = 10\n 2 × 5 = 10\n -1× -10= 10\n (-2) × (-5) = 10Then check which pair adds up to -7:\n1 + 10 = 11 ❌\n2 + 5 = 7 ❌\n-1 + -10 = -11 ❌\n-2 + -5 = -7 ✔\n   Find two numbers whose product is 10 and whose sum is -7\n\n  Which two numbers multiply to 10?\n 1× 10 = 10\n 2 × 5 = 10\n -1× -10= 10\n (-2) × (-5) = 10Then check which pair adds up to -7:\n1 + 10 = 11 ❌\n2 + 5 = 7 ❌\n-1 + -10 = -11 ❌\n-2 + -5 = -7 ✔\n🔹 Example 1                                Steps:\nSolve: x² - 7x + 10 = 0\n\n x² - 7x + 10 = 0                       Make sure that the equation is in standard form\n(x - 2)(x - 5) = 0                       Factor the quadratic expression",
+    "x - 2 = 0 or x - 5 = 0         Set each factor equal to zero\n x- 2 = 0                                    Solve the first equation\n x-2+2=0+2                          Addition Property of Equality\n x = 2",
+    "x- 5 = 0                                    Solve the second equation\n x-5+5=0+5                         Addition Property of Equality\n x = 5                                            Simplify\n x = 2 and x = 5                        State the solution set\n\nSubstitute x = 2:                           Check the solutions by substitution\n x2- 7x + 10 = 0                     Given equation\n 22- 72+ 10=0                           Substitute x = 2\n 4 - 14 + 10 = 0                        Simplify\n -10+10=0✔                            Zero Property verifies solution\n\nSubstitute x = 5:                           Check the solutions by substitution\n x2- 7x + 10 = 0                     Given equation\n 52- 75+ 10 = 0                                  Substitute x = 5\n 25 - 35 + 10 = 0                               Simplify\n 25-25=0✔                                           Correct\n\n🔹 Example 2                                Steps:\nSolve: 3x+x² - 10 = 0\n\n x² + 3x - 10 = 0                    Make sure that the equation is in standard form\n(x + 5)(x - 2) =0                             Factor the quadratic expression\n x + 5 = 0 or x - 2 = 0           Set each factor equal to zero\n x+5= 0                                       Solve the first equation\n x+5-5=0-5                          Subtraction Property of Equality\n x = -5                                          Simplify",
+    "x- 2 = 0                                    Solve the second equation\n x-2+2=0+2                         Addition Property of Equality\n x = 2                                            Simplify\n x = -5 and x = 2                       State the solution set\n\nSubstitute x = -5:                        Check the solutions by substitution\n x2+ 3x - 10 = 0                     Given equation\n -52+ 3-5- 10 =0            Substitute x = -5\n 25 - 15 - 10 = 0                       Simplify\n 25-25= 0✔                                Zero Property verifies solution\n\nSubstitute x = 2:                           Check the solutions by substitution\n x2+3x- 10 = 0                         Given equation\n 22+ 32- 10 = 0                                  Substitute x = 2\n 4+6-10 = 0                                       Simplify\n 10-10=0✔                                           Correct",
+    "B. Solving by Extracting Square Roots",
+    "Use this method when the equation can be written in the form x² = k.",
+    "🔹 Example 1\nSolve: x² = 16",
+    "Step 1: Isolate the term with x².\nThe squared term is already isolated:\n x² = 16",
+    "Step 2: Take the square root of both sides.\n x² = 16\n x = ±√16",
+    "Step 3: Simplify the square root.\n x = ±4",
+    "Step 4: State the solution set.\nThe solutions are x = 4 and x = -4.",
+    "Step 5: Check the solutions.\nSubstitute x = 4:\n x2= 16 \n 42= 16\n 16=16✔ \n\nSubstitute x = -4:\n x2= 16\n (-4)² = 16 \n 16=16✔\n\n🔹 Example 2\nSolve: 4x2-81=0\n\nStep 1: Isolate the term with x2.\nAdd 81 to both sides:",
+    "4x2-81+81=0+81\n 4x2=81\n\nDivide both sides by 4:",
+    "4x24=814\n x2=814",
+    "Step 2: Take the square root of both sides.",
+    "x2=814\n x=±814\n\nStep 3: Simplify the square root.",
+    "x=±92",
+    "Step 4: State the solution set.\nThe solutions are:",
+    "x=92 and x=-92",
+    "Step 5: Check the solutions.",
+    "Substitute x=92:",
+    "4x2-81=0\n 4922-81=0\n 4⋅814-81=0\n 81-81=0 ✔",
+    "Substitute x=-92:\n\n 4(-92)2-81=0\n 4⋅814-81=0\n 81-81=0 ✔",
+    "C. Solving by Completing the Square",
+    "Use this method when the quadratic cannot be factored easily.",
+    "🔹 Example 1\nSolve: x2+6x+5=0",
+    "Step 1: Write the equation in standard form.",
+    "x2+6x+5=0",
+    "Step 2: Move the constant term to the right side.",
+    "x2+6x=-5",
+    "Step 3: Add b22to both sides.\nHere, b=6, so 622=9",
+    "x2+6x+9=-5+9\n x2+6x+9=4",
+    "Step 4: Factor the left side as a perfect square.",
+    "x+3)2=4",
+    "Step 5: Take the square root of both sides.",
+    "x+3=±2",
+    "Step 6: Solve for x.  \n\n\n x+3=2   \n  x+3-3=2-3\n x=-1\n\n x+3=-2  \n x+3-3=-2-3\n x=-5",
+    "Step 7: State the solution set.",
+    "x=-1 and x=-5",
+    "Step 8: Check the solutions by substitution.",
+    "Substitute x=-1:",
+    "x2+6x+5=0\n (-1)2+6(-1)+5= ?\n 1-6+5=0 ✔",
+    "Substitute x=-5:",
+    "x2+6x+5=0\n (-5)2+6(-5)+5= ? \n 25-30+5=0 ✔\n\n🔹 Example 2\nSolve: x² + 5- 6x = 0",
+    "Step 1: Write the equation in standard form.\n x² - 6x + 5 = 0",
+    "Step 2: Move the constant term to the right side.\n x² - 6x = -5\nStep 3: Add b22 to both sides.\n b = -6, so -622= 9\n x² - 6x + 9 = -5 + 9\n x² - 6x + 9 = 4",
+    "Step 4: Factor the left side as a perfect square.\n (x - 3)² = 4",
+    "Step 5: Take the square root of both sides.\n x - 3 = ±2",
+    "Step 6: Solve for x.\n x - 3+3 = 2+3 \n x = 5 \n\n x- 3+3 = -2+3 \n x = 1",
+    "Step 7: State the solution set.\nThe solutions are x = 1 and x = 5.",
+    "Step 8: Check the solutions by substitution.",
+    "Substitute x=1:",
+    "x2- 6x + 5 = 0\n (1)2-6(1)+5= ?\n 1-6+5=0 ✔",
+    "Substitute x=5:",
+    "x2- 6x + 5 = 0\n (5)2-6(5)+5= ?\n 25-30+5=0 ✔",
+    "D. Solving Using the Quadratic Formula",
+    "This method can be used to solve any quadratic equation.",
+    "Formula:\n x =-b ± b2- 4ac2a\n\n🔹 Example 1\nSolve: 2x² + 3x - 2 = 0",
+    "Step 1: Identify the values of a, b, and c.\n a = 2, b = 3, c = -2",
+    "Step 2: Substitute into the quadratic formula.\nx =-b ± b2- 4ac2a  \n x =-3 ± 32- 42-22(2)",
+    "Step 3: Simplify the expression inside the square root.\n x =-3 ± 9 + 164\n x =-3 ± 254",
+    "Step 4: Evaluate the square root.\n x =-3 ± 54",
+    "Step 5: Find the two values of x.\n x =-3 + 54=24 or 12\n x =-3 - 54=-84=-2",
+    "Step 6: State the solution set.\nThe solutions are x =12 and x = -2.",
+    "Step 7: Check the solutions by substitution.\nSubstitute x=12:",
+    "2x² + 3x - 2 = 0 \n 2122+312-2= ?\n 2⋅14+32-2= ?\n 12+32-2= ?\n 2-2=0 ✔",
+    "Substitute x=-2:",
+    "2x2+ 3x - 2 = 0\n 2(-2)2+3(-2)-2= ?\n 2⋅4-6-2= ?\n 8-8=0 ✔",
+    "🔹 Example 2\nSolve: x² - 5x - 6 = 0",
+    "Step 1: Identify the values of a, b, and c.\n a = 1, b = -5, c = -6",
+    "Step 2: Substitute into the quadratic formula.\n x =-b ± b2- 4ac2a\n x =--5± -52- 41-62(1)",
+    "Step 3: Simplify inside the square root.\n x =5 ± 25 + 242\n x =5 ± 492",
+    "Step 4: Evaluate the square root.\n x =5 ± 72",
+    "Step 5: Find the two values of x.\n x =5 + 72= 6\n x =5 - 72= -1",
+    "Step 6: State the solution set.\nThe solutions are x = 6 and x = -1.",
+    "Step 7: Check the solutions by substitution.",
+    "Substitute x=6:",
+    "x2- 5x - 6 = 0\n 62-56-6= ?\n 6-30-6=0 ✔",
+    "Substitute x=-1:",
+    "x2- 5x - 6 = 0\n (-1)2-5(-1)-6= ?\n 1+5-6=0 ✔",
+    "VII. Practice Activities",
+    "Easy Level (5 Items)",
+    "Solve: x² - 9 = 0\nA. x = 3 only             B. x = -3 only\nC. x = ±3 ✔               D. x = 0",
+    "Which is in standard form?\nA. x(x - 3) = 0       B. x² + 5x + 6 = 0 ✔\nC. x2= 16                     D. 2x(x + 1)",
+    "Solve: x² = 16\nA. x = 4 only             B. x = -4 only\nC. x = ±4 ✔             D. x = 0",
+    "The degree of x² - 3x + 1 = 0 is:\nA. 1                                B. 2 ✔\nC. 3                                 D. 0",
+    "Which method fits x² - 4 = 0?\nA. Factoring                   B. Extracting square roots ✔\nC. Quadratic formula      D. Completing the square",
+    "Medium Level (5 Items)",
+    "Solve by factoring: x² - 7x + 10 = 0\nA. x = 2, 5 ✔                 B. x = -2, -5\nC. x = 1, 10                D. x = 0, 7",
+    "Which equation is quadratic?\nA. 2x + 3 = 0           B. x³ - 1 = 0\nC. 1x = 2                          D. x² - 4x + 1 = 0 ✔",
+    "Solve: 2x² - 8 = 0",
+    "A. x = 4 only              B. x = 2, -2 ✔\nC. x = -4 only            D. x = 0",
+    "Which method is best for solving x2=49?",
+    "A. Factoring                   B. Completing the square\nC. Quadratic formula     D. Extracting square roots ✔",
+    "Solve: x² = 25\nA. x = 5 only               B. x = -5 only\nC. x = ±5 ✔                  D. x = 0",
+    "Hard Level (5 Items)",
+    "Solve using formula: x² - 6x + 8 = 0\nA. x = 2, 4 ✔                B. x = -2, -4\nC. x = 1, 8                      D. x = 0, 6",
+    "Solve: 2x² - 3x - 2 = 0\nA. x = 2, -1/2 ✔        B. x = -2, 1/2\nC. x = 1, -2                   D. x = 0, 3/2",
+    "The discriminant of x² + 4x + 5 = 0 is:\nA. 16                                B. −4 ✔\nC. 4                                   D. 20",
+    "Which of the following steps is the most appropriate way to begin solving the quadratic equation x2-7x+10=0 by factoring?",
+    "A. Subtract 10 from both sides\nB. Factor the quadratic into two binomials ✔\nC. Divide all terms by the coefficient of x2\nD. Use the quadratic formula",
+    "Solve: x² + x - 6 = 0\nA. x = 2, -3 ✔            B. x = -2, 3\nC. x = 1, -6                   D. x = 0, 6",
+    "References:\nhttps://www.scribd.com/document/508144828/MODULE-1B \nhttps://depedtambayan.net/mathematics-9-quarter-1-module-2-solving-quadratic-equations-by-extracting-square-roots-week-1-learning-code-m9al-ia-2-1/"
+  ]
+}

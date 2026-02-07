@@ -1,0 +1,149 @@
+{
+  "module_id": "module_4_area_of_triangle",
+  "module_title": "MODULE 4: Solving Problems Involving Area of Triangles",
+  "topic": "Area of Triangles",
+  "learning_competency": "The learner solves problems involving the area of triangles using appropriate formulas.",
+  "sections": {
+    "purpose": "This module aims to develop the learners' understanding of how to compute and apply the area of triangles in different situations. It reinforces knowledge of triangle parts, correct use of formulas, and problem-solving skills necessary for real-life and mathematical applications.",
+    "learning_objectives": [
+      "Define the area of a triangle.",
+      "Identify the base and height of different types of triangles.",
+      "Use the formula for finding the area of a triangle correctly.",
+      "Solve routine problems involving the area of triangles.",
+      "Analyze and solve word problems involving triangle areas accurately."
+    ],
+    "what_is_area": {
+      "definition": "The area of a triangle is the amount of space enclosed by its three sides.",
+      "formula_intro": "To find the area, we use the formula:",
+      "formula": "A = ½ b h",
+      "where": "where:",
+      "where_bullets": [
+        "b = base of the triangle",
+        "h = height (altitude), perpendicular to the base"
+      ],
+      "reminder": "Important Reminder: The height must always be perpendicular to the base."
+    },
+    "key_words": [
+      { "term": "Triangle", "definition": "a polygon with three sides" },
+      { "term": "Base (b)", "definition": "the side used in the area formula" },
+      { "term": "Height (h)", "definition": "the perpendicular distance from the base to the opposite vertex" },
+      { "term": "Area (A)", "definition": "the space inside the triangle" },
+      { "term": "Right Triangle", "definition": "a triangle with one 90° angle" },
+      { "term": "Isosceles Triangle", "definition": "a triangle with two equal sides" },
+      { "term": "Scalene Triangle", "definition": "a triangle with all sides unequal" }
+    ],
+    "procedure": {
+      "intro": "Steps in solving area of triangle problems:",
+      "steps": [
+        "Step 1: Identify the base and height. Determine which side is the base and which measurement is the height.",
+        "Step 2: Write the formula. A = ½ b h",
+        "Step 3: Substitute the given values.",
+        "Step 4: Multiply the base and height.",
+        "Step 5: Divide the product by 2.",
+        "Step 6: Write the final answer with correct units (square units)."
+      ]
+    },
+    "worked_examples": [
+      {
+        "title": "Example 1",
+        "problem": "Find the area of a triangle with a base of 10 cm and a height of 6 cm.",
+        "image": "area-ex1",
+        "solution": [
+          "Step 1: Write the formula for the area of a triangle. A = ½ b h",
+          "Step 2: Identify the given values. • Base, b = 10 cm • Height, h = 6 cm",
+          "Step 3: Substitute the given values into the formula. A = ½ (10)(6)",
+          "Step 4: Multiply the base and the height. 10 × 6 = 60. So, A = ½ (60)",
+          "Step 5: Divide the product by 2. A = 30",
+          "Step 6: State the final answer with correct unit. A = 30 cm²"
+        ],
+        "conclusion": "The area of the triangle is 30 cm²."
+      },
+      {
+        "title": "Example 2",
+        "problem": "A triangle has a base of 12 m and a height of 8 m. Find its area.",
+        "image": "area-ex2",
+        "solution": [
+          "Step 1: Write the formula. A = ½ b h",
+          "Step 2: Identify the given values. • b = 12 m • h = 8 m",
+          "Step 3: Substitute the values into the formula. A = ½ (12)(8)",
+          "Step 4: Multiply the base and the height. 12 × 8 = 96. A = ½ (96)",
+          "Step 5: Divide by 2. A = 48",
+          "Step 6: State the final answer. A = 48 m²"
+        ],
+        "conclusion": "The area is 48 square meters."
+      },
+      {
+        "title": "Example 3",
+        "problem": "Find the area of a right triangle with legs measuring 9 cm and 4 cm.",
+        "image": "area-ex3",
+        "solution": [
+          "Step 1: Write the area formula. A = ½ b h",
+          "Step 2: Identify the base and height. In a right triangle, the two legs are perpendicular, so they serve as: • Base, b = 9 cm • Height, h = 4 cm",
+          "Step 3: Substitute the values. A = ½ (9)(4)",
+          "Step 4: Multiply the base and height. 9 × 4 = 36. A = ½ (36)",
+          "Step 5: Divide by 2. A = 18"
+        ],
+        "conclusion": "The area of the right triangle is 18 cm²."
+      },
+      {
+        "title": "Example 4",
+        "problem": "The area of a triangle is 36 cm² and its base is 12 cm. Find the height.",
+        "image": "area-ex4",
+        "solution": [
+          "A = ½ b h",
+          "36 = ½ (12)(h)",
+          "36 = 6h",
+          "h = 6 cm"
+        ],
+        "conclusion": "The height of the triangle is 6 cm."
+      },
+      {
+        "title": "Example 5",
+        "problem": "A triangular garden has a base of 15 m and a height of 10 m. Find its area.",
+        "image": "area-ex5",
+        "solution": [
+          "A = ½ b h",
+          "A = ½ (15)(10)",
+          "A = 75 m²"
+        ],
+        "conclusion": "The garden has an area of 75 m²."
+      },
+      {
+        "title": "Example 6",
+        "problem": "The area of a triangle is 36 cm² and its height is 6 cm. Find the base of the triangle.",
+        "solution": [
+          "Step 1: Write the formula for the area of a triangle. A = ½ b h where (A) = area, (b) = base, (h) = height",
+          "Step 2: Substitute the given values. Given: A = 36 cm², h = 6 cm. 36 = ½ b (6)",
+          "Step 3: Simplify the expression. ½ × 6 = 3. So the equation becomes: 36 = 3b",
+          "Step 4: Solve for the base (b). Divide both sides by 3: 36/3 = 3b/3 → 12 = b",
+          "Step 5: State the answer. b = 12 cm",
+          "Step 6: Check the answer by substitution. Substitute b = 12 cm and h = 6 cm: A = ½ (12)(6) = ½ (72) = 36 cm² ✓ Correct"
+        ],
+        "conclusion": "The base of the triangle is 12 cm."
+      }
+    ]
+  },
+  "practice_activities": {
+    "easy": [
+      { "question": "What is the formula for the area of a triangle?", "choices": { "A": "A = ½ bh", "B": "A = b + h", "C": "A = b × h", "D": "A = 2(b + h)" }, "correct": "A" },
+      { "question": "Find the area of a triangle with base 8 cm and height 5 cm.", "choices": { "A": "20 cm²", "B": "40 cm²", "C": "13 cm²", "D": "10 cm²" }, "correct": "A" },
+      { "question": "Which measurement must be perpendicular to the base?", "choices": { "A": "Side", "B": "Angle", "C": "Height", "D": "Hypotenuse" }, "correct": "C" },
+      { "question": "A triangle has a base of 6 m and height of 4 m. What is its area?", "choices": { "A": "12 m²", "B": "24 m²", "C": "10 m²", "D": "48 m²" }, "correct": "A" },
+      { "question": "The area of a triangle is expressed in:", "choices": { "A": "units", "B": "linear units", "C": "square units", "D": "cubic units" }, "correct": "C" }
+    ],
+    "medium": [
+      { "question": "Find the area of a triangle with base 14 cm and height 9 cm.", "choices": { "A": "63 cm²", "B": "126 cm²", "C": "23 cm²", "D": "72 cm²" }, "correct": "A" },
+      { "question": "A triangle has an area of 20 cm² and a base of 10 cm. What is its height?", "choices": { "A": "2 cm", "B": "4 cm", "C": "5 cm", "D": "10 cm" }, "correct": "B" },
+      { "question": "Which triangle has the greatest area?", "choices": { "A": "b=6, h=4", "B": "b=8, h=5", "C": "b=10, h=3", "D": "b=7, h=4" }, "correct": "B" },
+      { "question": "The base of a triangle is doubled while the height remains the same. What happens to the area?", "choices": { "A": "Becomes half", "B": "Remains the same", "C": "Becomes double", "D": "Becomes triple" }, "correct": "C" },
+      { "question": "A right triangle has legs 6 cm and 8 cm. What is its area?", "choices": { "A": "24 cm²", "B": "48 cm²", "C": "14 cm²", "D": "96 cm²" }, "correct": "A" }
+    ],
+    "hard": [
+      { "question": "A triangular lot has a base of 20 m and height of 12 m. If half of it is used, what is the area used?", "choices": { "A": "60 m²", "B": "120 m²", "C": "240 m²", "D": "360 m²" }, "correct": "B" },
+      { "question": "If the area of a triangle is 50 cm² and its height is 10 cm, find the base.", "choices": { "A": "5 cm", "B": "10 cm", "C": "20 cm", "D": "25 cm" }, "correct": "B" },
+      { "question": "Which triangle has the same area as one with base 10 cm and height 6 cm?", "choices": { "A": "b=12, h=5", "B": "b=8, h=4", "C": "b=15, h=3", "D": "b=6, h=5" }, "correct": "A" },
+      { "question": "A triangle's base is increased by 4 cm while its height stays the same. What happens to the area?", "choices": { "A": "Increases", "B": "Decreases", "C": "Becomes zero", "D": "Remains unchanged" }, "correct": "A" },
+      { "question": "A triangular flag has an area of 36 cm². If its base is 9 cm, what is its height?", "choices": { "A": "4 cm", "B": "6 cm", "C": "8 cm", "D": "9 cm" }, "correct": "A" }
+    ]
+  }
+}

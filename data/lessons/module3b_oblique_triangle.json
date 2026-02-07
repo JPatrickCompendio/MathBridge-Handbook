@@ -1,0 +1,190 @@
+{
+  "module_id": "module_3b_oblique_triangle",
+  "module_title": "MODULE 3B: Oblique Triangle",
+  "topic": "Oblique Triangle",
+  "sections": {
+    "purpose": "This module aims to help learners understand oblique triangles and learn how to solve them using simple and clear steps. This lesson will strengthen the learner's skills in solving triangles that do not have a right angle.",
+    "learning_objectives": [
+      "Define what an oblique triangle is.",
+      "Identify the types of oblique triangles.",
+      "Determine when to use the Law of Sines.",
+      "Determine when to use the Law of Cosines.",
+      "Solve simple problems involving oblique triangles accurately."
+    ],
+    "what_are_oblique_triangles": {
+      "definition": "An oblique triangle is a triangle that does not have a right angle (90°).",
+      "general_note": "In all triangles, including oblique triangles:",
+      "general_bullet": "The sum of the interior angles is 180°",
+      "types_intro": "There are two types of oblique triangles:",
+      "acute": {
+        "label": "Acute Triangle",
+        "definition": "all angles are less than 90°",
+        "images": ["oblique-acute"]
+      },
+      "obtuse": {
+        "label": "Obtuse Triangle",
+        "definition": "one angle is greater than 90°",
+        "images": ["oblique-obtuse"]
+      },
+      "conclusion": "If a triangle has no right angle and follows the 180° angle rule, it is an oblique triangle."
+    },
+    "key_words_and_concepts": [
+      { "term": "Oblique Triangle", "definition": "a triangle without a right angle" },
+      { "term": "Acute Triangle", "definition": "a triangle with all angles less than 90°" },
+      { "term": "Obtuse Triangle", "definition": "a triangle with one angle greater than 90°" },
+      { "term": "Law of Sines", "definition": "a formula used when angles and opposite sides are known" },
+      { "term": "Law of Cosines", "definition": "a formula used when two sides and the included angle are known" },
+      { "term": "Included Angle", "definition": "the angle between two given sides" }
+    ],
+    "law_of_sines": {
+      "when_used_intro": "The Law of Sines is used when:",
+      "when_used": [
+        "two angles and one side are given, or",
+        "two sides and a non-included angle are given."
+      ],
+      "formula": "a / sin A = b / sin B = c / sin C",
+      "formula_note": "Each side must be paired with its opposite angle.",
+      "steps_title": "A. Using the Law of Sines",
+      "steps": [
+        "Step 1: Identify the given sides and angles.",
+        "Step 2: Match each side with its opposite angle.",
+        "Step 3: Write the Law of Sines formula.",
+        "Step 4: Substitute the given values.",
+        "Step 5: Solve for the missing side or angle."
+      ],
+      "examples": [
+        {
+          "title": "Example 1",
+          "given": ["Angle A = 30°", "Angle B = 70°", "Side a = 12 cm", "Find side b."],
+          "solution": [
+            "Use the Law of Sines: a / sin A = b / sin B",
+            "Substitute: 12 / sin 30° = b / sin 70°",
+            "Cross multiplication: b = (12 sin 70°) / sin 30°",
+            "b = 12(0.94) / 0.5",
+            "b = 11.28 / 0.5",
+            "b = 22.56 cm"
+          ],
+          "solution_display": {
+            "formula_intro": "Use the Law of Sines:",
+            "formula": "a / sin A = b / sin B",
+            "substitute_label": "Substitute the given values:",
+            "substitute_equation": "12 / sin 30° = b / sin 70°",
+            "cross_note": "cross multiplication.",
+            "steps": ["b = (12 sin 70°) / sin 30°", "b = 12(0.94) / 0.5", "b = 11.28 / 0.5"]
+          },
+          "answer": "b = 22.56 cm",
+          "image": "law-sines-ex1"
+        },
+        {
+          "title": "Example 2",
+          "given": ["Angle C = 50°", "Angle A = 60°", "Side c = 15 cm", "Find side a."],
+          "solution": [
+            "a / sin A = c / sin C",
+            "a / sin 60° = 15 / sin 50°",
+            "Cross multiplication: a = (15 sin 60°) / sin 50°",
+            "a = (15 × 0.87) / 0.77",
+            "a = 13.05 / 0.77",
+            "a = 16.95 cm"
+          ],
+          "solution_display": {
+            "formula": "a / sin A = c / sin C",
+            "substitute_equation": "a / sin 60° = 15 / sin 50°",
+            "cross_note": "cross multiplication.",
+            "steps": ["a = (15 sin 60°) / sin 50°", "a = 15(0.87) / 0.77", "a = 13.05 / 0.77"],
+            "show_divider": true
+          },
+          "answer": "a = 16.95 cm",
+          "image": "law-sines-ex2"
+        },
+        {
+          "title": "Example 3",
+          "given": ["Angle A = 45°", "Angle B = 65°", "Side a = 10 cm", "Find side b."],
+          "solution": [
+            "a / sin A = b / sin B",
+            "10 / sin 45° = b / sin 65°",
+            "Cross multiplication: b = (10 sin 65°) / sin 45°",
+            "b = (10 × 0.91) / 0.71",
+            "b = 9.1 / 0.71",
+            "b = 12.82 cm"
+          ],
+          "solution_display": {
+            "formula": "a / sin A = b / sin B",
+            "substitute_label": "Substitute the given values:",
+            "substitute_equation": "10 / sin 45° = b / sin 65°",
+            "cross_note": "cross multiplication.",
+            "steps": ["b = (10 sin 65°) / sin 45°", "b = 10(0.91) / 0.71", "b = 9.1 / 0.71"]
+          },
+          "answer": "b = 12.82 cm",
+          "image": "law-sines-ex3"
+        }
+      ]
+    },
+    "law_of_cosines": {
+      "when_used_intro": "The Law of Cosines is used when:",
+      "when_used": [
+        "three sides are given, or",
+        "two sides and the included angle are given."
+      ],
+      "formula": "c² = a² + b² - 2ab cos C",
+      "formula_note": "This formula is useful when no opposite angle is known.",
+      "examples": [
+        {
+          "title": "Example 1",
+          "given": ["a = 7 cm", "b = 9 cm", "Angle C = 60°", "Find side c."],
+          "solution_display": {
+            "formula": "c² = a² + b² - 2ab cos C",
+            "substitute_equation": "c² = 7² + 9² - 2(7)(9) cos 60°",
+            "steps": ["c² = 49 + 81 - 126(0.5)", "c² = 67", "√c² = √67", "c = 8.19 cm"]
+          },
+          "answer": "c = 8.19 cm",
+          "image": "law-cosines-ex1"
+        },
+        {
+          "title": "Example 2",
+          "given": ["a = 10 cm", "b = 12 cm", "Angle C = 45°", "Find side c."],
+          "solution_display": {
+            "formula": "c² = a² + b² - 2ab cos C",
+            "substitute_equation": "c² = 10² + 12² - 2(10)(12) cos 45°",
+            "steps": ["c² = 100 + 144 - 240(0.707)", "c² = 74.32", "√c² = √74.32", "c = 8.62 cm"]
+          },
+          "answer": "c = 8.62 cm",
+          "image": "law-cosines-ex2"
+        },
+        {
+          "title": "Example 3",
+          "given": ["a = 6 cm", "b = 11 cm", "Angle C = 80°", "Find side c."],
+          "solution_display": {
+            "formula": "c² = a² + b² - 2ab cos C",
+            "substitute_equation": "c² = 6² + 11² - 2(6)(11) cos 80°",
+            "steps": ["c² = 36 + 121 - 132(0.17)", "c² = 157 - 22.44", "c² = 134.56", "√c² = √134.56", "c = 11.6 cm"]
+          },
+          "answer": "c = 11.6 cm",
+          "image": "law-cosines-ex3"
+        }
+      ]
+    }
+  },
+  "practice_activities": {
+    "easy": [
+      { "question": "The Law of Sines is used for ___.", "choices": { "A": "right triangles", "B": "equilateral triangles", "C": "oblique triangles", "D": "congruent triangles" }, "correct": "C" },
+      { "question": "Which situation uses the Law of Sines?", "choices": { "A": "Three sides are given", "B": "Two angles and one side", "C": "Two sides and included angle", "D": "One angle only" }, "correct": "B" },
+      { "question": "Which is an oblique triangle?", "choices": { "A": "Triangle with a right angle", "B": "Triangle with no right angle", "C": "Triangle with equal sides", "D": "Triangle with all angles 90°" }, "correct": "B" },
+      { "question": "Which situation uses the Law of Cosines?", "choices": { "A": "Two angles and one side", "B": "Three sides", "C": "Two angles only", "D": "One angle only" }, "correct": "B" },
+      { "question": "The Law of Sines can be used for obtuse triangles.", "choices": { "A": "No", "B": "Yes", "C": "Sometimes", "D": "Only acute triangles" }, "correct": "B" }
+    ],
+    "medium": [
+      { "question": "If ∠A = 40°, ∠B = 60°, and side a is given, which law should be used?", "choices": { "A": "Law of Cosines", "B": "Pythagorean Theorem", "C": "Law of Sines", "D": "Triangle Sum" }, "correct": "C" },
+      { "question": "In the Law of Sines, side a is paired with ___.", "choices": { "A": "∠B", "B": "∠C", "C": "∠A", "D": "any angle" }, "correct": "C" },
+      { "question": "If two sides and the included angle are given, use ___.", "choices": { "A": "Law of Sines", "B": "Triangle Sum", "C": "Law of Cosines", "D": "SAS Similarity" }, "correct": "C" },
+      { "question": "When no opposite angle is known, use ___.", "choices": { "A": "Law of Sines", "B": "Law of Cosines", "C": "Triangle Sum", "D": "SAS" }, "correct": "B" },
+      { "question": "Which is NOT needed to apply the Law of Sines?", "choices": { "A": "Opposite angle", "B": "Known side", "C": "Included angle", "D": "Oblique triangle" }, "correct": "C" }
+    ],
+    "hard": [
+      { "question": "A triangle has ∠A = 25°, ∠B = 65°, and a = 9 cm. Find side b.", "choices": { "A": "12.5 cm", "B": "14.1 cm", "C": "15.8 cm", "D": "18.2 cm" }, "correct": "B" },
+      { "question": "If all angles of a triangle are known, what must be done before using Law of Sines?", "choices": { "A": "Use Law of Cosines", "B": "Find a side first", "C": "Find the area", "D": "Redraw the triangle" }, "correct": "B" },
+      { "question": "In △ABC, ∠A = 28°, ∠B = 72°, and side a = 14 cm. Find side b.", "choices": { "A": "30.2 cm", "B": "31.8 cm", "C": "33.6 cm", "D": "35.1 cm" }, "correct": "C" },
+      { "question": "A triangle has sides 9 cm and 13 cm with an included angle of 120°. Find the length of the third side.", "choices": { "A": "18.0 cm", "B": "19.1 cm", "C": "20.5 cm", "D": "22.0 cm" }, "correct": "B" },
+      { "question": "A triangle has sides 8 cm, 11 cm, and 15 cm. Which law must be used FIRST to find the largest angle?", "choices": { "A": "Law of Sines", "B": "Triangle Sum Theorem", "C": "Pythagorean Theorem", "D": "Law of Cosines" }, "correct": "D" }
+    ]
+  }
+}

@@ -1,8 +1,9 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Animated, Platform, StyleSheet, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BorderRadius } from '../../constants/colors';
-import { getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize } from '../../utils/responsive';
+import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -66,27 +67,41 @@ function TabIcon({
 }
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  // Calculate bottom padding: base padding + safe area bottom inset
+  const baseBottomPadding = Platform.OS === 'ios' ? getSpacing(8) : getSpacing(6);
+  const bottomPadding = Math.max(baseBottomPadding, insets.bottom + getSpacing(4));
+  // On web, use taller tab bar and extra padding so label text is visible
+  const tabBarHeight = isWeb()
+    ? 88 + Math.max(0, insets.bottom)
+    : (isTablet() ? 75 : isSmallDevice() ? 62 : 68) + Math.max(0, insets.bottom);
+  const tabBarPaddingBottom = isWeb() ? Math.max(bottomPadding, 20) : bottomPadding;
+  const labelFontSize = isWeb() ? 13 : scaleFont(isTablet() ? 12 : isSmallDevice() ? 10 : 11);
+
   return (
     <Tabs
-      screenOptions={{
+      screenOptions={() => ({
         headerShown: false,
         tabBarActiveTintColor: ProfessionalColors.primary,
         tabBarInactiveTintColor: ProfessionalColors.textSecondary,
         tabBarStyle: [
           styles.tabBar,
           {
-            height: isTablet() ? 75 : isSmallDevice() ? 62 : 68,
-            paddingBottom: Platform.OS === 'ios' ? getSpacing(8) : getSpacing(6),
-            paddingTop: getSpacing(6),
-            paddingHorizontal: getSpacing(2),
+            height: tabBarHeight,
+            paddingBottom: tabBarPaddingBottom,
+            paddingTop: getSpacing(8),
+            paddingLeft: getSpacing(2) + Math.max(0, insets.left),
+            paddingRight: getSpacing(2) + Math.max(0, insets.right),
           },
         ],
         tabBarLabelStyle: [
           styles.tabBarLabel,
           {
-            fontSize: scaleFont(isTablet() ? 12 : isSmallDevice() ? 10 : 11),
+            fontSize: labelFontSize,
+            lineHeight: isWeb() ? 18 : undefined,
             marginTop: scaleSize(4),
-            marginBottom: 0,
+            marginBottom: isWeb() ? scaleSize(6) : 0,
+            minHeight: isWeb() ? 20 : undefined,
           },
         ],
         tabBarItemStyle: {
@@ -96,7 +111,7 @@ export default function TabsLayout() {
         tabBarHideOnKeyboard: true,
         tabBarShowLabel: true,
         tabBarLabelPosition: 'below-icon',
-      }}
+      })}
     >
       <Tabs.Screen
         name="index"

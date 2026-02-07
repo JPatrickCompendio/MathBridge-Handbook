@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
     Alert,
     Animated,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
@@ -11,7 +10,10 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BorderRadius, Spacing } from '../constants/colors';
+import { saveTopicActivitiesProgress } from '../utils/progressStorage';
+import { getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize } from '../utils/responsive';
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -103,33 +105,25 @@ const QUESTION_BANK: Question[] = [
   // Trigonometry - Hard
   { id: 45, question: 'What is sin(90°)?', options: ['0', '0.5', '1', '√2/2'], correctAnswer: 2, explanation: 'sin(90°) = 1', topic: 'Trigonometry', difficulty: 'hard' },
   
-  // Calculus - Easy
-  { id: 46, question: 'What does calculus study?', options: ['Discrete numbers', 'Continuous change', 'Shapes', 'Angles'], correctAnswer: 1, explanation: 'Calculus is the mathematical study of continuous change.', topic: 'Calculus', difficulty: 'easy' },
-  { id: 47, question: 'How many main branches does calculus have?', options: ['1', '2', '3', '4'], correctAnswer: 1, explanation: 'Calculus has two main branches: differential and integral.', topic: 'Calculus', difficulty: 'easy' },
-  { id: 48, question: 'What does differential calculus study?', options: ['Accumulation', 'Rates of change', 'Areas', 'Volumes'], correctAnswer: 1, explanation: 'Differential calculus studies derivatives and rates of change.', topic: 'Calculus', difficulty: 'easy' },
-  { id: 49, question: 'What does a limit describe?', options: ['Exact value', 'Approaching behavior', 'Function value', 'Derivative'], correctAnswer: 1, explanation: 'A limit describes the value that a function approaches.', topic: 'Calculus', difficulty: 'easy' },
-  { id: 50, question: 'What is the limit of f(x) = x² as x approaches 2?', options: ['2', '4', '8', '16'], correctAnswer: 1, explanation: 'As x approaches 2, x² approaches 4.', topic: 'Calculus', difficulty: 'easy' },
-  // Calculus - Medium
-  { id: 51, question: 'Can a limit exist even if the function is undefined at that point?', options: ['No', 'Yes', 'Sometimes', 'Never'], correctAnswer: 1, explanation: 'Yes, limits describe approaching behavior, so they can exist even when the function is undefined.', topic: 'Calculus', difficulty: 'medium' },
-  { id: 52, question: 'What does a derivative measure?', options: ['Area', 'Volume', 'Rate of change', 'Distance'], correctAnswer: 2, explanation: 'Derivatives measure the instantaneous rate of change.', topic: 'Calculus', difficulty: 'medium' },
-  { id: 53, question: 'What is the geometric meaning of a derivative?', options: ['Area under curve', 'Slope of tangent line', 'Length of curve', 'Volume'], correctAnswer: 1, explanation: 'The derivative at a point is the slope of the tangent line.', topic: 'Calculus', difficulty: 'medium' },
-  { id: 54, question: 'What is the derivative of f(x) = x²?', options: ['x', '2x', 'x²', '2x²'], correctAnswer: 1, explanation: 'The derivative of x² is 2x using the power rule.', topic: 'Calculus', difficulty: 'medium' },
-  // Calculus - Hard
-  { id: 55, question: 'What is the derivative of f(x) = 3x³?', options: ['3x²', '9x²', 'x³', '9x'], correctAnswer: 1, explanation: 'Using the power rule: derivative of 3x³ = 3 × 3x² = 9x²', topic: 'Calculus', difficulty: 'hard' },
+  // Variation - Easy
+  { id: 46, question: 'Which is the formula for direct variation?', options: ['y = k/x', 'y = kx', 'y = kx²', 'y = x/k'], correctAnswer: 1, explanation: 'Direct variation has the form y = kx, where k is the constant of variation.', topic: 'Variation', difficulty: 'easy' },
+  { id: 47, question: 'If y varies directly with x, and x doubles, y:', options: ['halves', 'doubles', 'stays the same', 'becomes zero'], correctAnswer: 1, explanation: 'In direct variation, y is proportional to x, so if x doubles, y doubles.', topic: 'Variation', difficulty: 'easy' },
+  { id: 48, question: 'Which shows inverse variation?', options: ['y = kx', 'y = k/x', 'y = kx²', 'y = x + k'], correctAnswer: 1, explanation: 'Inverse variation has the form y = k/x or xy = k.', topic: 'Variation', difficulty: 'easy' },
+  { id: 49, question: 'In y = kx, k is called:', options: ['variable', 'coefficient', 'constant of variation', 'exponent'], correctAnswer: 2, explanation: 'k is the constant of variation that relates the variables.', topic: 'Variation', difficulty: 'easy' },
+  { id: 50, question: 'If y = 5x, what is y when x = 2?', options: ['5', '8', '10', '12'], correctAnswer: 2, explanation: 'y = 5(2) = 10.', topic: 'Variation', difficulty: 'easy' },
+  // Variation - Medium
+  { id: 51, question: 'If y varies inversely with x, and y = 6 when x = 3, find y when x = 9.', options: ['2', '18', '4', '6'], correctAnswer: 0, explanation: 'y = k/x → 6 = k/3 → k = 18. Then y = 18/9 = 2.', topic: 'Variation', difficulty: 'medium' },
+  { id: 52, question: 'If y varies jointly with x and z, and y = 12 when x = 2, z = 3, find y when x = 4, z = 3.', options: ['12', '18', '24', '36'], correctAnswer: 2, explanation: 'y = kxz → 12 = k(2)(3) → k = 2. Then y = 2(4)(3) = 24.', topic: 'Variation', difficulty: 'medium' },
+  { id: 53, question: 'Which is joint variation?', options: ['y = kx', 'y = k/x', 'y = kxz', 'y = x + z'], correctAnswer: 2, explanation: 'Joint variation: one variable depends on two or more others, e.g. y = kxz.', topic: 'Variation', difficulty: 'medium' },
+  { id: 54, question: 'If y = kx/z, this is:', options: ['direct', 'inverse', 'joint', 'combined'], correctAnswer: 3, explanation: 'Combined variation: direct with one variable and inverse with another.', topic: 'Variation', difficulty: 'medium' },
+  { id: 55, question: 'If y = 2x, what is x when y = 14?', options: ['5', '6', '7', '8'], correctAnswer: 2, explanation: '14 = 2x → x = 7.', topic: 'Variation', difficulty: 'medium' },
+  // Variation - Hard
+  { id: 56, question: 'y varies jointly with x and z. If y = 30 when x = 5, z = 2, find y when x = 10, z = 4.', options: ['60', '120', '240', '300'], correctAnswer: 1, explanation: 'y = kxz → 30 = k(5)(2) → k = 3. Then y = 3(10)(4) = 120.', topic: 'Variation', difficulty: 'hard' },
+  { id: 57, question: 'y varies inversely with x. If y = 15 when x = 4, find x when y = 5.', options: ['8', '10', '12', '15'], correctAnswer: 2, explanation: 'y = k/x → 15 = k/4 → k = 60. Then 5 = 60/x → x = 12.', topic: 'Variation', difficulty: 'hard' },
+  { id: 58, question: 'y varies directly with x and inversely with z. If y = 10 when x = 5, z = 2, find y when x = 15, z = 6.', options: ['5', '10', '15', '20'], correctAnswer: 1, explanation: 'y = kx/z → 10 = k(5)/2 → k = 4. Then y = 4(15)/6 = 10.', topic: 'Variation', difficulty: 'hard' },
+  { id: 59, question: 'A worker finishes a job in 8 hours with 3 workers. How long will it take 6 workers? (Inverse variation)', options: ['16 h', '12 h', '8 h', '4 h'], correctAnswer: 3, explanation: 'Time varies inversely with workers. 8×3 = k = 24. 24/6 = 4 h.', topic: 'Variation', difficulty: 'hard' },
+  { id: 60, question: 'The force of gravity varies jointly with two masses and inversely with the square of the distance. If the distance doubles, gravity:', options: ['doubles', 'halves', 'quarters', 'stays the same'], correctAnswer: 2, explanation: 'If distance doubles, the square of distance quadruples, so gravity is divided by 4 (quarters).', topic: 'Variation', difficulty: 'hard' },
   
-  // Probability - Easy
-  { id: 56, question: 'What is the range of probability values?', options: ['0 to 10', '0 to 100', '0 to 1', '-1 to 1'], correctAnswer: 2, explanation: 'Probability values range from 0 (impossible) to 1 (certain).', topic: 'Probability', difficulty: 'easy' },
-  { id: 57, question: 'What does a probability of 0 mean?', options: ['Certain', 'Impossible', '50% chance', 'Unknown'], correctAnswer: 1, explanation: 'A probability of 0 means the event is impossible.', topic: 'Probability', difficulty: 'easy' },
-  { id: 58, question: 'What is the probability of flipping heads on a fair coin?', options: ['0', '0.5', '1', '2'], correctAnswer: 1, explanation: 'A fair coin has 2 outcomes, so P(heads) = 1/2 = 0.5', topic: 'Probability', difficulty: 'easy' },
-  { id: 59, question: 'What is the probability of rolling a 6 on a fair die?', options: ['1/6', '1/2', '1/3', '1'], correctAnswer: 0, explanation: 'A fair die has 6 outcomes, so P(6) = 1/6', topic: 'Probability', difficulty: 'easy' },
-  { id: 60, question: 'What is P(not A) if P(A) = 0.7?', options: ['0.3', '0.7', '1.7', '0'], correctAnswer: 0, explanation: 'Using complement rule: P(not A) = 1 - P(A) = 1 - 0.7 = 0.3', topic: 'Probability', difficulty: 'easy' },
-  // Probability - Medium
-  { id: 61, question: 'If two events are independent, what is P(A and B)?', options: ['P(A) + P(B)', 'P(A) × P(B)', 'P(A) - P(B)', 'P(A) / P(B)'], correctAnswer: 1, explanation: 'For independent events, P(A and B) = P(A) × P(B)', topic: 'Probability', difficulty: 'medium' },
-  { id: 62, question: 'What does P(A|B) mean?', options: ['Probability of A and B', 'Probability of A given B', 'Probability of A or B', 'Probability of not A'], correctAnswer: 1, explanation: 'P(A|B) means the probability of A occurring given that B has already occurred.', topic: 'Probability', difficulty: 'medium' },
-  { id: 63, question: 'How do you calculate P(A|B)?', options: ['P(A) + P(B)', 'P(A and B) / P(B)', 'P(A) × P(B)', 'P(A) - P(B)'], correctAnswer: 1, explanation: 'Conditional probability: P(A|B) = P(A and B) / P(B)', topic: 'Probability', difficulty: 'medium' },
-  { id: 64, question: 'If events A and B are independent, what is P(A|B)?', options: ['P(A) + P(B)', 'P(A) × P(B)', 'P(A)', 'P(B)'], correctAnswer: 2, explanation: 'If events are independent, P(A|B) = P(A) because B does not affect A.', topic: 'Probability', difficulty: 'medium' },
-  // Probability - Hard
-  { id: 65, question: 'What is the probability of rolling two sixes in a row with a fair die?', options: ['1/6', '1/12', '1/36', '1/3'], correctAnswer: 2, explanation: 'P(two sixes) = P(6) × P(6) = (1/6) × (1/6) = 1/36', topic: 'Probability', difficulty: 'hard' },
 ];
 
 // Get questions based on filters
@@ -143,12 +137,11 @@ const getQuestions = (
   // Filter by topic
   if (topicId) {
     const topicMap: { [key: string]: string } = {
-      '1': 'Geometry',
+      '1': 'Quadratic Equations',
       '2': 'Algebra',
       '3': 'Statistics',
       '4': 'Trigonometry',
-      '5': 'Calculus',
-      '6': 'Probability',
+      '5': 'Variation',
     };
     const topicName = topicMap[topicId];
     if (topicName) {
@@ -419,6 +412,11 @@ export default function QuizScreen() {
 
     setScore(calculatedScore);
     setShowResults(true);
+    // Record activities progress for this topic (50% of topic progress; other 50% from reading content)
+    if (topicId) {
+      const id = parseInt(topicId, 10);
+      if (!Number.isNaN(id)) saveTopicActivitiesProgress(id, 100);
+    }
   };
 
   const handleRestart = () => {
@@ -463,8 +461,12 @@ export default function QuizScreen() {
 
   if (!quizStarted) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.startScreen}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.startScreen}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.startHeader}>
             <TouchableOpacity
               style={styles.backButton}
@@ -501,7 +503,7 @@ export default function QuizScreen() {
               <Text style={styles.startButtonText}>Start Quiz</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -513,7 +515,7 @@ export default function QuizScreen() {
     const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.resultsContent}
@@ -583,7 +585,7 @@ export default function QuizScreen() {
 
   if (!currentQuestion) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading questions...</Text>
         </View>
@@ -596,7 +598,7 @@ export default function QuizScreen() {
   const showAnswer = isSurvivalMode && selectedAnswer !== undefined;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.quizContainer}>
         {/* Header with progress and timer */}
         <View style={styles.quizHeader}>
@@ -639,88 +641,95 @@ export default function QuizScreen() {
           </View>
         </View>
 
-        {/* Question Card */}
-        <Animated.View style={[styles.questionCard, { opacity: fadeAnim }]}>
-          <View style={styles.questionHeader}>
-            <Text style={styles.difficultyBadge}>
-              {currentQuestion.difficulty.toUpperCase()}
-            </Text>
-            <Text style={styles.topicBadge}>{currentQuestion.topic}</Text>
-          </View>
-
-          <Text style={styles.questionText}>{currentQuestion.question}</Text>
-
-          {isBlindMode ? (
-            <View style={styles.blindInputContainer}>
-              <Text style={styles.blindModeHint}>
-                Type your answer (no multiple choice options)
+        {/* Question Card with ScrollView */}
+        <ScrollView 
+          style={styles.questionCardScroll}
+          contentContainerStyle={styles.questionCardContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Animated.View style={[styles.questionCard, { opacity: fadeAnim }]}>
+            <View style={styles.questionHeader}>
+              <Text style={styles.difficultyBadge}>
+                {currentQuestion.difficulty.toUpperCase()}
               </Text>
-              <TextInput
-                style={styles.blindInput}
-                placeholder="Enter your answer..."
-                value={typedAnswers[currentQuestion.id] || ''}
-                onChangeText={handleTypedAnswer}
-                autoCapitalize="none"
-                autoCorrect={false}
-                onSubmitEditing={handleSubmitAnswer}
-                returnKeyType="done"
-              />
-              <TouchableOpacity
-                style={[
-                  styles.submitButton,
-                  !typedAnswers[currentQuestion.id] && styles.submitButtonDisabled,
-                ]}
-                onPress={handleSubmitAnswer}
-                disabled={!typedAnswers[currentQuestion.id]}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.submitButtonText}>Submit Answer</Text>
-              </TouchableOpacity>
+              <Text style={styles.topicBadge}>{currentQuestion.topic}</Text>
             </View>
-          ) : (
-            <View style={styles.optionsContainer}>
-              {currentQuestion.options.map((option, index) => {
-                const isSelected = selectedAnswer === index;
-                const showCorrect = showAnswer && index === currentQuestion.correctAnswer;
-                const showIncorrect = showAnswer && isSelected && !isCorrect;
 
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.optionButton,
-                      isSelected && styles.optionButtonSelected,
-                      showCorrect && styles.optionButtonCorrect,
-                      showIncorrect && styles.optionButtonIncorrect,
-                    ]}
-                    onPress={() => handleAnswerSelect(index)}
-                    disabled={showAnswer}
-                    activeOpacity={0.7}
-                  >
-                    <Text
+            <Text style={styles.questionText}>{currentQuestion.question}</Text>
+
+            {isBlindMode ? (
+              <View style={styles.blindInputContainer}>
+                <Text style={styles.blindModeHint}>
+                  Type your answer (no multiple choice options)
+                </Text>
+                <TextInput
+                  style={styles.blindInput}
+                  placeholder="Enter your answer..."
+                  value={typedAnswers[currentQuestion.id] || ''}
+                  onChangeText={handleTypedAnswer}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onSubmitEditing={handleSubmitAnswer}
+                  returnKeyType="done"
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    !typedAnswers[currentQuestion.id] && styles.submitButtonDisabled,
+                  ]}
+                  onPress={handleSubmitAnswer}
+                  disabled={!typedAnswers[currentQuestion.id]}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.submitButtonText}>Submit Answer</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.optionsContainer}>
+                {currentQuestion.options.map((option, index) => {
+                  const isSelected = selectedAnswer === index;
+                  const showCorrect = showAnswer && index === currentQuestion.correctAnswer;
+                  const showIncorrect = showAnswer && isSelected && !isCorrect;
+
+                  return (
+                    <TouchableOpacity
+                      key={index}
                       style={[
-                        styles.optionText,
-                        isSelected && styles.optionTextSelected,
-                        showCorrect && styles.optionTextCorrect,
+                        styles.optionButton,
+                        isSelected && styles.optionButtonSelected,
+                        showCorrect && styles.optionButtonCorrect,
+                        showIncorrect && styles.optionButtonIncorrect,
                       ]}
+                      onPress={() => handleAnswerSelect(index)}
+                      disabled={showAnswer}
+                      activeOpacity={0.7}
                     >
-                      {option}
-                    </Text>
-                    {showCorrect && <Text style={styles.correctIcon}>✓</Text>}
-                    {showIncorrect && <Text style={styles.incorrectIcon}>✕</Text>}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
+                      <Text
+                        style={[
+                          styles.optionText,
+                          isSelected && styles.optionTextSelected,
+                          showCorrect && styles.optionTextCorrect,
+                        ]}
+                      >
+                        {option}
+                      </Text>
+                      {showCorrect && <Text style={styles.correctIcon}>✓</Text>}
+                      {showIncorrect && <Text style={styles.incorrectIcon}>✕</Text>}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
 
-          {showAnswer && (
-            <View style={styles.explanationContainer}>
-              <Text style={styles.explanationLabel}>Explanation:</Text>
-              <Text style={styles.explanationText}>{currentQuestion.explanation}</Text>
-            </View>
-          )}
-        </Animated.View>
+            {showAnswer && (
+              <View style={styles.explanationContainer}>
+                <Text style={styles.explanationLabel}>Explanation:</Text>
+                <Text style={styles.explanationText}>{currentQuestion.explanation}</Text>
+              </View>
+            )}
+          </Animated.View>
+        </ScrollView>
 
         {/* Navigation Buttons */}
         <View style={styles.navigationContainer}>
@@ -783,72 +792,80 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     color: ProfessionalColors.textSecondary,
   },
   startScreen: {
-    flex: 1,
-    padding: Spacing.lg,
+    padding: getSpacing(Spacing.lg),
+    paddingBottom: getSpacing(Spacing.xxl) + 80,
   },
   startHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.xl,
+    marginBottom: getSpacing(Spacing.xl),
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: scaleSize(40),
+    height: scaleSize(40),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: Spacing.md,
+    marginRight: getSpacing(Spacing.md),
+    flexShrink: 0,
   },
   backIcon: {
-    fontSize: 24,
+    fontSize: scaleFont(isTablet() ? 28 : isSmallDevice() ? 20 : 24),
     color: ProfessionalColors.text,
   },
   startTitle: {
-    fontSize: 24,
+    fontSize: scaleFont(isTablet() ? 28 : isSmallDevice() ? 20 : 24),
     fontWeight: 'bold',
     color: ProfessionalColors.text,
+    flex: 1,
+    minWidth: 0,
   },
   startCard: {
     backgroundColor: ProfessionalColors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
+    borderRadius: scaleSize(BorderRadius.lg),
+    padding: getSpacing(Spacing.xl),
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleSize(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: scaleSize(8),
     elevation: 4,
+    marginHorizontal: getSpacing(Spacing.md),
   },
   startCardTitle: {
-    fontSize: 20,
+    fontSize: scaleFont(isTablet() ? 24 : isSmallDevice() ? 18 : 20),
     fontWeight: 'bold',
     color: ProfessionalColors.text,
-    marginBottom: Spacing.md,
+    marginBottom: getSpacing(Spacing.md),
+    textAlign: 'center',
   },
   startCardText: {
-    fontSize: 16,
+    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     color: ProfessionalColors.textSecondary,
     textAlign: 'center',
-    marginBottom: Spacing.xl,
-    lineHeight: 24,
+    marginBottom: getSpacing(Spacing.xl),
+    lineHeight: scaleFont(isTablet() ? 28 : isSmallDevice() ? 20 : 24),
   },
   startButton: {
     backgroundColor: ProfessionalColors.primary,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.xxl,
+    borderRadius: scaleSize(BorderRadius.lg),
+    paddingVertical: getSpacing(Spacing.lg),
+    paddingHorizontal: getSpacing(Spacing.xxl),
     shadowColor: ProfessionalColors.primary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scaleSize(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: scaleSize(8),
     elevation: 6,
+    minHeight: scaleSize(50),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   startButtonText: {
     color: ProfessionalColors.white,
-    fontSize: 18,
+    fontSize: scaleFont(isTablet() ? 20 : isSmallDevice() ? 16 : 18),
     fontWeight: 'bold',
   },
   quizContainer: {
@@ -857,7 +874,9 @@ const styles = StyleSheet.create({
   quizHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.lg,
+    paddingHorizontal: getSpacing(Spacing.lg),
+    paddingTop: getSpacing(Spacing.md),
+    paddingBottom: getSpacing(Spacing.md),
     backgroundColor: ProfessionalColors.white,
     borderBottomWidth: 1,
     borderBottomColor: ProfessionalColors.border,
@@ -865,25 +884,26 @@ const styles = StyleSheet.create({
   headerInfo: {
     flex: 1,
     alignItems: 'flex-end',
+    minWidth: 0,
   },
   questionCounter: {
-    fontSize: 14,
+    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
     fontWeight: '600',
     color: ProfessionalColors.text,
   },
   timer: {
-    fontSize: 14,
+    fontSize: scaleFont(isTablet() ? 14 : isSmallDevice() ? 11 : 13),
     fontWeight: 'bold',
     color: ProfessionalColors.error,
-    marginTop: Spacing.xs,
+    marginTop: getSpacing(Spacing.xs),
   },
   progressBarContainer: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: getSpacing(Spacing.lg),
+    paddingVertical: getSpacing(Spacing.md),
     backgroundColor: ProfessionalColors.white,
   },
   progressBarBackground: {
-    height: 8,
+    height: scaleSize(8),
     backgroundColor: ProfessionalColors.border,
     borderRadius: BorderRadius.full,
     overflow: 'hidden',
@@ -893,60 +913,70 @@ const styles = StyleSheet.create({
     backgroundColor: ProfessionalColors.primary,
     borderRadius: BorderRadius.full,
   },
-  questionCard: {
+  questionCardScroll: {
     flex: 1,
+  },
+  questionCardContent: {
+    padding: getSpacing(Spacing.md),
+    paddingBottom: getSpacing(Spacing.xl),
+  },
+  questionCard: {
     backgroundColor: ProfessionalColors.white,
-    margin: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
+    borderRadius: scaleSize(BorderRadius.lg),
+    padding: getSpacing(Spacing.xl),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleSize(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: scaleSize(8),
     elevation: 4,
   },
   questionHeader: {
     flexDirection: 'row',
-    gap: Spacing.sm,
-    marginBottom: Spacing.lg,
+    gap: getSpacing(Spacing.sm),
+    marginBottom: getSpacing(Spacing.lg),
+    flexWrap: 'nowrap',
   },
   difficultyBadge: {
     backgroundColor: ProfessionalColors.primary,
     color: ProfessionalColors.white,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.sm,
-    fontSize: 12,
+    paddingHorizontal: getSpacing(Spacing.sm),
+    paddingVertical: scaleSize(4),
+    borderRadius: scaleSize(BorderRadius.sm),
+    fontSize: scaleFont(isTablet() ? 14 : isSmallDevice() ? 10 : 12),
     fontWeight: 'bold',
+    flexShrink: 0,
   },
   topicBadge: {
     backgroundColor: ProfessionalColors.background,
     color: ProfessionalColors.text,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.sm,
-    fontSize: 12,
+    paddingHorizontal: getSpacing(Spacing.sm),
+    paddingVertical: scaleSize(4),
+    borderRadius: scaleSize(BorderRadius.sm),
+    fontSize: scaleFont(isTablet() ? 14 : isSmallDevice() ? 10 : 12),
     fontWeight: '600',
+    flexShrink: 1,
+    minWidth: 0,
   },
   questionText: {
-    fontSize: 20,
+    fontSize: scaleFont(isTablet() ? 24 : isSmallDevice() ? 18 : 20),
     fontWeight: '600',
     color: ProfessionalColors.text,
-    marginBottom: Spacing.xl,
-    lineHeight: 28,
+    marginBottom: getSpacing(Spacing.xl),
+    lineHeight: scaleFont(isTablet() ? 34 : isSmallDevice() ? 26 : 28),
   },
   optionsContainer: {
-    gap: Spacing.md,
+    gap: getSpacing(Spacing.md),
   },
   optionButton: {
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
+    padding: getSpacing(Spacing.lg),
+    borderRadius: scaleSize(BorderRadius.md),
     backgroundColor: ProfessionalColors.background,
-    borderWidth: 2,
+    borderWidth: scaleSize(2),
     borderColor: ProfessionalColors.border,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: scaleSize(50),
   },
   optionButtonSelected: {
     borderColor: ProfessionalColors.primary,
@@ -961,9 +991,10 @@ const styles = StyleSheet.create({
     backgroundColor: `${ProfessionalColors.error}20`,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     color: ProfessionalColors.text,
     flex: 1,
+    minWidth: 0,
   },
   optionTextSelected: {
     color: ProfessionalColors.primary,
@@ -974,91 +1005,103 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   correctIcon: {
-    fontSize: 20,
+    fontSize: scaleFont(isTablet() ? 22 : isSmallDevice() ? 18 : 20),
     color: ProfessionalColors.success,
     fontWeight: 'bold',
+    flexShrink: 0,
+    marginLeft: getSpacing(Spacing.sm),
   },
   incorrectIcon: {
-    fontSize: 20,
+    fontSize: scaleFont(isTablet() ? 22 : isSmallDevice() ? 18 : 20),
     color: ProfessionalColors.error,
     fontWeight: 'bold',
+    flexShrink: 0,
+    marginLeft: getSpacing(Spacing.sm),
   },
   blindInputContainer: {
-    marginTop: Spacing.lg,
+    marginTop: getSpacing(Spacing.lg),
   },
   blindModeHint: {
-    fontSize: 14,
+    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
     color: ProfessionalColors.textSecondary,
-    marginBottom: Spacing.md,
+    marginBottom: getSpacing(Spacing.md),
     fontStyle: 'italic',
   },
   blindInput: {
     backgroundColor: ProfessionalColors.background,
-    borderWidth: 2,
+    borderWidth: scaleSize(2),
     borderColor: ProfessionalColors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.lg,
-    fontSize: 16,
+    borderRadius: scaleSize(BorderRadius.md),
+    padding: getSpacing(Spacing.lg),
+    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     color: ProfessionalColors.text,
-    marginBottom: Spacing.md,
-    minHeight: 50,
+    marginBottom: getSpacing(Spacing.md),
+    minHeight: scaleSize(50),
   },
   submitButtonDisabled: {
     opacity: 0.5,
   },
   submitButton: {
     backgroundColor: ProfessionalColors.primary,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    borderRadius: scaleSize(BorderRadius.md),
+    padding: getSpacing(Spacing.md),
     alignItems: 'center',
+    minHeight: scaleSize(44),
+    justifyContent: 'center',
   },
   submitButtonText: {
     color: ProfessionalColors.white,
-    fontSize: 16,
+    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     fontWeight: 'bold',
   },
   explanationContainer: {
-    marginTop: Spacing.lg,
-    padding: Spacing.md,
+    marginTop: getSpacing(Spacing.lg),
+    padding: getSpacing(Spacing.md),
     backgroundColor: ProfessionalColors.background,
-    borderRadius: BorderRadius.md,
+    borderRadius: scaleSize(BorderRadius.md),
   },
   explanationLabel: {
-    fontSize: 14,
+    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
     fontWeight: 'bold',
     color: ProfessionalColors.text,
-    marginBottom: Spacing.xs,
+    marginBottom: getSpacing(Spacing.xs),
   },
   explanationText: {
-    fontSize: 14,
+    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
     color: ProfessionalColors.textSecondary,
-    lineHeight: 20,
+    lineHeight: scaleFont(isTablet() ? 24 : isSmallDevice() ? 18 : 20),
   },
   navigationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: Spacing.lg,
+    paddingHorizontal: getSpacing(Spacing.lg),
+    paddingTop: getSpacing(Spacing.md),
+    paddingBottom: getSpacing(Spacing.lg),
     backgroundColor: ProfessionalColors.white,
     borderTopWidth: 1,
     borderTopColor: ProfessionalColors.border,
-    gap: Spacing.md,
+    gap: getSpacing(Spacing.md),
+    flexShrink: 0,
   },
   navButton: {
     flex: 1,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
+    padding: getSpacing(Spacing.md),
+    borderRadius: scaleSize(BorderRadius.md),
     backgroundColor: ProfessionalColors.background,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: ProfessionalColors.border,
+    minHeight: scaleSize(44),
   },
   navButtonDisabled: {
     opacity: 0.5,
   },
   navButtonText: {
-    fontSize: 14,
+    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
     fontWeight: '600',
     color: ProfessionalColors.text,
+    textAlign: 'center',
   },
   navButtonTextDisabled: {
     color: ProfessionalColors.textSecondary,
@@ -1074,102 +1117,116 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   resultsContent: {
-    padding: Spacing.lg,
+    padding: getSpacing(Spacing.lg),
+    paddingBottom: getSpacing(Spacing.xxl) + 80,
   },
   resultsHeader: {
     alignItems: 'center',
-    marginBottom: Spacing.xl,
+    marginBottom: getSpacing(Spacing.xl),
   },
   resultsTitle: {
-    fontSize: 28,
+    fontSize: scaleFont(isTablet() ? 32 : isSmallDevice() ? 24 : 28),
     fontWeight: 'bold',
     color: ProfessionalColors.text,
-    marginBottom: Spacing.md,
+    marginBottom: getSpacing(Spacing.md),
+    textAlign: 'center',
   },
   resultsScore: {
-    fontSize: 48,
+    fontSize: scaleFont(isTablet() ? 56 : isSmallDevice() ? 40 : 48),
     fontWeight: 'bold',
     color: ProfessionalColors.primary,
-    marginBottom: Spacing.xs,
+    marginBottom: getSpacing(Spacing.xs),
   },
   resultsPercentage: {
-    fontSize: 24,
+    fontSize: scaleFont(isTablet() ? 28 : isSmallDevice() ? 20 : 24),
     fontWeight: '600',
     color: ProfessionalColors.textSecondary,
   },
   resultsCard: {
     backgroundColor: ProfessionalColors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
-    marginBottom: Spacing.xl,
+    borderRadius: scaleSize(BorderRadius.lg),
+    padding: getSpacing(Spacing.xl),
+    marginBottom: getSpacing(Spacing.xl),
+    marginHorizontal: getSpacing(Spacing.md),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleSize(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: scaleSize(8),
     elevation: 4,
   },
   resultsCardTitle: {
-    fontSize: 20,
+    fontSize: scaleFont(isTablet() ? 24 : isSmallDevice() ? 18 : 20),
     fontWeight: 'bold',
     color: ProfessionalColors.text,
-    marginBottom: Spacing.lg,
+    marginBottom: getSpacing(Spacing.lg),
+    textAlign: 'center',
   },
   resultsStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: Spacing.lg,
+    marginBottom: getSpacing(Spacing.lg),
+    flexWrap: 'nowrap',
+    gap: getSpacing(Spacing.sm),
   },
   statItem: {
     alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
   },
   statValue: {
-    fontSize: 32,
+    fontSize: scaleFont(isTablet() ? 36 : isSmallDevice() ? 26 : 32),
     fontWeight: 'bold',
     color: ProfessionalColors.primary,
-    marginBottom: Spacing.xs,
+    marginBottom: getSpacing(Spacing.xs),
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
     color: ProfessionalColors.textSecondary,
+    textAlign: 'center',
   },
   survivalText: {
-    fontSize: 16,
+    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     fontWeight: '600',
     color: ProfessionalColors.text,
     textAlign: 'center',
-    marginTop: Spacing.md,
+    marginTop: getSpacing(Spacing.md),
   },
   timeText: {
-    fontSize: 14,
+    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
     color: ProfessionalColors.textSecondary,
     textAlign: 'center',
-    marginTop: Spacing.sm,
+    marginTop: getSpacing(Spacing.sm),
   },
   actionsContainer: {
-    gap: Spacing.md,
+    gap: getSpacing(Spacing.md),
+    paddingHorizontal: getSpacing(Spacing.md),
   },
   restartButton: {
     backgroundColor: ProfessionalColors.primary,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
+    borderRadius: scaleSize(BorderRadius.lg),
+    padding: getSpacing(Spacing.lg),
     alignItems: 'center',
+    minHeight: scaleSize(50),
+    justifyContent: 'center',
   },
   restartButtonText: {
     color: ProfessionalColors.white,
-    fontSize: 18,
+    fontSize: scaleFont(isTablet() ? 20 : isSmallDevice() ? 16 : 18),
     fontWeight: 'bold',
   },
   homeButton: {
     backgroundColor: ProfessionalColors.background,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
+    borderRadius: scaleSize(BorderRadius.lg),
+    padding: getSpacing(Spacing.lg),
     alignItems: 'center',
     borderWidth: 1,
     borderColor: ProfessionalColors.border,
+    minHeight: scaleSize(50),
+    justifyContent: 'center',
   },
   homeButtonText: {
     color: ProfessionalColors.text,
-    fontSize: 16,
+    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     fontWeight: '600',
   },
 });

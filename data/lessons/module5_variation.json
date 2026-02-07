@@ -1,0 +1,178 @@
+{
+  "module_id": "module_5_variation",
+  "module_title": "MODULE 5: Solving Problems Involving Variation",
+  "topic": "Variation",
+  "learning_competency": "The learner solves problems involving direct, inverse, joint, and combined variation.",
+  "sections": {
+    "purpose": "This module aims to develop learners' understanding of different types of variation and how to model real-life situations using algebraic relationships. It emphasizes joint and combined variation, which commonly appear in science, engineering, and everyday applications.",
+    "learning_objectives": [
+      "Define direct, inverse, joint, and combined variation.",
+      "Translate word statements into variation equations.",
+      "Identify the constant of variation.",
+      "Solve problems involving direct, inverse, joint, and combined variation using a consistent step-by-step process.",
+      "Apply variation models to real-life situations."
+    ],
+    "what_is_variation": {
+      "intro": "Variation describes how one quantity changes in relation to another. There are four main types:",
+      "types": [
+        {
+          "name": "Direct Variation",
+          "description": "Two quantities vary directly if one increases as the other increases.",
+          "formula": "y = kx",
+          "where": "where k is the constant of variation.",
+          "example": "If speed is constant, distance varies directly with time."
+        },
+        {
+          "name": "Inverse Variation",
+          "description": "Two quantities vary inversely if one increases while the other decreases.",
+          "formula": "y = k/x  or  xy = k",
+          "example": "The time to finish a job varies inversely with the number of workers."
+        },
+        {
+          "name": "Joint Variation (Focus Topic)",
+          "description": "A variable varies jointly with two or more variables.",
+          "formula": "y = kxz",
+          "or_more": "or with more variables: y = kxzw",
+          "example": "The volume of a cylinder varies jointly with its height and the square of its radius."
+        },
+        {
+          "name": "Combined Variation (Focus Topic)",
+          "description": "A variable varies directly with one quantity and inversely with another at the same time.",
+          "formula": "y = kx/z",
+          "example": "Pressure varies directly with force and inversely with area."
+        }
+      ]
+    },
+    "key_words": [
+      { "term": "Variation", "definition": "relationship between two or more quantities" },
+      { "term": "Direct variation", "definition": "both variables increase together" },
+      { "term": "Inverse variation", "definition": "one increases while the other decreases" },
+      { "term": "Joint variation", "definition": "depends on two or more variables directly" },
+      { "term": "Combined variation", "definition": "direct with one variable and inverse with another" },
+      { "term": "Constant of variation (k)", "definition": "fixed number that relates the variables" }
+    ],
+    "procedure": {
+      "intro": "Standard steps in solving ANY variation problem:",
+      "steps": [
+        "Step 1: Translate the statement into a variation equation. Write the correct formula using k.",
+        "Step 2: Substitute the given values. Replace variables with known numbers.",
+        "Step 3: Solve for k. Find the constant of variation.",
+        "Step 4: Write the final variation equation. Substitute k back into the formula.",
+        "Step 5: Use the equation to solve the problem. Substitute new values.",
+        "Step 6: State the final answer clearly with units (if applicable)."
+      ]
+    },
+    "worked_examples": [
+      {
+        "title": "Example 1 – Direct Variation",
+        "problem": "If y varies directly with x, and y = 12 when x = 3, find y when x = 8.",
+        "solution": [
+          "Step 1: Write the variation equation. Since it is direct variation: y = kx",
+          "Step 2: Substitute the given values. y = 12, x = 3 → 12 = k·3",
+          "Step 3: Solve for k. 12 = 3k → k = 12/3 = 4. So k = 4.",
+          "Step 4: Write the final equation. y = 4x",
+          "Step 5: Substitute x = 8. y = 4(8) = 32",
+          "Step 6: Final Answer: y = 32"
+        ]
+      },
+      {
+        "title": "Example 2 – Direct Variation",
+        "problem": "If y varies directly with x, and y = 15 when x = 5, find y when x = 12.",
+        "solution": [
+          "Direct variation: y = kx. Given y = 15 when x = 5 → 15 = k(5) → 15 = 5k → k = 3.",
+          "Final equation: y = 3x. Substitute x = 12: y = 3(12) = 36.",
+          "Final Answer: y = 36"
+        ]
+      },
+      {
+        "title": "Example 3 – Inverse Variation",
+        "problem": "If y varies inversely with x, and y = 10 when x = 2, find y when x = 5.",
+        "solution": [
+          "Step 1: For inverse variation: y = k/x",
+          "Step 2: Given y = 10, x = 2 → 10 = k/2",
+          "Step 3: Solve for k. Multiply both sides by 2: 10×2 = k → k = 20.",
+          "Step 4: Final equation: y = 20/x",
+          "Step 5: Substitute x = 5: y = 20/5 = 4",
+          "Step 6: Final Answer: y = 4"
+        ]
+      },
+      {
+        "title": "Example 4 – Inverse Variation",
+        "problem": "If y varies inversely with x, and y = 18 when x = 2, find y when x = 6.",
+        "solution": [
+          "Step 1: Write the model. For inverse variation: y = k/x",
+          "Step 2: Substitute given values. 18 = k/2",
+          "Step 3: Multiply both sides by 2: k = 36",
+          "Step 4: Write final equation. y = 36/x",
+          "Step 5: Substitute x = 6. y = 36/6 = 6",
+          "Step 6: Final Answer: Answer: y = 6"
+        ]
+      },
+      {
+        "title": "Example 5 – Joint Variation",
+        "problem": "y varies jointly with x and z. If y = 24 when x = 4 and z = 3, find y when x = 6 and z = 5.",
+        "solution": [
+          "Step 1: Joint variation: y = kxz",
+          "Step 2: 24 = k(4)(3) → 24 = 12k",
+          "Step 3: k = 24/12 = 2",
+          "Step 4: y = 2xz",
+          "Step 5: y = 2(6)(5) = 60",
+          "Step 6: Final Answer: y = 60"
+        ]
+      },
+      {
+        "title": "Example 6 – Joint Variation",
+        "problem": "y varies jointly with x and z. If y = 48 when x = 6 and z = 4, find y when x = 9 and z = 5.",
+        "solution": [
+          "y = kxz. 48 = k(6)(4) → 48 = 24k → k = 2.",
+          "y = 2xz. y = 2(9)(5) = 90.",
+          "Final Answer: y = 90"
+        ]
+      },
+      {
+        "title": "Example 7 – Combined Variation",
+        "problem": "y varies directly with x and inversely with z. If y = 8 when x = 4 and z = 2, find y when x = 6 and z = 3.",
+        "solution": [
+          "Step 1: y = kx/z",
+          "Step 2: 8 = k(4)/2 → 8 = 4k/2 → 8 = 2k",
+          "Step 3: k = 4",
+          "Step 4: y = 4x/z",
+          "Step 5: y = 4(6)/3 = 24/3 = 8",
+          "Step 6: Final Answer: y = 8"
+        ]
+      },
+      {
+        "title": "Example 8 – Combined Variation",
+        "problem": "y varies directly with x and inversely with z. If y = 20 when x = 5 and z = 2, find y when x = 10 and z = 4.",
+        "solution": [
+          "y = kx/z. 20 = k(5)/2 → 40 = 5k → k = 8.",
+          "y = 8x/z. y = 8(10)/4 = 20.",
+          "Final Answer: y = 20"
+        ]
+      }
+    ]
+  },
+  "practice_activities": {
+    "easy": [
+      { "question": "Which is the formula for direct variation?", "choices": { "A": "y = kx", "B": "y = k/x", "C": "y = kx²", "D": "y = x/k" }, "correct": "A" },
+      { "question": "If y varies directly with x, and x doubles, y:", "choices": { "A": "halves", "B": "doubles", "C": "stays the same", "D": "becomes zero" }, "correct": "B" },
+      { "question": "Which shows inverse variation?", "choices": { "A": "y = kx", "B": "y = k/x", "C": "y = kx²", "D": "y = x + k" }, "correct": "B" },
+      { "question": "In y = kx, k is called:", "choices": { "A": "variable", "B": "coefficient", "C": "constant of variation", "D": "exponent" }, "correct": "C" },
+      { "question": "If y = 5x, what is y when x = 2?", "choices": { "A": "5", "B": "8", "C": "10", "D": "12" }, "correct": "C" }
+    ],
+    "medium": [
+      { "question": "If y varies inversely with x, and y = 6 when x = 3, find y when x = 9.", "choices": { "A": "2", "B": "18", "C": "4", "D": "6" }, "correct": "A" },
+      { "question": "If y varies jointly with x and z, and y = 12 when x = 2, z = 3, find y when x = 4, z = 3.", "choices": { "A": "12", "B": "18", "C": "24", "D": "36" }, "correct": "C" },
+      { "question": "Which is joint variation?", "choices": { "A": "y = kx", "B": "y = k/x", "C": "y = kxz", "D": "y = x + z" }, "correct": "C" },
+      { "question": "If y = kx/z, this is:", "choices": { "A": "direct", "B": "inverse", "C": "joint", "D": "combined" }, "correct": "D" },
+      { "question": "If y = 2x, what is x when y = 14?", "choices": { "A": "5", "B": "6", "C": "7", "D": "8" }, "correct": "C" }
+    ],
+    "hard": [
+      { "question": "y varies jointly with x and z. If y = 30 when x = 5, z = 2, find y when x = 10, z = 4.", "choices": { "A": "60", "B": "120", "C": "240", "D": "300" }, "correct": "B" },
+      { "question": "y varies inversely with x. If y = 15 when x = 4, find x when y = 5.", "choices": { "A": "8", "B": "10", "C": "12", "D": "15" }, "correct": "C" },
+      { "question": "y varies directly with x and inversely with z. If y = 10 when x = 5, z = 2, find y when x = 15, z = 6.", "choices": { "A": "5", "B": "10", "C": "15", "D": "20" }, "correct": "B" },
+      { "question": "A worker finishes a job in 8 hours with 3 workers. How long will it take 6 workers? (Inverse variation)", "choices": { "A": "16 h", "B": "12 h", "C": "8 h", "D": "4 h" }, "correct": "D" },
+      { "question": "The force of gravity varies jointly with two masses and inversely with the square of the distance. If the distance doubles, gravity:", "choices": { "A": "doubles", "B": "halves", "C": "quarters", "D": "stays the same" }, "correct": "C" }
+    ]
+  }
+}

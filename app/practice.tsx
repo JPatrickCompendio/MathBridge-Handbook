@@ -2,14 +2,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BorderRadius, Spacing } from '../constants/colors';
+import { getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize } from '../utils/responsive';
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -88,7 +89,7 @@ export default function PracticeScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={ProfessionalColors.primary} />
           <Text style={styles.loadingText}>Loading practice...</Text>
@@ -98,7 +99,7 @@ export default function PracticeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -225,134 +226,147 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: Spacing.md,
-    fontSize: 16,
+    marginTop: getSpacing(Spacing.md),
+    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     color: ProfessionalColors.textSecondary,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing.xl,
+    padding: getSpacing(Spacing.lg),
+    paddingBottom: getSpacing(Spacing.xxl) + 80,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.xl,
+    marginBottom: getSpacing(Spacing.xl),
+    gap: getSpacing(Spacing.md),
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: scaleSize(40),
+    height: scaleSize(40),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: Spacing.md,
+    flexShrink: 0,
   },
   backIcon: {
-    fontSize: 24,
+    fontSize: scaleFont(isTablet() ? 28 : isSmallDevice() ? 20 : 24),
     color: ProfessionalColors.text,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: scaleFont(isTablet() ? 32 : isSmallDevice() ? 24 : 28),
     fontWeight: 'bold',
     color: ProfessionalColors.text,
+    flex: 1,
+    minWidth: 0,
   },
   infoCard: {
     backgroundColor: ProfessionalColors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
-    marginBottom: Spacing.lg,
+    borderRadius: scaleSize(BorderRadius.lg),
+    padding: getSpacing(Spacing.xl),
+    marginBottom: getSpacing(Spacing.lg),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleSize(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: scaleSize(8),
     elevation: 4,
   },
   modeTitle: {
-    fontSize: 24,
+    fontSize: scaleFont(isTablet() ? 28 : isSmallDevice() ? 20 : 24),
     fontWeight: 'bold',
     color: ProfessionalColors.text,
-    marginBottom: Spacing.sm,
+    marginBottom: getSpacing(Spacing.sm),
   },
   modeDescription: {
-    fontSize: 16,
+    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     color: ProfessionalColors.textSecondary,
-    marginBottom: Spacing.lg,
-    lineHeight: 24,
+    marginBottom: getSpacing(Spacing.lg),
+    lineHeight: scaleFont(isTablet() ? 28 : isSmallDevice() ? 20 : 24),
   },
   detailsContainer: {
-    gap: Spacing.md,
+    gap: getSpacing(Spacing.md),
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Spacing.sm,
+    paddingVertical: getSpacing(Spacing.sm),
     borderBottomWidth: 1,
     borderBottomColor: ProfessionalColors.border,
+    flexWrap: 'nowrap',
+    gap: getSpacing(Spacing.sm),
   },
   detailLabel: {
-    fontSize: 14,
+    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
     color: ProfessionalColors.textSecondary,
     fontWeight: '500',
+    flexShrink: 0,
   },
   detailValue: {
-    fontSize: 14,
+    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
     color: ProfessionalColors.text,
     fontWeight: '600',
+    flex: 1,
+    minWidth: 0,
+    textAlign: 'right',
   },
   instructionsCard: {
     backgroundColor: ProfessionalColors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
-    marginBottom: Spacing.xl,
+    borderRadius: scaleSize(BorderRadius.lg),
+    padding: getSpacing(Spacing.xl),
+    marginBottom: getSpacing(Spacing.xl),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: scaleSize(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: scaleSize(8),
     elevation: 4,
   },
   instructionsTitle: {
-    fontSize: 18,
+    fontSize: scaleFont(isTablet() ? 20 : isSmallDevice() ? 16 : 18),
     fontWeight: 'bold',
     color: ProfessionalColors.text,
-    marginBottom: Spacing.md,
+    marginBottom: getSpacing(Spacing.md),
   },
   instructionsText: {
-    fontSize: 14,
+    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
     color: ProfessionalColors.textSecondary,
-    lineHeight: 22,
+    lineHeight: scaleFont(isTablet() ? 26 : isSmallDevice() ? 18 : 22),
   },
   actionsContainer: {
-    gap: Spacing.md,
+    gap: getSpacing(Spacing.md),
   },
   startButton: {
     backgroundColor: ProfessionalColors.primary,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
+    borderRadius: scaleSize(BorderRadius.lg),
+    padding: getSpacing(Spacing.lg),
     alignItems: 'center',
     shadowColor: ProfessionalColors.primary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scaleSize(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: scaleSize(8),
     elevation: 6,
+    minHeight: scaleSize(50),
+    justifyContent: 'center',
   },
   startButtonText: {
     color: ProfessionalColors.white,
-    fontSize: 18,
+    fontSize: scaleFont(isTablet() ? 20 : isSmallDevice() ? 16 : 18),
     fontWeight: 'bold',
   },
   cancelButton: {
     backgroundColor: ProfessionalColors.background,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
+    borderRadius: scaleSize(BorderRadius.lg),
+    padding: getSpacing(Spacing.lg),
     alignItems: 'center',
     borderWidth: 1,
     borderColor: ProfessionalColors.border,
+    minHeight: scaleSize(50),
+    justifyContent: 'center',
   },
   cancelButtonText: {
     color: ProfessionalColors.text,
-    fontSize: 16,
+    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     fontWeight: '600',
   },
 });

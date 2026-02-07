@@ -1,0 +1,204 @@
+{
+  "module_id": "module_3a_triangle_similarity",
+  "module_title": "MODULE 3A: Triangle Similarity",
+  "topic": "Triangle Similarity",
+  "learning_competency": "The learner illustrates and solves problems involving similar triangles.",
+  "sections": {
+    "purpose": "This module aims to help learners understand the concept of triangle similarity and identify triangles that have the same shape. It also helps learners learn the different methods used to determine if triangles are similar.",
+    "learning_objectives": [
+      "Define what similar triangles are.",
+      "Identify corresponding parts of triangles.",
+      "Determine triangle similarity using SAS, ASA, and SSS.",
+      "State the relationship between angles and sides of similar triangles.",
+      "Compare two triangles using corresponding sides and angles to justify similarity."
+    ],
+    "what_are_similar_triangles": {
+      "conditions": [
+        "their angles are equal",
+        "their corresponding sides are in the same ratio"
+      ],
+      "notes": [
+        "Similar triangles have the same shape, but they may have different sizes.",
+        "This means that one triangle can be larger or smaller, but the shape remains the same."
+      ]
+    },
+    "key_words_and_concepts": [
+      { "term": "Similar Triangles", "definition": "triangles that have the same shape but not necessarily the same size" },
+      { "term": "Corresponding Parts", "definition": "matching sides and angles of two triangles" },
+      { "term": "Ratio", "definition": "comparison of two quantities using division" },
+      { "term": "Proportional Sides", "definition": "sides that have the same ratio" },
+      { "term": "SAS Similarity", "definition": "similarity using Side–Angle–Side" },
+      { "term": "ASA Similarity", "definition": "similarity using Angle–Side–Angle" },
+      { "term": "SSS Similarity", "definition": "similarity using Side–Side–Side" }
+    ],
+    "corresponding_parts": {
+      "definition": "Corresponding means matching parts.",
+      "rules": [
+        "angle matches angle",
+        "side matches side",
+        "If one side of a triangle is longer, the matching side in the other triangle is also longer in the same ratio.",
+        "Correct matching of parts is important when checking triangle similarity."
+      ]
+    },
+    "ways_to_know_if_triangles_are_similar": {
+      "methods": {
+        "SAS_similarity": {
+          "name": "SAS Similarity (Side–Angle–Side)",
+          "criteria": [
+            "two pairs of corresponding sides have the same ratio, and",
+            "the angle between the two sides is equal."
+          ],
+          "note": "The angle must be between the two sides being compared.",
+          "examples": [
+            {
+              "title": "Example 1:",
+              "given": [
+                "△ABC and △DEF",
+                "AB = 4 cm",
+                "AC = 6 cm",
+                "DE = 8 cm",
+                "DF = 12 cm",
+                "∠A ≅ ∠D"
+              ],
+              "solution": [
+                "Step 1: Compare the sides.",
+                "AB / DE = 4 / 8 = 1 / 2",
+                "AC / DF = 6 / 12 = 1 / 2",
+                "Step 2: Check the included angle.",
+                "∠A ≅ ∠D (given)",
+                "Step 3: Decide.",
+                "The sides are proportional and the included angles are equal."
+              ],
+              "conclusion": "△ABC is similar to △DEF by SAS Similarity.",
+              "image": "sas-ex1"
+            },
+            {
+              "title": "Example 2:",
+              "given": [
+                "△PQR and △XYZ",
+                "PQ = 7 cm",
+                "QR = 13 cm",
+                "XY = 14 cm",
+                "YZ = 26 cm",
+                "∠Q ≅ ∠Y"
+              ],
+              "solution": [
+                "Step 1: Compare the sides.",
+                "PQ / XY = 7 / 14 = 1 / 2",
+                "QR / YZ = 13 / 26 = 1 / 2",
+                "Step 2: Check the included angle.",
+                "∠Q ≅ ∠Y (given)",
+                "Step 3: Decide.",
+                "The sides are proportional and the included angles are equal."
+              ],
+              "conclusion": "△PQR and △XYZ are similar by SAS Similarity.",
+              "image": "sas-ex2"
+            }
+          ]
+        },
+        "ASA_similarity": {
+          "name": "ASA Similarity (Angle–Side–Angle)",
+          "criteria": [
+            "two corresponding angles are equal, and",
+            "the side between the angles is corresponding."
+          ],
+          "note": "If two angles of one triangle are equal to two angles of another triangle, the triangles are similar.",
+          "examples": [
+            {
+              "title": "Example 1:",
+              "given": [
+                "△DEF and △ABC",
+                "∠D ≅ ∠A",
+                "∠F ≅ ∠C",
+                "Side DF corresponds to AC"
+              ],
+              "solution": [
+                "Step 1: Two angles are equal.",
+                "Step 2: The side between the angles matches."
+              ],
+              "conclusion": "Triangle ABC is similar to Triangle DEF by ASA Similarity.",
+              "image": "asa-ex1"
+            },
+            {
+              "title": "Example 2:",
+              "given": [
+                "△ELA and △JON",
+                "∠E ≅ ∠J",
+                "∠L ≅ ∠O",
+                "EL / JO = 6 / 12 = 1 / 2",
+                "Side EL corresponds to JO"
+              ],
+              "solution": [
+                "Two angles are equal and the included side corresponds."
+              ],
+              "conclusion": "The triangles are similar by ASA Similarity.",
+              "image": "asa-ex2"
+            }
+          ]
+        },
+        "SSS_similarity": {
+          "name": "SSS Similarity (Side–Side–Side)",
+          "criteria": [
+            "all three pairs of corresponding sides have the same ratio."
+          ],
+          "note": "The sides do not need to be equal, but their ratios must be the same.",
+          "examples": [
+            {
+              "title": "Example 1:",
+              "given": [
+                "△GHI: GI = 4 cm, HI = 8 cm, GH = 16 cm",
+                "△RST: RT = 6 cm, ST = 12 cm, RS = 24 cm"
+              ],
+              "solution": [
+                "GI / RT = 4 / 6 = 2 / 3",
+                "HI / ST = 8 / 12 = 2 / 3",
+                "GH / RS = 16 / 24 = 2 / 3",
+                "All side ratios are equal."
+              ],
+              "conclusion": "△GHI is similar to △RST by SSS Similarity.",
+              "image": "sss-ex1"
+            },
+            {
+              "title": "Example 2:",
+              "given": [
+                "△LMN: LN = 4 cm, MN = 6 cm, LM = 8 cm",
+                "△PQR: PR = 8 cm, QR = 12 cm, PQ = 16 cm"
+              ],
+              "solution": [
+                "LN / PR = 4 / 8 = 1 / 2",
+                "MN / QR = 6 / 12 = 1 / 2",
+                "LM / PQ = 8 / 16 = 1 / 2",
+                "All sides are proportional."
+              ],
+              "conclusion": "△LMN is similar to △PQR by SSS Similarity.",
+              "image": "sss-ex2"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "practice_activities": {
+    "easy": [
+      { "question": "Two triangles are similar if their corresponding angles are equal and their corresponding sides are ___.", "choices": { "A": "equal", "B": "parallel", "C": "proportional", "D": "perpendicular" }, "correct": "C" },
+      { "question": "Which method is used when two sides are proportional and the included angle is equal?", "choices": { "A": "ASA", "B": "SSS", "C": "SAS", "D": "AAS" }, "correct": "C" },
+      { "question": "If all three pairs of corresponding sides of two triangles are proportional, the triangles are similar by ___.", "choices": { "A": "ASA", "B": "SAS", "C": "AAS", "D": "SSS" }, "correct": "D" },
+      { "question": "If △ABC △DEF, then ∠A corresponds to ___.", "choices": { "A": "∠E", "B": "∠F", "C": "∠D", "D": "∠B" }, "correct": "C" },
+      { "question": "If two triangles have proportional sides but unequal included angles, they are ___.", "choices": { "A": "similar", "B": "congruent", "C": "not similar", "D": "right triangles" }, "correct": "C" }
+    ],
+    "medium": [
+      { "question": "Which condition proves triangles similar by ASA?", "choices": { "A": "Two sides and one angle", "B": "Three sides", "C": "Two angles and the included side", "D": "One angle only" }, "correct": "C" },
+      { "question": "If △ABC △DEF, which side corresponds to ?", "choices": { "A": "Side AB", "B": "Side BC", "C": "Side AC", "D": "Side DF" }, "correct": "C" },
+      { "question": "△JAK △BOD. If = 6 cm, = 9 cm, and = 12 cm, find .", "choices": { "A": "12 cm", "B": "15 cm", "C": "18 cm", "D": "20 cm" }, "correct": "C" },
+      { "question": "Which ratio proves triangle similarity?", "choices": { "A": "3/4 = 6/7", "B": "4/6 = 6/9", "C": "5/7 = 10/12", "D": "6/8 = 9/10" }, "correct": "B" },
+      { "question": "If △ABC △PQR and = 7 cm, = 14 cm, and = 10 cm, find .", "choices": { "A": "15 cm", "B": "18 cm", "C": "20 cm", "D": "24 cm" }, "correct": "C" }
+    ],
+    "hard": [
+      { "question": "Why is correct matching of corresponding parts important?", "choices": { "A": "To find perimeter", "B": "To prove similarity", "C": "To find area", "D": "To identify right triangles" }, "correct": "B" },
+      { "question": "If the sides of one triangle are doubled, what happens to the similar triangle?", "choices": { "A": "Angles change", "B": "Shape changes", "C": "Size changes but shape stays", "D": "It becomes congruent" }, "correct": "C" },
+      { "question": "△QRS △TUV. If = 8 cm, = 12 cm, and = 20 cm, find .", "choices": { "A": "18 cm", "B": "24 cm", "C": "30 cm", "D": "32 cm" }, "correct": "C" },
+      { "question": "The sides of a triangle are 6 cm, 9 cm, and 12 cm. A similar triangle has a longest side of 20 cm. What is the length of the shortest side of the larger triangle?", "choices": { "A": "8 cm", "B": "9 cm", "C": "10 cm", "D": "12 cm" }, "correct": "C" },
+      { "question": "The sides of △XYZ are 6 cm, 8 cm, and 10 cm. A similar triangle has a perimeter of 72 cm. What is the length of the longest side of the larger triangle?", "choices": { "A": "20 cm", "B": "24 cm", "C": "30 cm", "D": "36 cm" }, "correct": "B" }
+    ]
+  }
+}

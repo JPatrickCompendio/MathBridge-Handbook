@@ -1,0 +1,751 @@
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Image,
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BorderRadius, Spacing } from '../../constants/colors';
+import { MODULE_3_TRIANGLE_SIMILARITY_SECTIONS } from '../../data/lessons/module3_triangle_similarity';
+import { saveTopicContentProgress } from '../../utils/progressStorage';
+import { getSpacing, scaleFont, scaleSize } from '../../utils/responsive';
+
+const TRIANGLE_MEASURES_TOPIC_ID = 3;
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const Theme = {
+  primary: '#FF6600',
+  white: '#FFFFFF',
+  background: '#FFF8F5',
+  card: '#FFFFFF',
+  text: '#1A1A2E',
+  textSecondary: '#4A4A6A',
+  border: '#FFE5D9',
+  accent: '#0EA5E9',
+  success: '#10B981',
+  muted: '#E8E4E0',
+};
+
+const SECTION_V_IMAGES: Record<string, ReturnType<typeof require>> = {
+  'sas-ex1': require('../../assets/images/sas-ex1.png'),
+  'sas-ex2': require('../../assets/images/sas-ex2.png'),
+  'asa-ex1': require('../../assets/images/asa-ex1.png'),
+  'asa-ex2': require('../../assets/images/asa-ex2.png'),
+  'sss-ex1': require('../../assets/images/sss-ex1.png'),
+  'sss-ex2': require('../../assets/images/sss-ex2.png'),
+};
+
+function AccordionHeader({
+  title,
+  isOpen,
+  onPress,
+}: {
+  title: string;
+  isOpen: boolean;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const onPressIn = () => Animated.timing(scale, { toValue: 0.98, duration: 80, useNativeDriver: true }).start();
+  const onPressOut = () => Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+  return (
+    <TouchableOpacity onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut} activeOpacity={1}>
+      <Animated.View style={[styles.accordionHeader, { transform: [{ scale }] }]}>
+        <Text style={styles.accordionTitle} numberOfLines={2}>{title}</Text>
+        <Text style={[styles.accordionChevron, isOpen && styles.accordionChevronOpen]}>
+          {isOpen ? '▼' : '▶'}
+        </Text>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+function AnimatedAccordionBody({ children }: { children: React.ReactNode }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(8)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+  return (
+    <Animated.View style={[styles.accordionBody, { opacity, transform: [{ translateY }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+function SectionFadeIn({ index, children }: { index: number; children: React.ReactNode }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(16)).current;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 380,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 380,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, index * 70);
+    return () => clearTimeout(timer);
+  }, [index]);
+  return (
+    <Animated.View style={[styles.section, { opacity, transform: [{ translateY }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+export default function TriangleSimilarityLessonScreen() {
+  const router = useRouter();
+  const [expandedSection, setExpandedSection] = useState<string | null>('I');
+  const [expandedMethod, setExpandedMethod] = useState<string | null>(null);
+  const lastSavedProgress = useRef(0);
+
+  const handleScroll = (e: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    const maxScroll = contentSize.height - layoutMeasurement.height;
+    if (maxScroll <= 0) return;
+    const percent = Math.min(100, Math.max(0, (contentOffset.y / maxScroll) * 100));
+    if (percent - lastSavedProgress.current >= 5 || percent >= 100) {
+      lastSavedProgress.current = percent;
+      saveTopicContentProgress(TRIANGLE_MEASURES_TOPIC_ID, percent);
+    }
+  };
+
+  const toggle = (key: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedSection((prev) => (prev === key ? null : key));
+  };
+  const toggleMethod = (key: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedMethod((prev) => (prev === key ? null : key));
+  };
+
+  const sec = MODULE_3_TRIANGLE_SIMILARITY_SECTIONS;
+  const objectives = sec.learning_objectives || [];
+  const whatAre = sec.what_are_similar_triangles || { conditions: [], notes: [] };
+  const keyWordTerms = sec.key_words_and_concepts || [];
+  const correspondingParts = sec.corresponding_parts || { definition: '', rules: [] };
+  const waysToKnow = sec.ways_to_know_if_triangles_are_similar || { methods: {} };
+  const methods = waysToKnow.methods || {};
+  const methodKeys = Object.keys(methods);
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={2}>Triangle Similarity</Text>
+      </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={200}
+      >
+        {/* I. Purpose and Learning Objectives */}
+        <SectionFadeIn index={0}>
+          <View style={styles.purposeSectionWrap}>
+            <Text style={styles.staticSectionTitle}>I. Purpose and Learning Objectives</Text>
+            <View style={styles.staticSectionContent}>
+              <View style={styles.purposeCard}>
+                <Text style={[styles.purposeBlockHeading, styles.blockHeadingFirst]}>Purpose</Text>
+                <Text style={styles.bodyTextCentered}>{sec.purpose || ''}</Text>
+              </View>
+              <View style={styles.purposeCard}>
+                <Text style={styles.purposeBlockHeading}>Learning objectives</Text>
+                <Text style={styles.bodyTextCentered}>
+                  At the end of this lesson, the learners should be able to:
+                </Text>
+                <View style={styles.objectiveList}>
+                  {objectives.map((item, idx) => (
+                    <View key={idx} style={styles.objectiveRow}>
+                      <View style={styles.objectiveBullet} />
+                      <Text style={styles.objectiveItem}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </View>
+        </SectionFadeIn>
+
+        {/* II. What Are Similar Triangles? */}
+        <SectionFadeIn index={1}>
+          <AccordionHeader
+            title="II. What Are Similar Triangles?"
+            isOpen={expandedSection === 'II'}
+            onPress={() => toggle('II')}
+          />
+          {expandedSection === 'II' && (
+            <AnimatedAccordionBody>
+              <Text style={styles.paragraph}>Two triangles are similar if:</Text>
+              <View style={styles.bulletList}>
+                {(whatAre.conditions || []).map((c: string, idx: number) => (
+                  <View key={idx} style={styles.bulletRow}>
+                    <Text style={styles.bulletDot}>•</Text>
+                    <Text style={styles.bulletText}>{c}</Text>
+                  </View>
+                ))}
+              </View>
+              {(whatAre.notes || []).map((note: string, idx: number) => (
+                <Text key={idx} style={styles.paragraph}>{note}</Text>
+              ))}
+            </AnimatedAccordionBody>
+          )}
+        </SectionFadeIn>
+
+        {/* III. Key Words and Concepts */}
+        <SectionFadeIn index={2}>
+          <AccordionHeader
+            title="III. Key Words and Concepts"
+            isOpen={expandedSection === 'III'}
+            onPress={() => toggle('III')}
+          />
+          {expandedSection === 'III' && (
+            <AnimatedAccordionBody>
+              <View style={styles.keyWordsList}>
+                {keyWordTerms.map((item: { term?: string; definition?: string }, idx: number) => (
+                  <View key={idx} style={[styles.keyWordItem, idx === keyWordTerms.length - 1 && styles.keyWordItemLast]}>
+                    <View style={styles.keyWordTermRow}>
+                      <Text style={styles.keyWordBullet}>•</Text>
+                      <Text style={styles.keyWordTerm}>{item.term}</Text>
+                    </View>
+                    <Text style={styles.keyWordDefinition}>{item.definition}</Text>
+                  </View>
+                ))}
+              </View>
+            </AnimatedAccordionBody>
+          )}
+        </SectionFadeIn>
+
+        {/* IV. Corresponding Parts */}
+        <SectionFadeIn index={3}>
+          <AccordionHeader
+            title="IV. Corresponding Parts"
+            isOpen={expandedSection === 'IV'}
+            onPress={() => toggle('IV')}
+          />
+          {expandedSection === 'IV' && (
+            <AnimatedAccordionBody>
+              <Text style={styles.paragraph}>{correspondingParts.definition}</Text>
+
+              <View style={styles.correspondingSubsection}>
+                <View style={styles.bulletRow}>
+                  <Text style={styles.bulletDot}>•</Text>
+                  <Text style={styles.bulletTextBold}>angle matches angle</Text>
+                </View>
+                <View style={styles.diagramWrap}>
+                  <Image
+                    source={require('../../assets/images/corresponding-angles.png')}
+                    style={styles.diagramImage}
+                    resizeMode="contain"
+                  />
+                  <Text style={styles.diagramCaption}>
+                    Triangle PQR and Triangle XYZ — corresponding angles marked with arcs (P↔X, Q↔Y, R↔Z).
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.correspondingDivider} />
+
+              <View style={styles.correspondingSubsection}>
+                <View style={styles.bulletRow}>
+                  <Text style={styles.bulletDot}>•</Text>
+                  <Text style={styles.bulletTextBold}>side matches side</Text>
+                </View>
+                <View style={styles.diagramWrap}>
+                  <Image
+                    source={require('../../assets/images/corresponding-sides.png')}
+                    style={styles.diagramImage}
+                    resizeMode="contain"
+                  />
+                  <Text style={styles.diagramCaption}>
+                    Triangle PQR and Triangle XYZ — corresponding sides marked with hash marks (PQ↔XY, QR↔YZ, PR↔XZ).
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.paragraph}>
+                If one side of a triangle is longer, the matching side in the other triangle is also longer in the same ratio.
+              </Text>
+              <Text style={styles.paragraph}>
+                Correct matching of parts is important when checking triangle similarity.
+              </Text>
+            </AnimatedAccordionBody>
+          )}
+        </SectionFadeIn>
+
+        {/* V. Ways to Know If Triangles Are Similar */}
+        <SectionFadeIn index={4}>
+          <AccordionHeader
+            title="V. Ways to Know If Triangles Are Similar"
+            isOpen={expandedSection === 'V'}
+            onPress={() => toggle('V')}
+          />
+          {expandedSection === 'V' && (
+            <AnimatedAccordionBody>
+              <Text style={styles.paragraph}>There are three methods used to determine triangle similarity.</Text>
+              {methodKeys.map((key: string, methodIndex: number) => {
+                const method = methods[key];
+                if (!method) return null;
+                const isOpen = expandedMethod === key;
+                const examples = method.examples || [];
+                const hasStructuredExamples = Array.isArray(examples) && examples.length > 0 && typeof examples[0] === 'object';
+                return (
+                  <View key={key} style={styles.methodBlock}>
+                    <TouchableOpacity
+                      style={styles.methodHeader}
+                      onPress={() => toggleMethod(key)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.methodName}>{methodIndex + 1}. {method.name}</Text>
+                      <Text style={styles.accordionChevron}>{isOpen ? '▼' : '▶'}</Text>
+                    </TouchableOpacity>
+                    {isOpen && (
+                      <View style={styles.methodBody}>
+                        <Text style={styles.methodCriteriaTitle}>Triangles are similar if:</Text>
+                        <View style={styles.bulletList}>
+                          {(method.criteria || []).map((c: string, idx: number) => (
+                            <View key={idx} style={styles.bulletRow}>
+                              <Text style={styles.bulletDot}>•</Text>
+                              <Text style={styles.bulletText}>{c}</Text>
+                            </View>
+                          ))}
+                        </View>
+                        {method.note ? (
+                          <Text style={styles.methodNote}>{method.note}</Text>
+                        ) : null}
+                        {hasStructuredExamples ? (
+                          (examples as Array<{ title?: string; given?: string[]; solution?: string[]; conclusion?: string; image?: string }>).map((ex, exIdx) => (
+                            <View key={exIdx} style={styles.similarityExampleBlock}>
+                              <Text style={styles.similarityExampleTitle}>{ex.title || `Example ${exIdx + 1}:`}</Text>
+                              {ex.image && SECTION_V_IMAGES[ex.image] ? (
+                                <View style={styles.diagramWrap}>
+                                  <Image
+                                    source={SECTION_V_IMAGES[ex.image]}
+                                    style={styles.diagramImage}
+                                    resizeMode="contain"
+                                  />
+                                </View>
+                              ) : null}
+                              {(ex.given || []).length > 0 && (
+                                <>
+                                  <Text style={styles.similarityLabel}>Given:</Text>
+                                  {(ex.given || []).map((line: string, i: number) => (
+                                    <Text key={i} style={styles.similarityGivenLine}>{line}</Text>
+                                  ))}
+                                </>
+                              )}
+                              {(ex.solution || []).length > 0 && (
+                                <>
+                                  <Text style={[styles.similarityLabel, styles.similarityLabelSolution]}>Solution:</Text>
+                                  {(ex.solution || []).map((line: string, i: number) => (
+                                    <Text key={i} style={styles.similaritySolutionLine}>{line}</Text>
+                                  ))}
+                                </>
+                              )}
+                              {ex.conclusion ? (
+                                <>
+                                  <Text style={[styles.similarityLabel, styles.similarityLabelConclusion]}>Conclusion:</Text>
+                                  <Text style={styles.similarityConclusionText}>{ex.conclusion}</Text>
+                                </>
+                              ) : null}
+                            </View>
+                          ))
+                        ) : (
+                          (method.examples_text || []).map((ex: string, idx: number) => (
+                            <Text key={idx} style={styles.exampleText}>{ex}</Text>
+                          ))
+                        )}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </AnimatedAccordionBody>
+          )}
+        </SectionFadeIn>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Theme.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: getSpacing(Spacing.md),
+    paddingVertical: getSpacing(Spacing.sm),
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.border,
+    backgroundColor: Theme.card,
+  },
+  backButton: {
+    marginRight: getSpacing(Spacing.sm),
+  },
+  backButtonText: {
+    fontSize: scaleFont(16),
+    color: Theme.primary,
+    fontWeight: '600',
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: scaleFont(18),
+    fontWeight: '700',
+    color: Theme.text,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: getSpacing(Spacing.xxl),
+  },
+  section: {
+    paddingHorizontal: getSpacing(Spacing.md),
+    paddingVertical: getSpacing(Spacing.sm),
+  },
+  purposeSectionWrap: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+  },
+  staticSectionTitle: {
+    fontSize: scaleFont(18),
+    fontWeight: '700',
+    color: Theme.text,
+    marginBottom: getSpacing(Spacing.md),
+    paddingVertical: getSpacing(Spacing.xs),
+    textAlign: 'center',
+  },
+  staticSectionContent: {
+    marginBottom: getSpacing(Spacing.sm),
+    width: '100%',
+    maxWidth: scaleSize(520),
+    alignItems: 'center',
+  },
+  purposeCard: {
+    width: '100%',
+    backgroundColor: Theme.white,
+    borderRadius: scaleSize(BorderRadius.lg),
+    padding: getSpacing(Spacing.lg),
+    marginBottom: getSpacing(Spacing.md),
+    borderWidth: 1,
+    borderColor: Theme.border,
+    borderLeftWidth: scaleSize(4),
+    borderLeftColor: Theme.primary,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: scaleSize(6),
+    elevation: 2,
+  },
+  purposeBlockHeading: {
+    fontSize: scaleFont(15),
+    fontWeight: '700',
+    color: Theme.primary,
+    marginBottom: getSpacing(Spacing.sm),
+    textAlign: 'center',
+  },
+  blockHeadingFirst: {
+    marginTop: 0,
+  },
+  bodyTextCentered: {
+    fontSize: scaleFont(15),
+    color: Theme.text,
+    lineHeight: scaleFont(24),
+    marginBottom: getSpacing(Spacing.sm),
+    textAlign: 'center',
+  },
+  objectiveList: {
+    width: '100%',
+  },
+  objectiveRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: getSpacing(Spacing.xs),
+  },
+  objectiveBullet: {
+    width: scaleSize(6),
+    height: scaleSize(6),
+    borderRadius: 3,
+    backgroundColor: Theme.primary,
+    marginTop: scaleFont(10),
+    marginRight: getSpacing(Spacing.sm),
+    flexShrink: 0,
+  },
+  objectiveItem: {
+    flex: 1,
+    fontSize: scaleFont(14),
+    color: Theme.textSecondary,
+    lineHeight: scaleFont(22),
+  },
+  accordionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Theme.card,
+    paddingVertical: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(Spacing.md),
+    borderRadius: scaleSize(BorderRadius.lg),
+    borderWidth: 1,
+    borderColor: Theme.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: scaleSize(4),
+    elevation: 2,
+  },
+  accordionTitle: {
+    fontSize: scaleFont(17),
+    fontWeight: '700',
+    color: Theme.text,
+    flex: 1,
+  },
+  accordionChevron: {
+    fontSize: scaleFont(12),
+    color: Theme.primary,
+    fontWeight: 'bold',
+    marginLeft: getSpacing(Spacing.sm),
+  },
+  accordionChevronOpen: {
+    opacity: 0.9,
+  },
+  accordionBody: {
+    backgroundColor: Theme.card,
+    paddingHorizontal: getSpacing(Spacing.md),
+    paddingVertical: getSpacing(Spacing.sm),
+    paddingBottom: getSpacing(Spacing.md),
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: Theme.border,
+    borderBottomLeftRadius: scaleSize(BorderRadius.lg),
+    borderBottomRightRadius: scaleSize(BorderRadius.lg),
+    marginBottom: getSpacing(Spacing.sm),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: scaleSize(4),
+    elevation: 2,
+  },
+  paragraph: {
+    fontSize: scaleFont(14),
+    color: Theme.text,
+    lineHeight: scaleFont(22),
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  bulletList: {
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: getSpacing(Spacing.xs),
+  },
+  bulletDot: {
+    fontSize: scaleFont(14),
+    color: Theme.primary,
+    marginRight: getSpacing(Spacing.sm),
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: scaleFont(14),
+    color: Theme.textSecondary,
+    lineHeight: scaleFont(22),
+  },
+  keyWordsList: {
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  keyWordItem: {
+    marginBottom: getSpacing(Spacing.md),
+    paddingBottom: getSpacing(Spacing.sm),
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.border,
+  },
+  keyWordItemLast: {
+    borderBottomWidth: 0,
+  },
+  keyWordTermRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: getSpacing(Spacing.xs),
+  },
+  keyWordBullet: {
+    fontSize: scaleFont(16),
+    color: Theme.primary,
+    marginRight: getSpacing(Spacing.sm),
+  },
+  keyWordTerm: {
+    fontSize: scaleFont(15),
+    fontWeight: '700',
+    color: Theme.text,
+    flex: 1,
+  },
+  keyWordDefinition: {
+    fontSize: scaleFont(14),
+    color: Theme.textSecondary,
+    lineHeight: scaleFont(22),
+    marginLeft: scaleSize(24),
+    marginBottom: getSpacing(Spacing.xs),
+  },
+  correspondingSubsection: {
+    marginBottom: getSpacing(Spacing.md),
+  },
+  bulletTextBold: {
+    flex: 1,
+    fontSize: scaleFont(14),
+    fontWeight: '700',
+    color: Theme.text,
+  },
+  diagramWrap: {
+    marginTop: getSpacing(Spacing.sm),
+    marginLeft: scaleSize(24),
+    alignItems: 'center',
+    backgroundColor: Theme.white,
+    padding: getSpacing(Spacing.sm),
+    borderRadius: scaleSize(BorderRadius.sm),
+    borderWidth: 1,
+    borderColor: Theme.border,
+  },
+  diagramImage: {
+    width: '100%',
+    maxWidth: scaleSize(280),
+    height: scaleSize(140),
+  },
+  diagramCaption: {
+    fontSize: scaleFont(12),
+    color: Theme.textSecondary,
+    marginTop: getSpacing(Spacing.xs),
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  correspondingDivider: {
+    height: 1,
+    backgroundColor: Theme.border,
+    marginVertical: getSpacing(Spacing.md),
+  },
+  methodBlock: {
+    marginBottom: getSpacing(Spacing.md),
+    borderWidth: 1,
+    borderColor: Theme.border,
+    borderRadius: scaleSize(BorderRadius.md),
+    overflow: 'hidden',
+  },
+  methodHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: getSpacing(Spacing.md),
+    backgroundColor: Theme.muted,
+  },
+  methodName: {
+    fontSize: scaleFont(15),
+    fontWeight: '700',
+    color: Theme.text,
+    flex: 1,
+  },
+  methodBody: {
+    padding: getSpacing(Spacing.md),
+    backgroundColor: Theme.white,
+  },
+  methodCriteriaTitle: {
+    fontSize: scaleFont(14),
+    fontWeight: '600',
+    color: Theme.text,
+    marginBottom: getSpacing(Spacing.xs),
+  },
+  methodNote: {
+    fontSize: scaleFont(13),
+    color: Theme.textSecondary,
+    fontStyle: 'italic',
+    marginBottom: getSpacing(Spacing.md),
+    lineHeight: scaleFont(20),
+  },
+  similarityExampleBlock: {
+    marginTop: getSpacing(Spacing.md),
+    paddingTop: getSpacing(Spacing.sm),
+    borderTopWidth: 1,
+    borderTopColor: Theme.border,
+  },
+  similarityExampleTitle: {
+    fontSize: scaleFont(14),
+    fontWeight: '700',
+    color: Theme.primary,
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  similarityLabel: {
+    fontSize: scaleFont(13),
+    fontWeight: '600',
+    color: Theme.text,
+    marginTop: getSpacing(Spacing.xs),
+    marginBottom: getSpacing(Spacing.xs),
+  },
+  similarityLabelSolution: {
+    marginTop: getSpacing(Spacing.sm),
+  },
+  similarityLabelConclusion: {
+    marginTop: getSpacing(Spacing.sm),
+  },
+  similarityGivenLine: {
+    fontSize: scaleFont(13),
+    color: Theme.textSecondary,
+    lineHeight: scaleFont(20),
+    marginLeft: getSpacing(Spacing.sm),
+  },
+  similaritySolutionLine: {
+    fontSize: scaleFont(13),
+    color: Theme.textSecondary,
+    lineHeight: scaleFont(20),
+    marginLeft: getSpacing(Spacing.sm),
+  },
+  similarityConclusionText: {
+    fontSize: scaleFont(13),
+    fontWeight: '600',
+    color: Theme.text,
+    marginLeft: getSpacing(Spacing.sm),
+    lineHeight: scaleFont(20),
+  },
+  exampleText: {
+    fontSize: scaleFont(13),
+    color: Theme.textSecondary,
+    lineHeight: scaleFont(20),
+    marginTop: getSpacing(Spacing.sm),
+    fontStyle: 'italic',
+  },
+});

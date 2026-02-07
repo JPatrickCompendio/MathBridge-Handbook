@@ -1,6 +1,8 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+    ActivityIndicator,
+    Alert,
     Animated,
     Easing,
     KeyboardAvoidingView,
@@ -15,7 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Spacing } from '../../constants/colors';
-import { getSafeAreaTopPadding, getSpacing, hp, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
+import { database } from '../../services/database';
+import { getSafeAreaTopPadding, getSpacing, hp, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -35,19 +38,23 @@ const MATH_SYMBOLS = ['+', '−', '×', '÷', 'Σ', 'π', '√', '='];
 export default function SignupScreen() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
     username: '',
     password: '',
     confirmPassword: '',
+    recoveryPin: '',
+    confirmRecoveryPin: '',
   });
   const [errors, setErrors] = useState<{
-    name?: string;
     email?: string;
     username?: string;
     password?: string;
     confirmPassword?: string;
+    recoveryPin?: string;
+    confirmRecoveryPin?: string;
   }>({});
+  const [signupError, setSignupError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [currentSymbolIndex, setCurrentSymbolIndex] = useState(0);
 
   // Animation values for 3D rotation
@@ -137,14 +144,12 @@ export default function SignupScreen() {
   const validateForm = () => {
     const newErrors: typeof errors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+    if (isWeb()) {
+      if (!formData.email.trim()) {
+        newErrors.email = 'Email is required';
+      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = 'Email is invalid';
+      }
     }
 
     if (!formData.username.trim()) {
@@ -165,18 +170,55 @@ export default function SignupScreen() {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
+    if (!isWeb()) {
+      const pinRegex = /^\d{4,6}$/;
+      if (!formData.recoveryPin.trim()) {
+        newErrors.recoveryPin = 'Recovery PIN is required (for password reset offline)';
+      } else if (!pinRegex.test(formData.recoveryPin)) {
+        newErrors.recoveryPin = 'PIN must be 4–6 digits';
+      }
+      if (!formData.confirmRecoveryPin.trim()) {
+        newErrors.confirmRecoveryPin = 'Confirm your recovery PIN';
+      } else if (formData.recoveryPin !== formData.confirmRecoveryPin) {
+        newErrors.confirmRecoveryPin = 'PINs do not match';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSignup = () => {
-    if (validateForm()) {
-      console.log('Signup:', formData);
+  const handleSignup = async () => {
+    setSignupError('');
+    if (!validateForm()) return;
+    setLoading(true);
+    try {
+      const email = isWeb()
+        ? formData.email.trim()
+        : `_local_${Date.now()}_${Math.random().toString(36).slice(2, 9)}@app`;
+      await database.createUser({
+        username: formData.username.trim(),
+        email,
+        password: formData.password,
+        ...(!isWeb() && formData.recoveryPin.trim() ? { recoveryPin: formData.recoveryPin.trim() } : {}),
+      });
+      if (isWeb()) {
+        Alert.alert(
+          'Verify your email',
+          'We sent a verification link to your email address. Please check your inbox to verify your account.',
+          [{ text: 'OK', onPress: () => router.replace('/tabs' as never) }]
+        );
+      } else {
+        router.replace('/tabs' as never);
+      }
+    } catch (e: unknown) {
+      const message = e && typeof e === 'object' && 'code' in e && (e as { code: string }).code === 'auth/email-already-in-use'
+        ? 'This email is already in use. Sign in instead.'
+        : 'Something went wrong. Please try again.';
+      setSignupError(message);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleGoogleSignup = () => {
-    console.log('Google signup');
   };
 
   const handleFieldChange = (field: keyof typeof formData, value: string) => {
@@ -231,27 +273,19 @@ export default function SignupScreen() {
           {/* Form Section */}
           <View style={styles.formCard}>
             <View style={styles.form}>
-              <Input
-                label="Full Name"
-                placeholder="Enter your full name"
-                value={formData.name}
-                onChangeText={(text) => handleFieldChange('name', text)}
-                autoCapitalize="words"
-                error={errors.name}
-                containerStyle={styles.input}
-              />
-
-              <Input
-                label="Email Address"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChangeText={(text) => handleFieldChange('email', text)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                error={errors.email}
-                containerStyle={styles.input}
-              />
+              {isWeb() ? (
+                <Input
+                  label="Email Address"
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChangeText={(text) => handleFieldChange('email', text)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  error={errors.email}
+                  containerStyle={styles.input}
+                />
+              ) : null}
 
               <Input
                 label="Username"
@@ -284,27 +318,46 @@ export default function SignupScreen() {
                 containerStyle={styles.input}
               />
 
+              {!isWeb() ? (
+                <>
+                  <Input
+                    label="Recovery PIN"
+                    placeholder="4–6 digits (for password reset offline)"
+                    value={formData.recoveryPin}
+                    onChangeText={(text) => handleFieldChange('recoveryPin', text)}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    error={errors.recoveryPin}
+                    containerStyle={styles.input}
+                  />
+                  <Input
+                    label="Confirm Recovery PIN"
+                    placeholder="Re-enter your PIN"
+                    value={formData.confirmRecoveryPin}
+                    onChangeText={(text) => handleFieldChange('confirmRecoveryPin', text)}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    error={errors.confirmRecoveryPin}
+                    containerStyle={styles.input}
+                  />
+                </>
+              ) : null}
+
+              {signupError ? (
+                <Text style={styles.signupErrorText}>{signupError}</Text>
+              ) : null}
+
               <Button
-                title="Create Account"
+                title={loading ? 'Creating account...' : 'Create Account'}
                 onPress={handleSignup}
                 variant="primary"
                 size="large"
                 style={styles.signUpButton}
+                disabled={loading}
               />
-
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>Or</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <Button
-                title="Continue with Google"
-                onPress={handleGoogleSignup}
-                variant="outline"
-                size="large"
-                style={styles.googleButton}
-              />
+              {loading ? (
+                <ActivityIndicator size="small" color={ProfessionalColors.primary} style={styles.loader} />
+              ) : null}
 
               <View style={styles.loginContainer}>
                 <Text style={styles.loginText}>Already have an account? </Text>
@@ -430,6 +483,15 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: getSpacing(Spacing.lg),
   },
+  signupErrorText: {
+    fontSize: scaleFont(authResponsiveValues.smallTextFont),
+    color: ProfessionalColors.error,
+    marginBottom: getSpacing(Spacing.md),
+    textAlign: 'center',
+  },
+  loader: {
+    marginTop: getSpacing(Spacing.sm),
+  },
   signUpButton: {
     marginBottom: getSpacing(Spacing.lg),
     backgroundColor: ProfessionalColors.primary,
@@ -438,27 +500,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: getSpacing(Spacing.lg),
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: ProfessionalColors.border,
-  },
-  dividerText: {
-    marginHorizontal: getSpacing(Spacing.md),
-    fontSize: scaleFont(authResponsiveValues.smallTextFont),
-    color: ProfessionalColors.textSecondary,
-    fontWeight: '500',
-  },
-  googleButton: {
-    marginBottom: getSpacing(Spacing.xl),
-    borderColor: ProfessionalColors.border,
-    backgroundColor: ProfessionalColors.white,
   },
   loginContainer: {
     flexDirection: 'row',

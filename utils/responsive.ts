@@ -1,6 +1,34 @@
-import { Dimensions, PixelRatio, Platform, StatusBar } from 'react-native';
+import { Dimensions, PixelRatio, Platform, StatusBar, useWindowDimensions } from 'react-native';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+// Web / desktop: max content width for landscape/website-style layout
+export const WEB_CONTENT_MAX_WIDTH = 1100;
+export const WEB_BREAKPOINT_WIDE = 768;
+
+const { width: WINDOW_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+// On web, use a fixed base width for scale so components stay compact (no "zoomed in" look)
+const WEB_SCALE_BASE_WIDTH = 380;
+const SCREEN_WIDTH =
+  Platform.OS === 'web' ? WEB_SCALE_BASE_WIDTH : WINDOW_WIDTH;
+
+/** True when running on React Native Web */
+export const isWeb = (): boolean => Platform.OS === 'web';
+
+/**
+ * Hook for responsive layout (updates on resize; use in components).
+ * Use for conditional web/wide styling without changing mobile design.
+ */
+export function useResponsive() {
+  const { width, height } = useWindowDimensions();
+  const web = Platform.OS === 'web';
+  return {
+    width,
+    height,
+    isWeb: web,
+    isWideScreen: width > WEB_BREAKPOINT_WIDE,
+    contentMaxWidth: WEB_CONTENT_MAX_WIDTH,
+    isTablet: width >= 768,
+  };
+}
 
 // Base dimensions (iPhone 11 Pro - 375x812)
 const baseWidth = 375;
@@ -106,7 +134,7 @@ export const getSafeAreaTopPadding = () => {
   const statusBarHeight = getStatusBarHeight();
   // Add extra padding for better spacing (prevents overlap with status bar content)
   // This is especially important on Android where SafeAreaView doesn't automatically handle status bar
-  const extraPadding = isSmallDevice() ? 12 : isTablet() ? 16 : 14;
+  const extraPadding = isSmallDevice() ? 8 : isTablet() ? 10 : 9;
   return statusBarHeight + extraPadding;
 };
 
