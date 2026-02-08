@@ -1012,8 +1012,12 @@ export default function HomeScreen() {
           }
           const [overlay, user] = await Promise.all([getProfileOverlay(), database.getUserData()]);
           setDisplayName((overlay.displayName?.trim() || user?.username || user?.displayName) ?? DEFAULT_DISPLAY_NAME);
-          if (isWeb() && user?.photoUrl) {
-            setProfilePhotoUri(user.photoUrl);
+          // Web: use either overlay (just saved) or Firebase photoUrl so header shows set image
+          if (isWeb()) {
+            const photoUri = overlay.photoUri?.startsWith('http')
+              ? overlay.photoUri
+              : (user?.photoUrl || overlay.photoUri);
+            setProfilePhotoUri(photoUri || undefined);
           } else {
             setProfilePhotoUri(overlay.photoUri);
           }
