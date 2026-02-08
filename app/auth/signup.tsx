@@ -202,15 +202,22 @@ export default function SignupScreen() {
         password: formData.password,
         ...(!isWeb() && formData.recoveryPin.trim() ? { recoveryPin: formData.recoveryPin.trim() } : {}),
       });
-      const username = formData.username.trim();
-      const welcomeParam = `welcome=new&username=${encodeURIComponent(username)}`;
       if (isWeb()) {
-        Alert.alert(
-          'Verify your email',
-          'We sent a verification link to your email address. Please check your inbox to verify your account.',
-          [{ text: 'OK', onPress: () => router.replace(`/tabs?${welcomeParam}` as never) }]
-        );
+        await database.signOut();
+        if (typeof window !== 'undefined' && window.alert) {
+          window.alert(
+            'Account created!\n\nA verification email has been sent to your email address. Please check your inbox (and spam folder) and click the link to verify your account. You can sign in after verifying.'
+          );
+          router.replace('/auth/login?verify=1' as never);
+        } else {
+          Alert.alert(
+            'Email verification sent',
+            'A verification email has been sent to your email address. Please check your inbox and click the link to verify. You can sign in after verifying.',
+            [{ text: 'OK', onPress: () => router.replace('/auth/login?verify=1' as never) }]
+          );
+        }
       } else {
+        const welcomeParam = `welcome=new&username=${encodeURIComponent(formData.username.trim())}`;
         router.replace(`/tabs?${welcomeParam}` as never);
       }
     } catch (e: unknown) {

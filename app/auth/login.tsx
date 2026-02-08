@@ -1,4 +1,4 @@
-import { Href, useRouter } from 'expo-router';
+import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -184,6 +184,7 @@ function MathBackground() {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ verify?: string }>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -310,7 +311,10 @@ export default function LoginScreen() {
         setLoginError('Invalid email or password. Create an account if you don\'t have one.');
       }
     } catch (e) {
-      setLoginError('Something went wrong. Please try again.');
+      const msg = e instanceof Error && e.message === 'EMAIL_NOT_VERIFIED'
+        ? 'Please verify your email before signing in. Check your inbox (and spam folder) for the verification link.'
+        : 'Something went wrong. Please try again.';
+      setLoginError(msg);
     } finally {
       setLoading(false);
     }
@@ -434,6 +438,11 @@ export default function LoginScreen() {
           {/* Form Section */}
           <View style={styles.formArea}>
             <View style={styles.form}>
+              {isWeb() && params.verify === '1' ? (
+                <Text style={styles.verifyEmailSentText}>
+                  Verification email sent. Sign in after you verify your email.
+                </Text>
+              ) : null}
               <Input
                 label={isWeb() ? 'Email Address' : 'Username'}
                 placeholder={isWeb() ? 'Enter your email' : 'Your username'}
@@ -886,6 +895,12 @@ const styles = StyleSheet.create({
   },
   forgotPasswordMessageError: {
     color: ProfessionalColors.error,
+  },
+  verifyEmailSentText: {
+    fontSize: scaleFont(authResponsiveValues.smallTextFont),
+    color: ProfessionalColors.success,
+    marginBottom: getSpacing(Spacing.md),
+    textAlign: 'center',
   },
   loginErrorText: {
     fontSize: scaleFont(authResponsiveValues.smallTextFont),

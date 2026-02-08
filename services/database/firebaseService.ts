@@ -131,6 +131,11 @@ const firebaseService: DatabaseService = {
       const userCred = await signInWithEmailAndPassword(authInstance, email, password);
       const fbUser = userCred.user;
 
+      if (!fbUser.emailVerified) {
+        await firebaseSignOut(authInstance);
+        throw new Error('EMAIL_NOT_VERIFIED');
+      }
+
       const userRef = doc(database, 'users', fbUser.uid);
       const snap = await getDoc(userRef);
       const username = snap.exists() ? (snap.data().username as string) : (fbUser.displayName ?? '');
@@ -142,7 +147,8 @@ const firebaseService: DatabaseService = {
       };
       setSession(session);
       return session;
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && e.message === 'EMAIL_NOT_VERIFIED') throw e;
       return null;
     }
   },
