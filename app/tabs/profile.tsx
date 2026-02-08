@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import * as ImagePicker from 'expo-image-picker/build/ImagePicker';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -580,33 +580,45 @@ export default function ProfileScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      let cancelled = false;
       const load = async () => {
-        const saved = await getTopicProgress();
-        if (saved && typeof saved === 'object') {
-          setTopics((prev) => prev.map((t) => ({ ...t, progress: (saved as Record<number, number>)[t.id] ?? 0 })));
-        }
-        const overlay = await getProfileOverlay();
-        const user = await database.getUserData();
-        const displayName = (overlay.displayName?.trim() || user?.username || user?.displayName) ?? '';
-        if (user) {
-          const isLocalEmail = user.email.startsWith('_local_') && user.email.endsWith('@app');
-          setUserData({
-            name: (displayName || user.username) ?? '',
-            email: isLocalEmail ? '' : user.email,
-            memberSince: user.createdAt ?? '',
-            avatar: ((displayName || user.username) ?? '').charAt(0).toUpperCase() || '?',
-          });
-          if (isWeb() && user.photoUrl) {
-            setProfilePhotoUri(user.photoUrl);
+        try {
+          const saved = await getTopicProgress();
+          if (cancelled) return;
+          if (saved && typeof saved === 'object') {
+            setTopics((prev) => prev.map((t) => ({ ...t, progress: (saved as Record<number, number>)[t.id] ?? 0 })));
+          }
+          const overlay = await getProfileOverlay();
+          if (cancelled) return;
+          const user = await database.getUserData();
+          if (cancelled) return;
+          const displayName = (overlay.displayName?.trim() || user?.username || user?.displayName) ?? '';
+          if (user) {
+            const isLocalEmail = !!(user.email && user.email.startsWith('_local_') && user.email.endsWith('@app'));
+            setUserData({
+              name: (displayName || user.username) ?? '',
+              email: isLocalEmail ? '' : (user.email ?? ''),
+              memberSince: user.createdAt ?? '',
+              avatar: ((displayName || user.username) ?? '').charAt(0).toUpperCase() || '?',
+            });
+            if (isWeb() && user.photoUrl) {
+              setProfilePhotoUri(user.photoUrl);
+            } else {
+              setProfilePhotoUri(overlay.photoUri);
+            }
           } else {
+            setUserData(getDefaultUser());
             setProfilePhotoUri(overlay.photoUri);
           }
-        } else {
-          setUserData(getDefaultUser());
-          setProfilePhotoUri(overlay.photoUri);
+        } catch (e) {
+          if (!cancelled) {
+            setUserData(getDefaultUser());
+            setProfilePhotoUri(undefined);
+          }
         }
       };
       load();
+      return () => { cancelled = true; };
     }, [])
   );
   const fadeAnim = useRef(new Animated.Value(1)).current; // Start visible
