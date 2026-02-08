@@ -238,7 +238,7 @@ const TOPIC_INFO: { [key: string]: { name: string; icon: string; description: st
     description: 'Learn to identify and apply steps in solving quadratic equations',
   },
   '2': {
-    name: 'Pythagorean Triples',
+    name: 'Triangle Triples',
     icon: '🎯',
     description: 'Identifying triangle triples',
   },

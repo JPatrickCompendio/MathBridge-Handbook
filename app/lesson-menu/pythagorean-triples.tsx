@@ -1,3 +1,4 @@
+import { Video } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -138,7 +139,7 @@ export default function PythagoreanTriplesLessonScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={2}>Pythagorean Triples</Text>
+        <Text style={styles.headerTitle} numberOfLines={2}>Triangle Triples</Text>
       </View>
       <View style={{ flex: 1 }}>
         <ScrollView
@@ -373,6 +374,23 @@ export default function PythagoreanTriplesLessonScreen() {
             </AccordionRevealBody>
           )}
         </SectionFadeIn>
+
+        {/* Video: Triangle Triples */}
+        <SectionFadeIn index={5}>
+          <View style={styles.topicVideoWrap}>
+            <Text style={styles.topicVideoLabel}>Video: Triangle Triples</Text>
+            <View style={styles.topicVideoContainer}>
+              <Video
+                source={require('../../assets/images/videos/M2TriangleTriples.mp4')}
+                style={styles.topicVideo}
+                useNativeControls
+                resizeMode={Video.RESIZE_MODE_CONTAIN}
+                shouldPlay={false}
+                isLooping={false}
+              />
+            </View>
+          </View>
+        </SectionFadeIn>
         </View>
         </ScrollView>
         <ReadingProgressIndicator />
@@ -424,6 +442,28 @@ const styles = StyleSheet.create({
   scrollInnerWeb: {
     maxWidth: 1200,
     alignSelf: 'center',
+  },
+  topicVideoWrap: {
+    marginTop: getSpacing(Spacing.lg),
+    marginBottom: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(Spacing.md),
+  },
+  topicVideoLabel: {
+    fontSize: scaleFont(16),
+    fontWeight: '700',
+    color: Theme.text,
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  topicVideoContainer: {
+    width: '100%',
+    borderRadius: scaleSize(BorderRadius.lg),
+    overflow: 'hidden',
+    backgroundColor: Theme.muted,
+  },
+  topicVideo: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    minHeight: scaleSize(200),
   },
   section: {
     paddingHorizontal: getSpacing(Spacing.md),

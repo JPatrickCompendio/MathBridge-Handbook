@@ -1,3 +1,4 @@
+import { Video } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -457,14 +458,49 @@ function MethodStepsContent({ content }: { content: string[] }) {
   return <>{elements}</>;
 }
 
+/** Reusable video block shown at the end of a method accordion */
+function MethodVideoBlock({ label, source }: { label: string; source: number }) {
+  return (
+    <View style={styles.factoringVideoWrap}>
+      <Text style={styles.factoringVideoLabel}>Video: {label}</Text>
+      <View style={styles.factoringVideoContainer}>
+        <Video
+          source={source}
+          style={styles.factoringVideo}
+          useNativeControls
+          resizeMode={Video.RESIZE_MODE_CONTAIN}
+          shouldPlay={false}
+          isLooping={false}
+        />
+      </View>
+    </View>
+  );
+}
+
 /** Renders method content with two-column (Example | Steps) when applicable */
 function MethodContentBlock({ methodTitle, content }: { methodTitle: string; content: string[] }) {
   const isFactoring = methodTitle.includes('Factoring');
+  const isExtractingSquareRoots = methodTitle.includes('Extracting Square Roots');
+  const isCompletingTheSquare = methodTitle.includes('Completing the Square');
+  const isQuadraticFormula = methodTitle.includes('Quadratic Formula');
   const intro = content[0] || '';
   const rest = content.slice(1);
 
+  const renderMethodVideo = () => {
+    if (isFactoring) return <MethodVideoBlock label="Solving by Factoring" source={require('../../assets/images/videos/M1Factoring.mp4')} />;
+    if (isExtractingSquareRoots) return <MethodVideoBlock label="Solving by Extracting Square Roots" source={require('../../assets/images/videos/M1BExtracting Square Roots.mp4')} />;
+    if (isCompletingTheSquare) return <MethodVideoBlock label="Completing the Square" source={require('../../assets/images/videos/M1Completing The Square.mp4')} />;
+    if (isQuadraticFormula) return <MethodVideoBlock label="Solving Using the Quadratic Formula" source={require('../../assets/images/videos/M1Quadratic Formula.mp4')} />;
+    return null;
+  };
+
   if (!isFactoring) {
-    return <MethodStepsContent content={content} />;
+    return (
+      <>
+        <MethodStepsContent content={content} />
+        {renderMethodVideo()}
+      </>
+    );
   }
   if (rest.length === 0) {
     return (
@@ -477,6 +513,7 @@ function MethodContentBlock({ methodTitle, content }: { methodTitle: string; con
             <RichParagraph text={paragraph} first={idx === 0} boldPhrases={METHOD_BOLD_PHRASES} />
           </View>
         ))}
+        {renderMethodVideo()}
       </>
     );
   }
@@ -493,6 +530,7 @@ function MethodContentBlock({ methodTitle, content }: { methodTitle: string; con
             <BlockParagraph text={paragraph} first={idx === 0} />
           </View>
         ))}
+        {renderMethodVideo()}
       </>
     );
   }
@@ -539,6 +577,7 @@ function MethodContentBlock({ methodTitle, content }: { methodTitle: string; con
           })}
         </View>
       ))}
+      {renderMethodVideo()}
     </>
   );
 }
@@ -1262,6 +1301,27 @@ const styles = StyleSheet.create({
     marginBottom: getSpacing(Spacing.md),
     paddingVertical: getSpacing(Spacing.sm),
     paddingHorizontal: getSpacing(Spacing.sm),
+  },
+  factoringVideoWrap: {
+    marginTop: getSpacing(Spacing.lg),
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  factoringVideoLabel: {
+    fontSize: scaleFont(16),
+    fontWeight: '700',
+    color: Theme.text,
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  factoringVideoContainer: {
+    width: '100%',
+    borderRadius: scaleSize(BorderRadius.lg),
+    overflow: 'hidden',
+    backgroundColor: Theme.muted,
+  },
+  factoringVideo: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    minHeight: scaleSize(200),
   },
   methodIntroText: {
     fontSize: scaleFont(14),

@@ -53,7 +53,7 @@ const DEFAULT_DISPLAY_NAME = 'Learner';
 
 const EXAMPLE_TOPICS = [
   { id: 1, name: 'Quadratic Equations', progress: 0, icon: '🧮', subtitle: 'Solving Quadratic Equations' },
-  { id: 2, name: 'Pythagorean Triples', progress: 0, icon: '🎯', subtitle: 'Identifying Triangle Triples' },
+  { id: 2, name: 'Triangle Triples', progress: 0, icon: '🎯', subtitle: 'Identifying Triangle Triples' },
   { id: 3, name: 'Triangle Measures', progress: 0, icon: '△', subtitle: 'Similar Triangles & Oblique' },
   { id: 4, name: 'Area of Triangles', progress: 0, icon: '📐', subtitle: 'Area Formula & Problems' },
   { id: 5, name: 'Variation', progress: 0, icon: '📊', subtitle: 'Direct, Inverse, Joint & Combined' },
@@ -69,6 +69,7 @@ const getTopicImage = (topicName: string): any => {
   const imageMap: { [key: string]: any } = {
     'Quadratic Equations': require('../../assets/images/geometry.png'),
     'Geometry': require('../../assets/images/geometry.png'),
+    'Triangle Triples': require('../../assets/images/geometry.png'),
     'Pythagorean Triples': require('../../assets/images/geometry.png'),
     'Algebra': require('../../assets/images/algebra.png'),
     'Triangle Measures': require('../../assets/images/geometry.png'),
@@ -1050,15 +1051,16 @@ export default function HomeScreen() {
     if (selectedTopic) {
       setModalVisible(false);
       setTimeout(() => {
-        if (selectedTopic.name === 'Quadratic Equations') {
+        // Always go directly to lesson content (never to /topic/[id])
+        if (selectedTopic.name === 'Quadratic Equations' || selectedTopic.id === 1) {
           router.push('/lesson-menu/quadratic-equations' as any);
-        } else if (selectedTopic.name === 'Pythagorean Triples') {
+        } else if (selectedTopic.name === 'Triangle Triples' || selectedTopic.name === 'Pythagorean Triples' || selectedTopic.id === 2) {
           router.push('/lesson-menu/pythagorean-triples' as any);
-        } else if (selectedTopic.name === 'Triangle Measures') {
+        } else if (selectedTopic.name === 'Triangle Measures' || selectedTopic.id === 3) {
           router.push('/lesson-menu/triangle-measures' as any);
-        } else if (selectedTopic.name === 'Area of Triangles') {
+        } else if (selectedTopic.name === 'Area of Triangles' || selectedTopic.id === 4) {
           router.push('/lesson-menu/area-of-triangle' as any);
-        } else if (selectedTopic.name === 'Variation') {
+        } else if (selectedTopic.name === 'Variation' || selectedTopic.id === 5) {
           router.push('/lesson-menu/variation' as any);
         } else {
           router.push(`/topic/${selectedTopic.id}` as any);
@@ -1079,7 +1081,7 @@ export default function HomeScreen() {
       setTimeout(() => setTriangleMeasuresChoiceVisible(true), 200);
       return;
     }
-    if (selectedTopic.name === 'Quadratic Equations' || selectedTopic.name === 'Pythagorean Triples' || selectedTopic.name === 'Area of Triangles' || selectedTopic.name === 'Variation') {
+    if (selectedTopic.name === 'Quadratic Equations' || selectedTopic.name === 'Triangle Triples' || selectedTopic.name === 'Pythagorean Triples' || selectedTopic.name === 'Area of Triangles' || selectedTopic.name === 'Variation' || selectedTopic.id === 2) {
       setModalVisible(false);
       setTimeout(() => setActivitiesModalVisible(true), 200);
     }
@@ -1329,7 +1331,7 @@ export default function HomeScreen() {
         onClose={handleCloseModal}
         onEnter={handleEnterTopic}
         onTakeActivities={
-          selectedTopic?.name === 'Quadratic Equations' || selectedTopic?.name === 'Pythagorean Triples' || selectedTopic?.name === 'Triangle Measures' || selectedTopic?.name === 'Area of Triangles' || selectedTopic?.name === 'Variation'
+          selectedTopic?.name === 'Quadratic Equations' || selectedTopic?.name === 'Triangle Triples' || selectedTopic?.name === 'Pythagorean Triples' || selectedTopic?.name === 'Triangle Measures' || selectedTopic?.name === 'Area of Triangles' || selectedTopic?.name === 'Variation' || selectedTopic?.id === 2
             ? handleTakeActivities
             : undefined
         }
@@ -1345,7 +1347,7 @@ export default function HomeScreen() {
           topicId={selectedTopic?.id}
         />
       )}
-      {selectedTopic?.name === 'Pythagorean Triples' && (
+      {(selectedTopic?.name === 'Triangle Triples' || selectedTopic?.name === 'Pythagorean Triples' || selectedTopic?.id === 2) && (
         <PracticeActivitiesModal
           visible={activitiesModalVisible}
           onClose={() => setActivitiesModalVisible(false)}

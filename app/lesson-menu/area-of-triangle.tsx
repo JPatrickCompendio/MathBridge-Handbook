@@ -1,3 +1,4 @@
+import { Video } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -290,6 +291,23 @@ export default function AreaOfTriangleLessonScreen() {
             </AccordionRevealBody>
           )}
         </SectionFadeIn>
+
+        {/* Video: Area of Triangle */}
+        <SectionFadeIn index={5}>
+          <View style={styles.topicVideoWrap}>
+            <Text style={styles.topicVideoLabel}>Video: Area of Triangle</Text>
+            <View style={styles.topicVideoContainer}>
+              <Video
+                source={require('../../assets/images/videos/M4arjay.mp4')}
+                style={styles.topicVideo}
+                useNativeControls
+                resizeMode={Video.RESIZE_MODE_CONTAIN}
+                shouldPlay={false}
+                isLooping={false}
+              />
+            </View>
+          </View>
+        </SectionFadeIn>
         </View>
         </ScrollView>
         <ReadingProgressIndicator />
@@ -317,6 +335,28 @@ const styles = StyleSheet.create({
   scrollContentWeb: { alignItems: 'center' },
   scrollInner: { width: '100%' },
   scrollInnerWeb: { maxWidth: 1200, alignSelf: 'center' },
+  topicVideoWrap: {
+    marginTop: getSpacing(Spacing.lg),
+    marginBottom: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(Spacing.md),
+  },
+  topicVideoLabel: {
+    fontSize: scaleFont(16),
+    fontWeight: '700',
+    color: Theme.text,
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  topicVideoContainer: {
+    width: '100%',
+    borderRadius: scaleSize(BorderRadius.lg),
+    overflow: 'hidden',
+    backgroundColor: Theme.muted,
+  },
+  topicVideo: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    minHeight: scaleSize(200),
+  },
   section: { paddingHorizontal: getSpacing(Spacing.md), paddingVertical: getSpacing(Spacing.sm) },
   purposeSectionWrap: { alignSelf: 'stretch', alignItems: 'center' },
   staticSectionTitle: {

@@ -52,7 +52,7 @@ const EXAMPLE_TOPICS = [
   },
   {
     id: 2,
-    name: 'Pythagorean Triples',
+    name: 'Triangle Triples',
     icon: '🎯',
     mastery: 0,
     difficulties: {

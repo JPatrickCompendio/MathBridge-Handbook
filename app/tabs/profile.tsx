@@ -62,7 +62,7 @@ const DEFAULT_STATS = {
 // Topics with progress (match home screen; progress loaded from storage)
 const TOPICS = [
   { id: 1, name: 'Quadratic Equations', progress: 0, icon: '🧮' },
-  { id: 2, name: 'Pythagorean Triples', progress: 0, icon: '🎯' },
+  { id: 2, name: 'Triangle Triples', progress: 0, icon: '🎯' },
   { id: 3, name: 'Triangle Measures', progress: 0, icon: '△' },
   { id: 4, name: 'Area of Triangles', progress: 0, icon: '📐' },
   { id: 5, name: 'Variation', progress: 0, icon: '📊' },
