@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BorderRadius, Spacing } from '../constants/colors';
+import { database } from '../services/database';
 import { saveTopicActivitiesProgress } from '../utils/progressStorage';
 import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize } from '../utils/responsive';
 
@@ -450,6 +451,18 @@ export default function QuizScreen() {
     if (topicId) {
       const id = parseInt(topicId, 10);
       if (!Number.isNaN(id)) saveTopicActivitiesProgress(id, 100);
+    }
+    // Save score for Topics Practice so best score shows on Activities tab
+    const tid = topicId ? parseInt(topicId, 10) : NaN;
+    const difficulty = params.difficulty as 'easy' | 'medium' | 'hard' | undefined;
+    if (!Number.isNaN(tid) && difficulty && params.mode === 'topic-quiz') {
+      database.saveScore({
+        topicId: tid,
+        difficulty,
+        score: calculatedScore,
+        total: questions.length,
+        passed: calculatedScore >= Math.ceil(questions.length * 0.6),
+      }).catch((e) => console.warn('Save score failed:', e));
     }
   };
 

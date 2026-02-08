@@ -44,10 +44,14 @@ export interface AchievementRecord {
   unlockedAt: string; // ISO
 }
 
+export type QuizDifficulty = 'easy' | 'medium' | 'hard';
+
 export interface ScoreRecord {
   id?: string;
   topicId: number;
   quizId?: string;
+  /** Difficulty for topic quiz (Activities Topics Practice). */
+  difficulty?: QuizDifficulty;
   score: number;
   total: number;
   passed: boolean;

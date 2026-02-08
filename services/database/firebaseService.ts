@@ -256,6 +256,7 @@ const firebaseService: DatabaseService = {
     await addDoc(coll, {
       topicId: record.topicId,
       quizId: record.quizId ?? null,
+      difficulty: record.difficulty ?? null,
       score: record.score,
       total: record.total,
       passed: record.passed,
@@ -277,6 +278,7 @@ const firebaseService: DatabaseService = {
         id: d.id,
         topicId: data.topicId,
         quizId: data.quizId,
+        difficulty: data.difficulty ?? undefined,
         score: data.score,
         total: data.total,
         passed: data.passed,

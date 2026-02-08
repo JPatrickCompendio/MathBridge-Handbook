@@ -1464,7 +1464,7 @@ const responsiveValues = {
   streakFont: isWeb() ? 13 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
   streakIconFont: isWeb() ? 14 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
   topicCardMinHeight: isWeb() ? 180 : 200,
-  searchBarMaxWidth: isWeb() ? 560 : undefined,
+  searchBarMaxWidth: isWeb() ? 640 : undefined,
 };
 
 const styles = StyleSheet.create({

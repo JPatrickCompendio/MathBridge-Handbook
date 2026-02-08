@@ -66,6 +66,7 @@ async function ensureTables(db: SQLite.SQLiteDatabase): Promise<void> {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       topic_id INTEGER NOT NULL,
       quiz_id TEXT,
+      difficulty TEXT,
       score INTEGER NOT NULL,
       total INTEGER NOT NULL,
       passed INTEGER NOT NULL,
@@ -80,6 +81,12 @@ async function ensureTables(db: SQLite.SQLiteDatabase): Promise<void> {
   // Add recovery_pin_hash for app-only password reset (ignore if already exists)
   try {
     await db.execAsync('ALTER TABLE users ADD COLUMN recovery_pin_hash TEXT');
+  } catch {
+    // Column already exists
+  }
+  // Add difficulty for topic quiz best scores (ignore if already exists)
+  try {
+    await db.execAsync('ALTER TABLE scores ADD COLUMN difficulty TEXT');
   } catch {
     // Column already exists
   }
@@ -229,10 +236,11 @@ const sqliteService: DatabaseService = {
     await ensureTables(db);
     const completedAt = new Date().toISOString();
     await db.runAsync(
-      'INSERT INTO scores (topic_id, quiz_id, score, total, passed, completed_at) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO scores (topic_id, quiz_id, difficulty, score, total, passed, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [
         record.topicId,
         record.quizId ?? null,
+        record.difficulty ?? null,
         record.score,
         record.total,
         record.passed ? 1 : 0,
@@ -245,17 +253,18 @@ const sqliteService: DatabaseService = {
     const db = await getDb();
     await ensureTables(db);
     const rows = topicId != null
-      ? await db.getAllAsync<{ id: number; topic_id: number; quiz_id: string | null; score: number; total: number; passed: number; completed_at: string }>(
-          'SELECT id, topic_id, quiz_id, score, total, passed, completed_at FROM scores WHERE topic_id = ? ORDER BY completed_at DESC',
+      ? await db.getAllAsync<{ id: number; topic_id: number; quiz_id: string | null; difficulty: string | null; score: number; total: number; passed: number; completed_at: string }>(
+          'SELECT id, topic_id, quiz_id, difficulty, score, total, passed, completed_at FROM scores WHERE topic_id = ? ORDER BY completed_at DESC',
           [topicId]
         )
-      : await db.getAllAsync<{ id: number; topic_id: number; quiz_id: string | null; score: number; total: number; passed: number; completed_at: string }>(
-          'SELECT id, topic_id, quiz_id, score, total, passed, completed_at FROM scores ORDER BY completed_at DESC'
+      : await db.getAllAsync<{ id: number; topic_id: number; quiz_id: string | null; difficulty: string | null; score: number; total: number; passed: number; completed_at: string }>(
+          'SELECT id, topic_id, quiz_id, difficulty, score, total, passed, completed_at FROM scores ORDER BY completed_at DESC'
         );
     return rows.map((r) => ({
       id: String(r.id),
       topicId: r.topic_id,
       quizId: r.quiz_id ?? undefined,
+      difficulty: (r.difficulty as ScoreRecord['difficulty']) ?? undefined,
       score: r.score,
       total: r.total,
       passed: r.passed === 1,

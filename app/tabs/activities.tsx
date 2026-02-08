@@ -1,5 +1,6 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Alert,
     Animated,
@@ -13,6 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TabsAnimatedBackground from '../../components/TabsAnimatedBackground';
 import { BorderRadius, Spacing } from '../../constants/colors';
+import { database } from '../../services/database';
+import type { ScoreRecord } from '../../services/database';
 import { getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
@@ -200,9 +203,71 @@ function SwingIcon({ children, style }: { children: React.ReactNode; style?: any
   );
 }
 
+type DifficultyKey = 'easy' | 'medium' | 'hard';
+
+function getBestScoresByTopicAndDifficulty(scores: ScoreRecord[]): Map<number, Record<DifficultyKey, { score: number; total: number }>> {
+  const map = new Map<number, Record<DifficultyKey, { score: number; total: number }>>();
+  for (const r of scores) {
+    if (r.difficulty !== 'easy' && r.difficulty !== 'medium' && r.difficulty !== 'hard') continue;
+    const key = r.topicId;
+    if (!map.has(key)) {
+      map.set(key, { easy: { score: 0, total: 10 }, medium: { score: 0, total: 10 }, hard: { score: 0, total: 10 } });
+    }
+    const d = map.get(key)!;
+    const current = d[r.difficulty];
+    if (r.score > current.score || (r.score === current.score && r.total > current.total)) {
+      d[r.difficulty] = { score: r.score, total: r.total };
+    }
+  }
+  return map;
+}
+
 export default function ActivitiesScreen() {
   const router = useRouter();
   const [expandedTopics, setExpandedTopics] = useState<number[]>([]);
+  const [topics, setTopics] = useState(EXAMPLE_TOPICS);
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      (async () => {
+        try {
+          const scores = await database.getScores();
+          if (cancelled) return;
+          const bestMap = getBestScoresByTopicAndDifficulty(scores);
+          setTopics((prev) =>
+            prev.map((t) => {
+              const best = bestMap.get(t.id);
+              if (!best) return t;
+              return {
+                ...t,
+                difficulties: {
+                  easy: {
+                    score: `${best.easy.score}/${best.easy.total}`,
+                    completed: best.easy.score > 0,
+                    perfect: best.easy.score === best.easy.total,
+                  },
+                  medium: {
+                    score: `${best.medium.score}/${best.medium.total}`,
+                    completed: best.medium.score > 0,
+                    perfect: best.medium.score === best.medium.total,
+                  },
+                  hard: {
+                    score: `${best.hard.score}/${best.hard.total}`,
+                    completed: best.hard.score > 0,
+                    perfect: best.hard.score === best.hard.total,
+                  },
+                },
+              };
+            })
+          );
+        } catch (e) {
+          if (!cancelled) console.warn('Load scores failed:', e);
+        }
+      })();
+      return () => { cancelled = true; };
+    }, [])
+  );
 
   const toggleTopic = (topicId: number) => {
     setExpandedTopics((prev) =>
@@ -213,7 +278,7 @@ export default function ActivitiesScreen() {
   };
 
   const getWeakestTopic = () => {
-    return EXAMPLE_TOPICS.reduce((weakest, topic) =>
+    return topics.reduce((weakest, topic) =>
       topic.mastery < weakest.mastery ? topic : weakest
     );
   };
@@ -473,7 +538,7 @@ export default function ActivitiesScreen() {
         {/* Topics Practice Grid */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Topics Practice</Text>
-          {EXAMPLE_TOPICS.map((topic) => {
+          {topics.map((topic) => {
             const isExpanded = expandedTopics.includes(topic.id);
             return (
               <View key={topic.id} style={styles.topicSection}>
