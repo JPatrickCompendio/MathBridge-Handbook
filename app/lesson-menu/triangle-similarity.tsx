@@ -17,7 +17,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_3_TRIANGLE_SIMILARITY_SECTIONS } from '../../data/lessons/module3_triangle_similarity';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
-import { getSpacing, scaleFont, scaleSize } from '../../utils/responsive';
+import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
+import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+
+const TRIANGLE_SIMILARITY_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
 
 const TRIANGLE_MEASURES_TOPIC_ID = 3;
 
@@ -51,10 +54,12 @@ function AccordionHeader({
   title,
   isOpen,
   onPress,
+  icon,
 }: {
   title: string;
   isOpen: boolean;
   onPress: () => void;
+  icon?: string;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
   const onPressIn = () => Animated.timing(scale, { toValue: 0.98, duration: 80, useNativeDriver: true }).start();
@@ -62,6 +67,7 @@ function AccordionHeader({
   return (
     <TouchableOpacity onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut} activeOpacity={1}>
       <Animated.View style={[styles.accordionHeader, { transform: [{ scale }] }]}>
+        {icon ? <Text style={styles.accordionIcon}>{icon}</Text> : null}
         <Text style={styles.accordionTitle} numberOfLines={2}>{title}</Text>
         <Text style={[styles.accordionChevron, isOpen && styles.accordionChevronOpen]}>
           {isOpen ? '▼' : '▶'}
@@ -73,25 +79,16 @@ function AccordionHeader({
 
 function AnimatedAccordionBody({ children }: { children: React.ReactNode }) {
   const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(8)).current;
+  const translateY = useRef(new Animated.Value(isWeb() ? 12 : 8)).current;
   useEffect(() => {
+    const duration = isWeb() ? 400 : 280;
     Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 280,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 280,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
+      Animated.timing(opacity, { toValue: 1, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   }, []);
   return (
-    <Animated.View style={[styles.accordionBody, { opacity, transform: [{ translateY }] }]}>
+    <Animated.View style={[styles.accordionBody, isWeb() && styles.accordionBodyWeb, { opacity, transform: [{ translateY }] }]}>
       {children}
     </Animated.View>
   );
@@ -130,22 +127,21 @@ export default function TriangleSimilarityLessonScreen() {
   const router = useRouter();
   const [expandedSection, setExpandedSection] = useState<string | null>('I');
   const [expandedMethod, setExpandedMethod] = useState<string | null>(null);
-  const lastSavedProgress = useRef(0);
-
-  const handleScroll = (e: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
-    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-    const maxScroll = contentSize.height - layoutMeasurement.height;
-    if (maxScroll <= 0) return;
-    const percent = Math.min(100, Math.max(0, (contentOffset.y / maxScroll) * 100));
-    if (percent - lastSavedProgress.current >= 5 || percent >= 100) {
-      lastSavedProgress.current = percent;
-      saveTopicContentProgress(TRIANGLE_MEASURES_TOPIC_ID, percent);
-    }
-  };
+  const [openedSections, setOpenedSections] = useState<Set<string>>(() => new Set(['I']));
+  const { ReadingProgressIndicator } = useAccordionReadingProgress(
+    TRIANGLE_MEASURES_TOPIC_ID,
+    TRIANGLE_SIMILARITY_SECTION_KEYS.length,
+    openedSections,
+    saveTopicContentProgress
+  );
 
   const toggle = (key: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedSection((prev) => (prev === key ? null : key));
+    setExpandedSection((prev) => {
+      const next = prev === key ? null : key;
+      if (next) setOpenedSections((s) => new Set(s).add(next));
+      return next;
+    });
   };
   const toggleMethod = (key: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -169,13 +165,13 @@ export default function TriangleSimilarityLessonScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={2}>Triangle Similarity</Text>
       </View>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={200}
-      >
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, isWeb() && styles.scrollContentWeb]}
+          showsVerticalScrollIndicator={false}
+        >
+        <View style={[styles.scrollInner, isWeb() && styles.scrollInnerWeb]}>
         {/* I. Purpose and Learning Objectives */}
         <SectionFadeIn index={0}>
           <View style={styles.purposeSectionWrap}>
@@ -209,6 +205,7 @@ export default function TriangleSimilarityLessonScreen() {
             title="II. What Are Similar Triangles?"
             isOpen={expandedSection === 'II'}
             onPress={() => toggle('II')}
+            icon={isWeb() ? '🔺' : undefined}
           />
           {expandedSection === 'II' && (
             <AnimatedAccordionBody>
@@ -234,6 +231,7 @@ export default function TriangleSimilarityLessonScreen() {
             title="III. Key Words and Concepts"
             isOpen={expandedSection === 'III'}
             onPress={() => toggle('III')}
+            icon={isWeb() ? '📝' : undefined}
           />
           {expandedSection === 'III' && (
             <AnimatedAccordionBody>
@@ -258,6 +256,7 @@ export default function TriangleSimilarityLessonScreen() {
             title="IV. Corresponding Parts"
             isOpen={expandedSection === 'IV'}
             onPress={() => toggle('IV')}
+            icon={isWeb() ? '📐' : undefined}
           />
           {expandedSection === 'IV' && (
             <AnimatedAccordionBody>
@@ -315,6 +314,7 @@ export default function TriangleSimilarityLessonScreen() {
             title="V. Ways to Know If Triangles Are Similar"
             isOpen={expandedSection === 'V'}
             onPress={() => toggle('V')}
+            icon={isWeb() ? '💡' : undefined}
           />
           {expandedSection === 'V' && (
             <AnimatedAccordionBody>
@@ -399,7 +399,10 @@ export default function TriangleSimilarityLessonScreen() {
             </AnimatedAccordionBody>
           )}
         </SectionFadeIn>
-      </ScrollView>
+        </View>
+        </ScrollView>
+        <ReadingProgressIndicator />
+      </View>
     </SafeAreaView>
   );
 }
@@ -438,6 +441,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: getSpacing(Spacing.xxl),
   },
+  scrollContentWeb: { alignItems: 'center' },
+  scrollInner: { width: '100%' },
+  scrollInnerWeb: { maxWidth: 1200, alignSelf: 'center' },
   section: {
     paddingHorizontal: getSpacing(Spacing.md),
     paddingVertical: getSpacing(Spacing.sm),
@@ -447,7 +453,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   staticSectionTitle: {
-    fontSize: scaleFont(18),
+    fontSize: scaleFont(isWeb() ? 22 : 18),
     fontWeight: '700',
     color: Theme.text,
     marginBottom: getSpacing(Spacing.md),
@@ -457,7 +463,7 @@ const styles = StyleSheet.create({
   staticSectionContent: {
     marginBottom: getSpacing(Spacing.sm),
     width: '100%',
-    maxWidth: scaleSize(520),
+    maxWidth: scaleSize(isWeb() ? 1100 : 520),
     alignItems: 'center',
   },
   purposeCard: {
@@ -477,7 +483,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   purposeBlockHeading: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     fontWeight: '700',
     color: Theme.primary,
     marginBottom: getSpacing(Spacing.sm),
@@ -487,9 +493,9 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   bodyTextCentered: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     color: Theme.text,
-    lineHeight: scaleFont(24),
+    lineHeight: scaleFont(isWeb() ? 28 : 24),
     marginBottom: getSpacing(Spacing.sm),
     textAlign: 'center',
   },
@@ -512,9 +518,9 @@ const styles = StyleSheet.create({
   },
   objectiveItem: {
     flex: 1,
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
   },
   accordionHeader: {
     flexDirection: 'row',
@@ -533,11 +539,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   accordionTitle: {
-    fontSize: scaleFont(17),
+    fontSize: scaleFont(isWeb() ? 19 : 17),
     fontWeight: '700',
     color: Theme.text,
     flex: 1,
   },
+  accordionIcon: { fontSize: scaleFont(22), marginRight: getSpacing(Spacing.sm) },
   accordionChevron: {
     fontSize: scaleFont(12),
     color: Theme.primary,
@@ -549,8 +556,8 @@ const styles = StyleSheet.create({
   },
   accordionBody: {
     backgroundColor: Theme.card,
-    paddingHorizontal: getSpacing(Spacing.md),
-    paddingVertical: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(isWeb() ? Spacing.xl : Spacing.md),
+    paddingVertical: getSpacing(isWeb() ? Spacing.md : Spacing.sm),
     paddingBottom: getSpacing(Spacing.md),
     borderWidth: 1,
     borderTopWidth: 0,
@@ -564,10 +571,11 @@ const styles = StyleSheet.create({
     shadowRadius: scaleSize(4),
     elevation: 2,
   },
+  accordionBodyWeb: { borderLeftWidth: 4, borderLeftColor: Theme.primary, backgroundColor: '#FFFCFA' },
   paragraph: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.text,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
     marginBottom: getSpacing(Spacing.sm),
   },
   bulletList: {
@@ -579,15 +587,15 @@ const styles = StyleSheet.create({
     marginBottom: getSpacing(Spacing.xs),
   },
   bulletDot: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.primary,
     marginRight: getSpacing(Spacing.sm),
   },
   bulletText: {
     flex: 1,
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
   },
   keyWordsList: {
     marginBottom: getSpacing(Spacing.sm),
@@ -612,15 +620,15 @@ const styles = StyleSheet.create({
     marginRight: getSpacing(Spacing.sm),
   },
   keyWordTerm: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     fontWeight: '700',
     color: Theme.text,
     flex: 1,
   },
   keyWordDefinition: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
     marginLeft: scaleSize(24),
     marginBottom: getSpacing(Spacing.xs),
   },
@@ -629,7 +637,7 @@ const styles = StyleSheet.create({
   },
   bulletTextBold: {
     flex: 1,
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     fontWeight: '700',
     color: Theme.text,
   },
@@ -649,7 +657,7 @@ const styles = StyleSheet.create({
     height: scaleSize(140),
   },
   diagramCaption: {
-    fontSize: scaleFont(12),
+    fontSize: scaleFont(isWeb() ? 15 : 12),
     color: Theme.textSecondary,
     marginTop: getSpacing(Spacing.xs),
     textAlign: 'center',
@@ -675,7 +683,7 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.muted,
   },
   methodName: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     fontWeight: '700',
     color: Theme.text,
     flex: 1,
@@ -685,17 +693,17 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.white,
   },
   methodCriteriaTitle: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     fontWeight: '600',
     color: Theme.text,
     marginBottom: getSpacing(Spacing.xs),
   },
   methodNote: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     color: Theme.textSecondary,
     fontStyle: 'italic',
     marginBottom: getSpacing(Spacing.md),
-    lineHeight: scaleFont(20),
+    lineHeight: scaleFont(isWeb() ? 25 : 20),
   },
   similarityExampleBlock: {
     marginTop: getSpacing(Spacing.md),
@@ -704,13 +712,13 @@ const styles = StyleSheet.create({
     borderTopColor: Theme.border,
   },
   similarityExampleTitle: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     fontWeight: '700',
     color: Theme.primary,
     marginBottom: getSpacing(Spacing.sm),
   },
   similarityLabel: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     fontWeight: '600',
     color: Theme.text,
     marginTop: getSpacing(Spacing.xs),
@@ -723,28 +731,28 @@ const styles = StyleSheet.create({
     marginTop: getSpacing(Spacing.sm),
   },
   similarityGivenLine: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(20),
+    lineHeight: scaleFont(isWeb() ? 25 : 20),
     marginLeft: getSpacing(Spacing.sm),
   },
   similaritySolutionLine: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(20),
+    lineHeight: scaleFont(isWeb() ? 25 : 20),
     marginLeft: getSpacing(Spacing.sm),
   },
   similarityConclusionText: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     fontWeight: '600',
     color: Theme.text,
     marginLeft: getSpacing(Spacing.sm),
-    lineHeight: scaleFont(20),
+    lineHeight: scaleFont(isWeb() ? 25 : 20),
   },
   exampleText: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(20),
+    lineHeight: scaleFont(isWeb() ? 25 : 20),
     marginTop: getSpacing(Spacing.sm),
     fontStyle: 'italic',
   },

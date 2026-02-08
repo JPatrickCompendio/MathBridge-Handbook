@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Alert,
+    Animated,
+    Easing,
     ScrollView,
     StyleSheet,
     Text,
@@ -9,6 +11,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import TabsAnimatedBackground from '../../components/TabsAnimatedBackground';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
@@ -118,6 +121,84 @@ const PRACTICE_MODES = [
     color: ProfessionalColors.warning,
   },
 ];
+
+// --- Moving icon animations (no zoom): float = up/down, drift = left/right, swing = rotate ---
+function useLoopMove(config: { toValue: number; duration: number; delay?: number }) {
+  const anim = useRef(new Animated.Value(0)).current;
+  const duration = config.duration;
+  const delay = config.delay ?? 0;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(anim, {
+          toValue: config.toValue,
+          duration,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0,
+          duration,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [anim, duration, delay, config.toValue]);
+  return anim;
+}
+
+/** Up-down floating motion (like a gentle bounce in place) */
+function FloatIcon({ children, style, delay = 0 }: { children: React.ReactNode; style?: any; delay?: number }) {
+  const y = useLoopMove({ toValue: 1, duration: 1600, delay });
+  const translateY = y.interpolate({ inputRange: [0, 1], outputRange: [0, -8] });
+  return (
+    <Animated.View style={[style, { transform: [{ translateY }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/** Left-right drifting motion */
+function DriftIcon({ children, style, delay = 0 }: { children: React.ReactNode; style?: any; delay?: number }) {
+  const x = useLoopMove({ toValue: 1, duration: 2000, delay });
+  const translateX = x.interpolate({ inputRange: [0, 1], outputRange: [0, 6] });
+  return (
+    <Animated.View style={[style, { transform: [{ translateX }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/** Small rotation wiggle (no scale) */
+function SwingIcon({ children, style }: { children: React.ReactNode; style?: any }) {
+  const rot = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(rot, {
+          toValue: 1,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(rot, {
+          toValue: 0,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [rot]);
+  const rotate = rot.interpolate({ inputRange: [0, 1], outputRange: ['-6deg', '6deg'] });
+  return (
+    <Animated.View style={[style, { transform: [{ rotate }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
 
 export default function ActivitiesScreen() {
   const router = useRouter();
@@ -270,7 +351,9 @@ export default function ActivitiesScreen() {
   const weakestTopic = getWeakestTopic();
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <View style={styles.container}>
+      <TabsAnimatedBackground />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -294,18 +377,14 @@ export default function ActivitiesScreen() {
               activeOpacity={0.8}
             >
               <View style={styles.quickCardHeader}>
-                <Text style={styles.quickCardIcon}>🎯</Text>
+                <FloatIcon delay={0}>
+                  <Text style={styles.quickCardIcon}>🎯</Text>
+                </FloatIcon>
                 <Text style={styles.quickCardTitle}>5 Random Questions</Text>
               </View>
               <Text style={styles.quickCardDescription}>
                 Mixed difficulty from all topics
               </Text>
-              <View style={styles.topicIconsRow}>
-                <Text style={styles.topicIcon}>🧮</Text>
-                <Text style={styles.topicIcon}>📐</Text>
-                <Text style={styles.topicIcon}>📊</Text>
-                <Text style={styles.topicIcon}>📏</Text>
-              </View>
               <TouchableOpacity
                 style={[styles.startButton, { backgroundColor: ProfessionalColors.primary }]}
                 onPress={() => handleStartPractice('5-random')}
@@ -320,19 +399,14 @@ export default function ActivitiesScreen() {
               activeOpacity={0.8}
             >
               <View style={styles.quickCardHeader}>
-                <Text style={styles.quickCardIcon}>📚</Text>
+                <FloatIcon delay={100}>
+                  <Text style={styles.quickCardIcon}>📚</Text>
+                </FloatIcon>
                 <Text style={styles.quickCardTitle}>10 Random Questions</Text>
               </View>
               <Text style={styles.quickCardDescription}>
                 Longer practice session
               </Text>
-              <View style={styles.topicIconsRow}>
-                <Text style={styles.topicIcon}>🧮</Text>
-                <Text style={styles.topicIcon}>📐</Text>
-                <Text style={styles.topicIcon}>📊</Text>
-                <Text style={styles.topicIcon}>📏</Text>
-                <Text style={styles.topicIcon}>⚖️</Text>
-              </View>
               <TouchableOpacity
                 style={[styles.startButton, { backgroundColor: ProfessionalColors.success }]}
                 onPress={() => handleStartPractice('10-random')}
@@ -347,15 +421,14 @@ export default function ActivitiesScreen() {
               activeOpacity={0.8}
             >
               <View style={styles.quickCardHeader}>
-                <Text style={styles.quickCardIcon}>{weakestTopic.icon}</Text>
+                <FloatIcon delay={200}>
+                  <Text style={styles.quickCardIcon}>{weakestTopic.icon}</Text>
+                </FloatIcon>
                 <Text style={styles.quickCardTitle}>Weakest Topic Practice</Text>
               </View>
               <Text style={styles.quickCardDescription}>
                 Focus on {weakestTopic.name} ({Math.round(weakestTopic.mastery)}% mastery)
               </Text>
-              <View style={styles.topicIconsRow}>
-                <Text style={styles.topicIcon}>{weakestTopic.icon}</Text>
-              </View>
               <TouchableOpacity
                 style={[styles.startButton, { backgroundColor: ProfessionalColors.warning }]}
                 onPress={() => handleStartPractice('weakest')}
@@ -378,7 +451,9 @@ export default function ActivitiesScreen() {
             >
               <View style={styles.modeCardContent}>
                 <View style={[styles.modeIconContainer, { backgroundColor: `${mode.color}20` }]}>
-                  <Text style={styles.modeIcon}>{mode.icon}</Text>
+                  <FloatIcon style={styles.modeIconWrap} delay={0}>
+                    <Text style={styles.modeIcon}>{mode.icon}</Text>
+                  </FloatIcon>
                 </View>
                 <View style={styles.modeInfo}>
                   <Text style={styles.modeTitle}>{mode.title}</Text>
@@ -408,7 +483,9 @@ export default function ActivitiesScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.topicHeaderLeft}>
-                    <Text style={styles.topicSectionIcon}>{topic.icon}</Text>
+                    <DriftIcon delay={topic.id * 80}>
+                      <Text style={styles.topicSectionIcon}>{topic.icon}</Text>
+                    </DriftIcon>
                     <View style={styles.topicHeaderInfo}>
                       <Text style={styles.topicSectionName}>{topic.name}</Text>
                       <Text style={styles.topicSectionMastery}>
@@ -416,7 +493,9 @@ export default function ActivitiesScreen() {
                       </Text>
                     </View>
                   </View>
-                  <Text style={styles.expandIcon}>{isExpanded ? '▼' : '▶'}</Text>
+                  <SwingIcon>
+                    <Text style={styles.expandIcon}>{isExpanded ? '▼' : '▶'}</Text>
+                  </SwingIcon>
                 </TouchableOpacity>
 
                 {isExpanded && (
@@ -425,16 +504,18 @@ export default function ActivitiesScreen() {
                     <View style={styles.difficultyCard}>
                       <View style={styles.difficultyHeader}>
                         <View style={styles.difficultyLeft}>
-                          <Text style={styles.difficultyIndicator}>🟢</Text>
+                          <FloatIcon delay={0}><Text style={styles.difficultyIndicator}>🟢</Text></FloatIcon>
                           <Text style={styles.difficultyLabel}>Easy Quiz</Text>
                         </View>
                         {topic.difficulties.easy.completed && (
                           <View style={styles.completionBadge}>
-                            {topic.difficulties.easy.perfect ? (
-                              <Text style={styles.completionIcon}>⭐</Text>
-                            ) : (
-                              <Text style={styles.completionIcon}>✅</Text>
-                            )}
+                            <FloatIcon delay={0}>
+                              {topic.difficulties.easy.perfect ? (
+                                <Text style={styles.completionIcon}>⭐</Text>
+                              ) : (
+                                <Text style={styles.completionIcon}>✅</Text>
+                              )}
+                            </FloatIcon>
                           </View>
                         )}
                       </View>
@@ -456,16 +537,18 @@ export default function ActivitiesScreen() {
                     <View style={styles.difficultyCard}>
                       <View style={styles.difficultyHeader}>
                         <View style={styles.difficultyLeft}>
-                          <Text style={styles.difficultyIndicator}>🟡</Text>
+                          <FloatIcon delay={100}><Text style={styles.difficultyIndicator}>🟡</Text></FloatIcon>
                           <Text style={styles.difficultyLabel}>Medium Quiz</Text>
                         </View>
                         {topic.difficulties.medium.completed && (
                           <View style={styles.completionBadge}>
-                            {topic.difficulties.medium.perfect ? (
-                              <Text style={styles.completionIcon}>⭐</Text>
-                            ) : (
-                              <Text style={styles.completionIcon}>✅</Text>
-                            )}
+                            <FloatIcon delay={100}>
+                              {topic.difficulties.medium.perfect ? (
+                                <Text style={styles.completionIcon}>⭐</Text>
+                              ) : (
+                                <Text style={styles.completionIcon}>✅</Text>
+                              )}
+                            </FloatIcon>
                           </View>
                         )}
                       </View>
@@ -487,16 +570,18 @@ export default function ActivitiesScreen() {
                     <View style={styles.difficultyCard}>
                       <View style={styles.difficultyHeader}>
                         <View style={styles.difficultyLeft}>
-                          <Text style={styles.difficultyIndicator}>🔴</Text>
+                          <FloatIcon delay={200}><Text style={styles.difficultyIndicator}>🔴</Text></FloatIcon>
                           <Text style={styles.difficultyLabel}>Hard Quiz</Text>
                         </View>
                         {topic.difficulties.hard.completed && (
                           <View style={styles.completionBadge}>
-                            {topic.difficulties.hard.perfect ? (
-                              <Text style={styles.completionIcon}>⭐</Text>
-                            ) : (
-                              <Text style={styles.completionIcon}>✅</Text>
-                            )}
+                            <FloatIcon delay={200}>
+                              {topic.difficulties.hard.perfect ? (
+                                <Text style={styles.completionIcon}>⭐</Text>
+                              ) : (
+                                <Text style={styles.completionIcon}>✅</Text>
+                              )}
+                            </FloatIcon>
                           </View>
                         )}
                       </View>
@@ -520,7 +605,8 @@ export default function ActivitiesScreen() {
           })}
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -536,7 +622,6 @@ const responsiveValues = {
   quickCardIconFont: isTablet() ? 28 : isSmallDevice() ? 20 : 24,
   quickCardTitleFont: isTablet() ? 22 : isSmallDevice() ? 16 : 18,
   quickCardDescFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
-  topicIconFont: isTablet() ? 24 : isSmallDevice() ? 18 : 20,
   startButtonFont: isTablet() ? 18 : isSmallDevice() ? 14 : 16,
   modeIconSize: isTablet() ? 60 : isSmallDevice() ? 45 : 50,
   modeIconRadius: isTablet() ? 30 : isSmallDevice() ? 22 : 25,
@@ -561,6 +646,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: ProfessionalColors.background,
+  },
+  safeArea: {
+    flex: 1,
+    zIndex: 1,
   },
   scrollView: {
     flex: 1,
@@ -642,15 +731,6 @@ const styles = StyleSheet.create({
     color: ProfessionalColors.textSecondary,
     marginBottom: getSpacing(Spacing.md),
   },
-  topicIconsRow: {
-    flexDirection: 'row',
-    marginBottom: getSpacing(Spacing.md),
-    gap: getSpacing(Spacing.sm),
-    flexWrap: 'wrap',
-  },
-  topicIcon: {
-    fontSize: scaleFont(responsiveValues.topicIconFont),
-  },
   startButton: {
     alignSelf: 'center',
     marginTop: getSpacing(Spacing.xs),
@@ -694,6 +774,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
+  },
+  modeIconWrap: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modeIcon: {
     fontSize: scaleFont(responsiveValues.modeIconFont),

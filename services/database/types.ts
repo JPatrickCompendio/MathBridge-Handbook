@@ -78,6 +78,10 @@ export interface DatabaseService {
 
   getLastActivityTimestamp(): Promise<string | null>;
   setLastActivityTimestamp(iso: string): Promise<void>;
+  /** Current consecutive-day streak (0 if none). */
+  getStreak(): Promise<number>;
+  /** Update last activity to now and return updated streak. */
+  setLastActivityAndStreak(iso: string): Promise<number>;
 
   /** Clear all topic progress (for reset) */
   clearAllProgress(): Promise<void>;

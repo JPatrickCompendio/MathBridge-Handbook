@@ -1,21 +1,26 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker/build/ImagePicker';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
   Easing,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import TabsAnimatedBackground from '../../components/TabsAnimatedBackground';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { database } from '../../services/database';
+import { getProfileOverlay, setProfileOverlay } from '../../utils/profileStorage';
 import { getTopicProgress, resetTopicProgress } from '../../utils/progressStorage';
 import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
@@ -416,10 +421,10 @@ function AnimatedLogoutButton({
       style={{
         opacity: fadeAnim,
         transform: [{ scale: pressScale }],
-        marginHorizontal: responsiveValues.paddingH,
+        marginHorizontal: isWeb() ? 0 : responsiveValues.paddingH,
         marginTop: getSpacing(Spacing.xl),
         marginBottom: getSpacing(Spacing.lg),
-        maxWidth: responsiveValues.cardMaxWidth,
+        maxWidth: responsiveValues.logoutButtonMaxWidth ?? responsiveValues.cardMaxWidth,
         alignSelf: 'center',
         width: '100%',
       }}
@@ -565,8 +570,12 @@ function AnimatedProgressItem({
 export default function ProfileScreen() {
   const router = useRouter();
   const [resetModalVisible, setResetModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const [topics, setTopics] = useState(TOPICS);
   const [userData, setUserData] = useState(getDefaultUser());
+  const [profilePhotoUri, setProfilePhotoUri] = useState<string | undefined>(undefined);
+  const [editDisplayName, setEditDisplayName] = useState('');
+  const [editPhotoUri, setEditPhotoUri] = useState<string | undefined>(undefined);
 
   useFocusEffect(
     useCallback(() => {
@@ -575,14 +584,17 @@ export default function ProfileScreen() {
         if (saved && typeof saved === 'object') {
           setTopics((prev) => prev.map((t) => ({ ...t, progress: (saved as Record<number, number>)[t.id] ?? 0 })));
         }
+        const overlay = await getProfileOverlay();
+        setProfilePhotoUri(overlay.photoUri);
         const user = await database.getUserData();
+        const displayName = (overlay.displayName?.trim() || user?.username) ?? '';
         if (user) {
           const isLocalEmail = user.email.startsWith('_local_') && user.email.endsWith('@app');
           setUserData({
-            name: user.username ?? '',
+            name: (displayName || user.username) ?? '',
             email: isLocalEmail ? '' : user.email,
             memberSince: user.createdAt ?? '',
-            avatar: (user.username ?? '').charAt(0).toUpperCase() || '?',
+            avatar: ((displayName || user.username) ?? '').charAt(0).toUpperCase() || '?',
           });
         } else {
           setUserData(getDefaultUser());
@@ -596,8 +608,53 @@ export default function ProfileScreen() {
   const avatarScale = useRef(new Animated.Value(0.9)).current; // Start slightly smaller for bounce
 
   const handleEditProfile = () => {
-    console.log('Edit profile');
-    // TODO: Navigate to edit profile screen
+    setEditDisplayName(userData.name || '');
+    setEditPhotoUri(profilePhotoUri);
+    setEditModalVisible(true);
+  };
+
+  const handlePickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        if (isWeb()) return;
+        Alert.alert('Permission needed', 'Allow access to your photos to set a profile picture.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        base64: true,
+      });
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const uri = asset.base64
+          ? `data:image/jpeg;base64,${asset.base64}`
+          : asset.uri;
+        setEditPhotoUri(uri);
+      }
+    } catch (e) {
+      console.warn('Image picker error:', e);
+      if (!isWeb()) Alert.alert('Error', 'Could not open image picker.');
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    const name = editDisplayName.trim();
+    await setProfileOverlay({ displayName: name || undefined, photoUri: editPhotoUri });
+    setProfilePhotoUri(editPhotoUri);
+    setUserData((prev) => ({
+      ...prev,
+      name: name || prev.name,
+      avatar: (name || userData.name || '').charAt(0).toUpperCase() || '?',
+    }));
+    setEditModalVisible(false);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditModalVisible(false);
   };
 
   const handleTopicPress = (topicId: number) => {
@@ -614,21 +671,6 @@ export default function ProfileScreen() {
     await resetTopicProgress();
     setTopics((prev) => prev.map((t) => ({ ...t, progress: 0 })));
     Alert.alert('Success', 'Your progress has been reset.');
-  };
-
-  const handleAppSettings = () => {
-    console.log('App settings');
-    // TODO: Navigate to settings screen
-  };
-
-  const handleHelpSupport = () => {
-    console.log('Help & Support');
-    // TODO: Navigate to help screen
-  };
-
-  const handleAboutApp = () => {
-    console.log('About app');
-    // TODO: Navigate to about screen
   };
 
   const performLogout = async () => {
@@ -726,12 +768,15 @@ export default function ProfileScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <View style={styles.container}>
+      <TabsAnimatedBackground />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, isWeb() && styles.scrollContentWeb]}
         showsVerticalScrollIndicator={false}
       >
+        <View style={[styles.scrollInner, isWeb() && styles.scrollInnerWeb]}>
         {/* User Profile Header with Gradient */}
         <Animated.View 
           style={[
@@ -779,13 +824,19 @@ export default function ProfileScreen() {
                   ],
                 }}
               >
-                <LinearGradient
-                  colors={[ProfessionalColors.primary, ProfessionalColors.primaryDark]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                <Text style={styles.avatarText}>{userData.avatar || '?'}</Text>
+                {profilePhotoUri ? (
+                  <Image source={{ uri: profilePhotoUri }} style={styles.avatarImage} />
+                ) : (
+                  <>
+                    <LinearGradient
+                      colors={[ProfessionalColors.primary, ProfessionalColors.primaryDark]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <Text style={styles.avatarText}>{userData.avatar || '?'}</Text>
+                  </>
+                )}
               </Animated.View>
             </Animated.View>
           </View>
@@ -895,30 +946,6 @@ export default function ProfileScreen() {
               index={0}
               delay={400}
             />
-            <View style={styles.actionDivider} />
-            <AnimatedActionItem
-              icon="⚙️"
-              text="App Settings"
-              onPress={handleAppSettings}
-              index={1}
-              delay={450}
-            />
-            <View style={styles.actionDivider} />
-            <AnimatedActionItem
-              icon="❓"
-              text="Help & Support"
-              onPress={handleHelpSupport}
-              index={2}
-              delay={500}
-            />
-            <View style={styles.actionDivider} />
-            <AnimatedActionItem
-              icon="ℹ️"
-              text="About App"
-              onPress={handleAboutApp}
-              index={3}
-              delay={550}
-            />
           </View>
         </Animated.View>
 
@@ -927,6 +954,7 @@ export default function ProfileScreen() {
           onPress={handleLogout}
           fadeAnim={fadeAnim}
         />
+        </View>
       </ScrollView>
 
       {/* Reset Progress Confirmation Modal */}
@@ -961,41 +989,98 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={editModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseEditModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.editModalContent]}>
+            <Text style={styles.modalTitle}>Edit Profile</Text>
+            <TextInput
+              style={styles.editModalInput}
+              placeholder="Display name"
+              placeholderTextColor={ProfessionalColors.textSecondary}
+              value={editDisplayName}
+              onChangeText={setEditDisplayName}
+              autoCapitalize="words"
+            />
+            <View style={styles.editModalPhotoRow}>
+              <View style={styles.editModalPhotoPreview}>
+                {editPhotoUri ? (
+                  <Image source={{ uri: editPhotoUri }} style={styles.editModalPhotoImage} />
+                ) : (
+                  <Text style={styles.editModalPhotoPlaceholder}>{userData.avatar || '?'}</Text>
+                )}
+              </View>
+              <TouchableOpacity
+                style={styles.editModalPhotoButton}
+                onPress={handlePickImage}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.editModalPhotoButtonText}>Select profile picture</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={handleCloseEditModal}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={handleSaveProfile}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalButtonConfirmText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
+    </View>
   );
 }
 
 // Compute responsive values before StyleSheet
+const PROFILE_WEB_MAX_WIDTH = 960;
 const responsiveValues = {
-  paddingH: isTablet() ? wp(5) : wp(4),
-  editButtonSize: isTablet() ? 48 : isSmallDevice() ? 36 : 40,
-  editButtonRadius: isTablet() ? 24 : isSmallDevice() ? 18 : 20,
-  editIconFont: isTablet() ? 24 : isSmallDevice() ? 18 : 20,
-  avatarSize: isTablet() ? 120 : isSmallDevice() ? 80 : 100,
-  avatarRadius: isTablet() ? 60 : isSmallDevice() ? 40 : 50,
-  avatarTextFont: isTablet() ? 44 : isSmallDevice() ? 28 : 36,
-  userNameFont: isTablet() ? 28 : isSmallDevice() ? 20 : 24,
-  userEmailFont: isTablet() ? 16 : isSmallDevice() ? 12 : 14,
-  memberSinceFont: isTablet() ? 14 : isSmallDevice() ? 10 : 12,
-  sectionTitleFont: isTablet() ? 24 : isSmallDevice() ? 18 : 20,
-  statCardWidth: isTablet() ? scaleSize(180) : isSmallDevice() ? scaleSize(140) : scaleSize(160),
-  statCardHeight: isTablet() ? scaleSize(140) : isSmallDevice() ? scaleSize(120) : scaleSize(130),
-  statIconFont: isTablet() ? 40 : isSmallDevice() ? 28 : 32,
-  statValueFont: isTablet() ? 30 : isSmallDevice() ? 20 : 24,
-  statLabelFont: isTablet() ? 14 : isSmallDevice() ? 10 : 12,
-  topicIconFont: isTablet() ? 28 : isSmallDevice() ? 20 : 24,
-  topicNameFont: isTablet() ? 18 : isSmallDevice() ? 14 : 16,
-  progressPercentageFont: isTablet() ? 18 : isSmallDevice() ? 14 : 16,
-  progressBarHeight: isTablet() ? 10 : isSmallDevice() ? 6 : 8,
-  actionIconFont: isTablet() ? 28 : isSmallDevice() ? 20 : 24,
-  actionTextFont: isTablet() ? 18 : isSmallDevice() ? 14 : 16,
-  actionArrowFont: isTablet() ? 28 : isSmallDevice() ? 20 : 24,
-  logoutButtonFont: isTablet() ? 20 : isSmallDevice() ? 16 : 18,
-  modalMaxWidth: isTablet() ? 500 : 400,
-  modalTitleFont: isTablet() ? 28 : isSmallDevice() ? 20 : 24,
-  modalMessageFont: isTablet() ? 18 : isSmallDevice() ? 14 : 16,
-  modalButtonTextFont: isTablet() ? 18 : isSmallDevice() ? 14 : 16,
-  cardMaxWidth: isTablet() ? 800 : undefined,
+  paddingH: isWeb() ? 32 : isTablet() ? wp(5) : wp(4),
+  editButtonSize: isWeb() ? 44 : isTablet() ? 48 : isSmallDevice() ? 36 : 40,
+  editButtonRadius: isWeb() ? 22 : isTablet() ? 24 : isSmallDevice() ? 18 : 20,
+  editIconFont: isWeb() ? 22 : isTablet() ? 24 : isSmallDevice() ? 18 : 20,
+  avatarSize: isWeb() ? 100 : isTablet() ? 120 : isSmallDevice() ? 80 : 100,
+  avatarRadius: isWeb() ? 50 : isTablet() ? 60 : isSmallDevice() ? 40 : 50,
+  avatarTextFont: isWeb() ? 36 : isTablet() ? 44 : isSmallDevice() ? 28 : 36,
+  userNameFont: isWeb() ? 26 : isTablet() ? 28 : isSmallDevice() ? 20 : 24,
+  userEmailFont: isWeb() ? 15 : isTablet() ? 16 : isSmallDevice() ? 12 : 14,
+  memberSinceFont: isWeb() ? 13 : isTablet() ? 14 : isSmallDevice() ? 10 : 12,
+  sectionTitleFont: isWeb() ? 22 : isTablet() ? 24 : isSmallDevice() ? 18 : 20,
+  statCardWidth: isWeb() ? (PROFILE_WEB_MAX_WIDTH - 20 * 2) / 3 : isTablet() ? scaleSize(180) : isSmallDevice() ? scaleSize(140) : scaleSize(160),
+  statCardHeight: isWeb() ? 130 : isTablet() ? scaleSize(140) : isSmallDevice() ? scaleSize(120) : scaleSize(130),
+  statIconFont: isWeb() ? 36 : isTablet() ? 40 : isSmallDevice() ? 28 : 32,
+  statValueFont: isWeb() ? 26 : isTablet() ? 30 : isSmallDevice() ? 20 : 24,
+  statLabelFont: isWeb() ? 13 : isTablet() ? 14 : isSmallDevice() ? 10 : 12,
+  topicIconFont: isWeb() ? 24 : isTablet() ? 28 : isSmallDevice() ? 20 : 24,
+  topicNameFont: isWeb() ? 17 : isTablet() ? 18 : isSmallDevice() ? 14 : 16,
+  progressPercentageFont: isWeb() ? 16 : isTablet() ? 18 : isSmallDevice() ? 14 : 16,
+  progressBarHeight: isWeb() ? 10 : isTablet() ? 10 : isSmallDevice() ? 6 : 8,
+  actionIconFont: isWeb() ? 24 : isTablet() ? 28 : isSmallDevice() ? 20 : 24,
+  actionTextFont: isWeb() ? 17 : isTablet() ? 18 : isSmallDevice() ? 14 : 16,
+  actionArrowFont: isWeb() ? 24 : isTablet() ? 28 : isSmallDevice() ? 20 : 24,
+  logoutButtonFont: isWeb() ? 17 : isTablet() ? 20 : isSmallDevice() ? 16 : 18,
+  modalMaxWidth: isWeb() ? 440 : isTablet() ? 500 : 400,
+  modalTitleFont: isWeb() ? 22 : isTablet() ? 28 : isSmallDevice() ? 20 : 24,
+  modalMessageFont: isWeb() ? 16 : isTablet() ? 18 : isSmallDevice() ? 14 : 16,
+  modalButtonTextFont: isWeb() ? 16 : isTablet() ? 18 : isSmallDevice() ? 14 : 16,
+  cardMaxWidth: isWeb() ? PROFILE_WEB_MAX_WIDTH : isTablet() ? 800 : undefined,
+  logoutButtonMaxWidth: isWeb() ? 400 : undefined,
 };
 
 const styles = StyleSheet.create({
@@ -1003,24 +1088,42 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: ProfessionalColors.background,
   },
+  safeArea: {
+    flex: 1,
+    zIndex: 1,
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingTop: getSpacing(Spacing.md),
     paddingBottom: getSpacing(Spacing.xxl) + 80,
-    paddingHorizontal: isWeb() ? wp(6) : 0,
+    paddingHorizontal: isWeb() ? 0 : 0,
+  },
+  scrollContentWeb: {
+    paddingHorizontal: getSpacing(Spacing.lg),
+    alignItems: 'center',
+  },
+  scrollInner: {
+    width: '100%',
+  },
+  scrollInnerWeb: {
+    maxWidth: PROFILE_WEB_MAX_WIDTH,
+    alignSelf: 'center',
   },
   // Profile Header
   profileHeader: {
     backgroundColor: ProfessionalColors.white,
     padding: getSpacing(Spacing.xl),
-    paddingTop: getSpacing(Spacing.xxl),
+    paddingTop: isWeb() ? getSpacing(Spacing.xxl) + getSpacing(Spacing.md) : getSpacing(Spacing.xxl),
+    paddingBottom: isWeb() ? getSpacing(Spacing.xl) + getSpacing(Spacing.md) : getSpacing(Spacing.xl),
     alignItems: 'center',
     position: 'relative',
     borderBottomWidth: 1,
     borderBottomColor: ProfessionalColors.border,
     overflow: 'hidden',
+    borderTopLeftRadius: isWeb() ? scaleSize(BorderRadius.xl) : 0,
+    borderTopRightRadius: isWeb() ? scaleSize(BorderRadius.xl) : 0,
   },
   editButton: {
     position: 'absolute',
@@ -1052,6 +1155,11 @@ const styles = StyleSheet.create({
     elevation: 12,
     overflow: 'hidden',
   },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: scaleSize(responsiveValues.avatarRadius),
+  },
   avatarText: {
     fontSize: scaleFont(responsiveValues.avatarTextFont),
     fontWeight: 'bold',
@@ -1076,8 +1184,8 @@ const styles = StyleSheet.create({
   },
   // Section
   section: {
-    marginTop: getSpacing(Spacing.lg),
-    paddingHorizontal: responsiveValues.paddingH,
+    marginTop: isWeb() ? getSpacing(Spacing.xl) : getSpacing(Spacing.lg),
+    paddingHorizontal: isWeb() ? 0 : responsiveValues.paddingH,
     maxWidth: responsiveValues.cardMaxWidth,
     alignSelf: 'center',
     width: '100%',
@@ -1086,14 +1194,14 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(responsiveValues.sectionTitleFont),
     fontWeight: 'bold',
     color: ProfessionalColors.text,
-    marginBottom: getSpacing(Spacing.md),
+    marginBottom: isWeb() ? getSpacing(Spacing.lg) : getSpacing(Spacing.md),
   },
   // Statistics Grid
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: getSpacing(Spacing.md),
-    justifyContent: isSmallDevice() ? 'center' : 'flex-start',
+    gap: isWeb() ? getSpacing(Spacing.md) : getSpacing(Spacing.md),
+    justifyContent: isWeb() ? 'space-between' : isSmallDevice() ? 'center' : 'flex-start',
   },
   statCard: {
     width: responsiveValues.statCardWidth,
@@ -1136,12 +1244,14 @@ const styles = StyleSheet.create({
   progressContainer: {
     backgroundColor: ProfessionalColors.white,
     borderRadius: scaleSize(BorderRadius.lg),
-    padding: getSpacing(Spacing.md),
+    padding: isWeb() ? getSpacing(Spacing.lg) : getSpacing(Spacing.md),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: scaleSize(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: scaleSize(8),
+    shadowOpacity: isWeb() ? 0.06 : 0.1,
+    shadowRadius: scaleSize(isWeb() ? 12 : 8),
     elevation: 4,
+    borderWidth: isWeb() ? 1 : 0,
+    borderColor: isWeb() ? ProfessionalColors.border : 'transparent',
   },
   progressItem: {
     marginBottom: getSpacing(Spacing.lg),
@@ -1193,9 +1303,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: scaleSize(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: scaleSize(8),
+    shadowOpacity: isWeb() ? 0.06 : 0.1,
+    shadowRadius: scaleSize(isWeb() ? 12 : 8),
     elevation: 4,
+    borderWidth: isWeb() ? 1 : 0,
+    borderColor: isWeb() ? ProfessionalColors.border : 'transparent',
   },
   actionItem: {
     flexDirection: 'row',
@@ -1264,6 +1376,57 @@ const styles = StyleSheet.create({
     padding: getSpacing(Spacing.xl),
     width: '100%',
     maxWidth: scaleSize(responsiveValues.modalMaxWidth),
+  },
+  editModalContent: {
+    maxWidth: scaleSize(400),
+  },
+  editModalInput: {
+    borderWidth: 1,
+    borderColor: ProfessionalColors.border,
+    borderRadius: scaleSize(BorderRadius.md),
+    paddingVertical: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(Spacing.md),
+    fontSize: scaleFont(16),
+    color: ProfessionalColors.text,
+    marginBottom: getSpacing(Spacing.lg),
+  },
+  editModalPhotoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: getSpacing(Spacing.xl),
+    gap: getSpacing(Spacing.md),
+  },
+  editModalPhotoPreview: {
+    width: scaleSize(80),
+    height: scaleSize(80),
+    borderRadius: scaleSize(40),
+    backgroundColor: ProfessionalColors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  editModalPhotoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  editModalPhotoPlaceholder: {
+    fontSize: scaleFont(32),
+    fontWeight: 'bold',
+    color: ProfessionalColors.textSecondary,
+  },
+  editModalPhotoButton: {
+    flex: 1,
+    paddingVertical: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(Spacing.md),
+    borderRadius: scaleSize(BorderRadius.md),
+    backgroundColor: ProfessionalColors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editModalPhotoButtonText: {
+    fontSize: scaleFont(14),
+    fontWeight: '600',
+    color: ProfessionalColors.white,
   },
   modalTitle: {
     fontSize: scaleFont(responsiveValues.modalTitleFont),

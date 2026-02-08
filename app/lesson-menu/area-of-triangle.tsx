@@ -17,7 +17,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_4_AREA_OF_TRIANGLE_SECTIONS } from '../../data/lessons/module4_area_of_triangle';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
-import { getSpacing, scaleFont, scaleSize } from '../../utils/responsive';
+import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
+import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+
+const AREA_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
 
 const AREA_OF_TRIANGLE_TOPIC_ID = 4;
 
@@ -45,13 +48,40 @@ const Theme = {
   muted: '#E8E4E0',
 };
 
-function AccordionHeader({ title, isOpen, onPress }: { title: string; isOpen: boolean; onPress: () => void }) {
+// Match "Step N:" at the start of a solution line for highlighting
+const STEP_PREFIX_REGEX = /^(Step\s+\d+):\s*/i;
+
+function SolutionStepLine({ line, stepBadgeStyle, stepBadgeTextStyle, lineStyle, rowStyle }: {
+  line: string;
+  stepBadgeStyle: any;
+  stepBadgeTextStyle: any;
+  lineStyle: any;
+  rowStyle: any;
+}) {
+  const match = line.match(STEP_PREFIX_REGEX);
+  if (match) {
+    const stepLabel = match[1]; // "Step 1", "Step 2", ...
+    const rest = line.slice(match[0].length);
+    return (
+      <View style={rowStyle}>
+        <View style={stepBadgeStyle}>
+          <Text style={stepBadgeTextStyle}>{stepLabel}</Text>
+        </View>
+        <Text style={lineStyle}>{rest}</Text>
+      </View>
+    );
+  }
+  return <Text style={[lineStyle, { marginBottom: getSpacing(Spacing.xs), flex: undefined }]}>{line}</Text>;
+}
+
+function AccordionHeader({ title, isOpen, onPress, icon }: { title: string; isOpen: boolean; onPress: () => void; icon?: string }) {
   const scale = useRef(new Animated.Value(1)).current;
   const onPressIn = () => Animated.timing(scale, { toValue: 0.98, duration: 80, useNativeDriver: true }).start();
   const onPressOut = () => Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }).start();
   return (
     <TouchableOpacity onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut} activeOpacity={1}>
       <Animated.View style={[styles.accordionHeader, { transform: [{ scale }] }]}>
+        {icon ? <Text style={styles.accordionIcon}>{icon}</Text> : null}
         <Text style={styles.accordionTitle} numberOfLines={2}>{title}</Text>
         <Text style={[styles.accordionChevron, isOpen && styles.accordionChevronOpen]}>{isOpen ? '▼' : '▶'}</Text>
       </Animated.View>
@@ -61,15 +91,16 @@ function AccordionHeader({ title, isOpen, onPress }: { title: string; isOpen: bo
 
 function AnimatedAccordionBody({ children }: { children: React.ReactNode }) {
   const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(8)).current;
+  const translateY = useRef(new Animated.Value(isWeb() ? 12 : 8)).current;
   useEffect(() => {
+    const duration = isWeb() ? 400 : 280;
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   }, []);
   return (
-    <Animated.View style={[styles.accordionBody, { opacity, transform: [{ translateY }] }]}>
+    <Animated.View style={[styles.accordionBody, isWeb() && styles.accordionBodyWeb, { opacity, transform: [{ translateY }] }]}>
       {children}
     </Animated.View>
   );
@@ -97,10 +128,21 @@ function SectionFadeIn({ index, children }: { index: number; children: React.Rea
 export default function AreaOfTriangleLessonScreen() {
   const router = useRouter();
   const [expandedSection, setExpandedSection] = useState<string | null>('I');
+  const [openedSections, setOpenedSections] = useState<Set<string>>(() => new Set(['I']));
+  const { ReadingProgressIndicator } = useAccordionReadingProgress(
+    AREA_OF_TRIANGLE_TOPIC_ID,
+    AREA_SECTION_KEYS.length,
+    openedSections,
+    saveTopicContentProgress
+  );
 
   const toggle = (key: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedSection((prev) => (prev === key ? null : key));
+    setExpandedSection((prev) => {
+      const next = prev === key ? null : key;
+      if (next) setOpenedSections((s) => new Set(s).add(next));
+      return next;
+    });
   };
 
   const sec = MODULE_4_AREA_OF_TRIANGLE_SECTIONS;
@@ -111,18 +153,6 @@ export default function AreaOfTriangleLessonScreen() {
   const procedureSteps = (procedure as { steps?: string[] }).steps || [];
   const procedureIntro = (procedure as { intro?: string }).intro || '';
   const workedExamples = sec.worked_examples || [];
-  const lastSavedProgress = useRef(0);
-
-  const handleScroll = (e: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
-    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-    const maxScroll = contentSize.height - layoutMeasurement.height;
-    if (maxScroll <= 0) return;
-    const percent = Math.min(100, Math.max(0, (contentOffset.y / maxScroll) * 100));
-    if (percent - lastSavedProgress.current >= 5 || percent >= 100) {
-      lastSavedProgress.current = percent;
-      saveTopicContentProgress(AREA_OF_TRIANGLE_TOPIC_ID, percent);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -132,13 +162,13 @@ export default function AreaOfTriangleLessonScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={2}>Area of Triangles</Text>
       </View>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={200}
-      >
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, isWeb() && styles.scrollContentWeb]}
+          showsVerticalScrollIndicator={false}
+        >
+        <View style={[styles.scrollInner, isWeb() && styles.scrollInnerWeb]}>
         {/* I. Purpose and Learning Objectives */}
         <SectionFadeIn index={0}>
           <View style={styles.purposeSectionWrap}>
@@ -170,6 +200,7 @@ export default function AreaOfTriangleLessonScreen() {
             title="II. What Is the Area of a Triangle?"
             isOpen={expandedSection === 'II'}
             onPress={() => toggle('II')}
+            icon={isWeb() ? '🔺' : undefined}
           />
           {expandedSection === 'II' && (
             <AnimatedAccordionBody>
@@ -194,7 +225,7 @@ export default function AreaOfTriangleLessonScreen() {
 
         {/* III. Key Words and Concepts */}
         <SectionFadeIn index={2}>
-          <AccordionHeader title="III. Key Words and Concepts" isOpen={expandedSection === 'III'} onPress={() => toggle('III')} />
+          <AccordionHeader title="III. Key Words and Concepts" isOpen={expandedSection === 'III'} onPress={() => toggle('III')} icon={isWeb() ? '📝' : undefined} />
           {expandedSection === 'III' && (
             <AnimatedAccordionBody>
               <View style={styles.keyWordsList}>
@@ -218,6 +249,7 @@ export default function AreaOfTriangleLessonScreen() {
             title="IV. Procedure: Steps in Solving Area of Triangle Problems"
             isOpen={expandedSection === 'IV'}
             onPress={() => toggle('IV')}
+            icon={isWeb() ? '📐' : undefined}
           />
           {expandedSection === 'IV' && (
             <AnimatedAccordionBody>
@@ -239,6 +271,7 @@ export default function AreaOfTriangleLessonScreen() {
             title="V. Worked Examples with Step-by-Step Explanation"
             isOpen={expandedSection === 'V'}
             onPress={() => toggle('V')}
+            icon={isWeb() ? '💡' : undefined}
           />
           {expandedSection === 'V' && (
             <AnimatedAccordionBody>
@@ -254,7 +287,14 @@ export default function AreaOfTriangleLessonScreen() {
                   <View style={styles.solutionWrap}>
                     <Text style={styles.solutionLabel}>Solution:</Text>
                     {(ex.solution || []).map((line: string, i: number) => (
-                      <Text key={i} style={styles.solutionLine}>{line}</Text>
+                      <SolutionStepLine
+                        key={i}
+                        line={line}
+                        stepBadgeStyle={styles.solutionStepBadge}
+                        stepBadgeTextStyle={styles.solutionStepBadgeText}
+                        lineStyle={styles.solutionLine}
+                        rowStyle={styles.solutionStepRow}
+                      />
                     ))}
                   </View>
                   {ex.conclusion != null && ex.conclusion !== '' && (
@@ -265,7 +305,10 @@ export default function AreaOfTriangleLessonScreen() {
             </AnimatedAccordionBody>
           )}
         </SectionFadeIn>
-      </ScrollView>
+        </View>
+        </ScrollView>
+        <ReadingProgressIndicator />
+      </View>
     </SafeAreaView>
   );
 }
@@ -286,17 +329,20 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: scaleFont(18), fontWeight: '700', color: Theme.text },
   scrollView: { flex: 1 },
   scrollContent: { paddingBottom: getSpacing(Spacing.xxl) },
+  scrollContentWeb: { alignItems: 'center' },
+  scrollInner: { width: '100%' },
+  scrollInnerWeb: { maxWidth: 1200, alignSelf: 'center' },
   section: { paddingHorizontal: getSpacing(Spacing.md), paddingVertical: getSpacing(Spacing.sm) },
   purposeSectionWrap: { alignSelf: 'stretch', alignItems: 'center' },
   staticSectionTitle: {
-    fontSize: scaleFont(18),
+    fontSize: scaleFont(isWeb() ? 22 : 18),
     fontWeight: '700',
     color: Theme.text,
     marginBottom: getSpacing(Spacing.md),
     paddingVertical: getSpacing(Spacing.xs),
     textAlign: 'center',
   },
-  staticSectionContent: { marginBottom: getSpacing(Spacing.sm), width: '100%', maxWidth: scaleSize(520), alignItems: 'center' },
+  staticSectionContent: { marginBottom: getSpacing(Spacing.sm), width: '100%', maxWidth: scaleSize(isWeb() ? 1100 : 520), alignItems: 'center' },
   purposeCard: {
     width: '100%',
     backgroundColor: Theme.white,
@@ -313,13 +359,13 @@ const styles = StyleSheet.create({
     shadowRadius: scaleSize(6),
     elevation: 2,
   },
-  purposeBlockHeading: { fontSize: scaleFont(15), fontWeight: '700', color: Theme.primary, marginBottom: getSpacing(Spacing.sm), textAlign: 'center' },
+  purposeBlockHeading: { fontSize: scaleFont(isWeb() ? 18 : 15), fontWeight: '700', color: Theme.primary, marginBottom: getSpacing(Spacing.sm), textAlign: 'center' },
   blockHeadingFirst: { marginTop: 0 },
-  bodyTextCentered: { fontSize: scaleFont(15), color: Theme.text, lineHeight: scaleFont(24), marginBottom: getSpacing(Spacing.sm), textAlign: 'center' },
+  bodyTextCentered: { fontSize: scaleFont(isWeb() ? 18 : 15), color: Theme.text, lineHeight: scaleFont(isWeb() ? 28 : 24), marginBottom: getSpacing(Spacing.sm), textAlign: 'center' },
   objectiveList: { width: '100%' },
   objectiveRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: getSpacing(Spacing.xs) },
   objectiveBullet: { width: scaleSize(6), height: scaleSize(6), borderRadius: 3, backgroundColor: Theme.primary, marginTop: scaleFont(10), marginRight: getSpacing(Spacing.sm), flexShrink: 0 },
-  objectiveItem: { flex: 1, fontSize: scaleFont(14), color: Theme.textSecondary, lineHeight: scaleFont(22) },
+  objectiveItem: { flex: 1, fontSize: scaleFont(isWeb() ? 17 : 14), color: Theme.textSecondary, lineHeight: scaleFont(isWeb() ? 26 : 22) },
   accordionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -336,13 +382,14 @@ const styles = StyleSheet.create({
     shadowRadius: scaleSize(4),
     elevation: 2,
   },
-  accordionTitle: { fontSize: scaleFont(17), fontWeight: '700', color: Theme.text, flex: 1 },
+  accordionTitle: { fontSize: scaleFont(isWeb() ? 19 : 17), fontWeight: '700', color: Theme.text, flex: 1 },
+  accordionIcon: { fontSize: scaleFont(22), marginRight: getSpacing(Spacing.sm) },
   accordionChevron: { fontSize: scaleFont(12), color: Theme.primary, fontWeight: 'bold', marginLeft: getSpacing(Spacing.sm) },
   accordionChevronOpen: { opacity: 0.9 },
   accordionBody: {
     backgroundColor: Theme.card,
-    paddingHorizontal: getSpacing(Spacing.md),
-    paddingVertical: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(isWeb() ? Spacing.xl : Spacing.md),
+    paddingVertical: getSpacing(isWeb() ? Spacing.md : Spacing.sm),
     paddingBottom: getSpacing(Spacing.md),
     borderWidth: 1,
     borderTopWidth: 0,
@@ -356,30 +403,51 @@ const styles = StyleSheet.create({
     shadowRadius: scaleSize(4),
     elevation: 2,
   },
-  paragraph: { fontSize: scaleFont(14), color: Theme.text, lineHeight: scaleFont(22), marginBottom: getSpacing(Spacing.sm) },
+  accordionBodyWeb: { borderLeftWidth: 4, borderLeftColor: Theme.primary, backgroundColor: '#FFFCFA' },
+  paragraph: { fontSize: scaleFont(isWeb() ? 17 : 14), color: Theme.text, lineHeight: scaleFont(isWeb() ? 26 : 22), marginBottom: getSpacing(Spacing.sm) },
   formulaBox: { backgroundColor: Theme.muted, padding: getSpacing(Spacing.md), borderRadius: scaleSize(BorderRadius.sm), marginBottom: getSpacing(Spacing.sm), alignItems: 'center' },
-  formulaText: { fontSize: scaleFont(16), fontWeight: '600', color: Theme.text },
+  formulaText: { fontSize: scaleFont(isWeb() ? 19 : 16), fontWeight: '600', color: Theme.text },
   bulletList: { marginBottom: getSpacing(Spacing.sm) },
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: getSpacing(Spacing.xs) },
-  bulletDot: { fontSize: scaleFont(14), color: Theme.primary, marginRight: getSpacing(Spacing.sm) },
-  bulletText: { flex: 1, fontSize: scaleFont(14), color: Theme.textSecondary, lineHeight: scaleFont(22) },
+  bulletDot: { fontSize: scaleFont(isWeb() ? 17 : 14), color: Theme.primary, marginRight: getSpacing(Spacing.sm) },
+  bulletText: { flex: 1, fontSize: scaleFont(isWeb() ? 17 : 14), color: Theme.textSecondary, lineHeight: scaleFont(isWeb() ? 26 : 22) },
   keyWordsList: { marginBottom: getSpacing(Spacing.sm) },
   keyWordItem: { marginBottom: getSpacing(Spacing.md), paddingBottom: getSpacing(Spacing.sm), borderBottomWidth: 1, borderBottomColor: Theme.border },
   keyWordItemLast: { borderBottomWidth: 0 },
   keyWordTermRow: { flexDirection: 'row', alignItems: 'center', marginBottom: getSpacing(Spacing.xs) },
-  keyWordBullet: { fontSize: scaleFont(16), color: Theme.primary, marginRight: getSpacing(Spacing.sm) },
-  keyWordTerm: { flex: 1, fontSize: scaleFont(15), fontWeight: '700', color: Theme.text },
-  keyWordDefinition: { fontSize: scaleFont(14), color: Theme.textSecondary, lineHeight: scaleFont(22), marginLeft: scaleSize(24), marginBottom: getSpacing(Spacing.xs) },
+  keyWordBullet: { fontSize: scaleFont(isWeb() ? 18 : 16), color: Theme.primary, marginRight: getSpacing(Spacing.sm) },
+  keyWordTerm: { flex: 1, fontSize: scaleFont(isWeb() ? 18 : 15), fontWeight: '700', color: Theme.text },
+  keyWordDefinition: { fontSize: scaleFont(isWeb() ? 17 : 14), color: Theme.textSecondary, lineHeight: scaleFont(isWeb() ? 26 : 22), marginLeft: scaleSize(24), marginBottom: getSpacing(Spacing.xs) },
   stepList: { marginTop: getSpacing(Spacing.xs) },
   stepRow: { marginBottom: getSpacing(Spacing.sm) },
-  stepText: { fontSize: scaleFont(14), color: Theme.textSecondary, lineHeight: scaleFont(22) },
+  stepText: { fontSize: scaleFont(isWeb() ? 17 : 14), color: Theme.textSecondary, lineHeight: scaleFont(isWeb() ? 26 : 22) },
   exampleBlock: { marginBottom: getSpacing(Spacing.md), paddingBottom: getSpacing(Spacing.md), borderBottomWidth: 1, borderBottomColor: Theme.border },
-  exampleTitle: { fontSize: scaleFont(15), fontWeight: '700', color: Theme.primary, marginBottom: getSpacing(Spacing.sm) },
-  exampleProblem: { fontSize: scaleFont(14), color: Theme.text, marginBottom: getSpacing(Spacing.sm), fontStyle: 'italic' },
+  exampleTitle: { fontSize: scaleFont(isWeb() ? 18 : 15), fontWeight: '700', color: Theme.primary, marginBottom: getSpacing(Spacing.sm) },
+  exampleProblem: { fontSize: scaleFont(isWeb() ? 17 : 14), color: Theme.text, marginBottom: getSpacing(Spacing.sm), fontStyle: 'italic' },
   diagramWrap: { alignItems: 'center', marginVertical: getSpacing(Spacing.sm), width: '100%' },
   diagramImage: { width: '100%', maxWidth: scaleSize(400), height: scaleSize(220) },
   solutionWrap: { marginLeft: getSpacing(Spacing.sm), marginTop: getSpacing(Spacing.xs) },
-  solutionLabel: { fontSize: scaleFont(14), fontWeight: '600', color: Theme.text, marginBottom: getSpacing(Spacing.xs) },
-  solutionLine: { fontSize: scaleFont(13), color: Theme.textSecondary, lineHeight: scaleFont(20), marginBottom: getSpacing(Spacing.xs) },
-  conclusionText: { fontSize: scaleFont(14), fontWeight: '600', color: Theme.primary, marginTop: getSpacing(Spacing.sm), marginLeft: getSpacing(Spacing.sm) },
+  solutionLabel: { fontSize: scaleFont(isWeb() ? 17 : 14), fontWeight: '600', color: Theme.text, marginBottom: getSpacing(Spacing.xs) },
+  solutionStepRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: getSpacing(Spacing.xs),
+    gap: getSpacing(Spacing.sm),
+  },
+  solutionStepBadge: {
+    backgroundColor: Theme.primary,
+    paddingHorizontal: scaleSize(8),
+    paddingVertical: scaleSize(3),
+    borderRadius: scaleSize(6),
+    minWidth: scaleSize(52),
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  solutionStepBadgeText: {
+    fontSize: scaleFont(isWeb() ? 14 : 12),
+    fontWeight: '800',
+    color: Theme.white,
+  },
+  solutionLine: { flex: 1, fontSize: scaleFont(isWeb() ? 16 : 13), color: Theme.textSecondary, lineHeight: scaleFont(isWeb() ? 25 : 20) },
+  conclusionText: { fontSize: scaleFont(isWeb() ? 17 : 14), fontWeight: '600', color: Theme.primary, marginTop: getSpacing(Spacing.sm), marginLeft: getSpacing(Spacing.sm) },
 });

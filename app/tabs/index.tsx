@@ -1,9 +1,11 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
     Animated,
     Easing,
+    Image,
     ImageBackground,
     Modal,
     ScrollView,
@@ -16,6 +18,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TopicModal from '../../components/TopicModal';
 import PracticeActivitiesModal from '../../components/PracticeActivitiesModal';
+import WelcomeModal from '../../components/WelcomeModal';
+import TabsAnimatedBackground from '../../components/TabsAnimatedBackground';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { TRIANGLE_SIMILARITY_DATA } from '../../data/lessons/module3_triangle_similarity';
 import { OBLIQUE_TRIANGLE_PRACTICE } from '../../data/lessons/module3b_oblique_triangle';
@@ -24,6 +28,7 @@ import { QUADRATIC_EQUATIONS_DATA } from '../../data/lessons/module1_quadratic';
 import { AREA_OF_TRIANGLE_DATA } from '../../data/lessons/module4_area_of_triangle';
 import { VARIATION_DATA } from '../../data/lessons/module5_variation';
 import { database } from '../../services/database';
+import { getProfileOverlay } from '../../utils/profileStorage';
 import { getTopicProgress } from '../../utils/progressStorage';
 import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize, useResponsive, wp } from '../../utils/responsive';
 
@@ -43,13 +48,8 @@ const ProfessionalColors = {
   gradientEnd: '#FF8C42',
 };
 
-// Example data
-const EXAMPLE_USER = {
-  name: 'John Patrick',
-  averageProgress: 67,
-  streak: 5,
-  level: 12,
-};
+// Fallback display name when not logged in
+const DEFAULT_DISPLAY_NAME = 'Learner';
 
 const EXAMPLE_TOPICS = [
   { id: 1, name: 'Quadratic Equations', progress: 0, icon: '📐', subtitle: 'Solving Quadratic Equations' },
@@ -395,7 +395,39 @@ function AnimatedProgressBar({ progress, style, styles }: { progress: number; st
   );
 }
 
-// Animated Background Component for Profile Header
+// Subtle shimmer overlay for header (animated)
+function HeaderShimmer() {
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0.12,
+          duration: 2500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 2500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+      { iterations: -1 }
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[StyleSheet.absoluteFill, { backgroundColor: ProfessionalColors.white, opacity }]}
+    />
+  );
+}
+
+// Animated Background Component for Profile Header (white particles on orange)
 function AnimatedProfileBackground() {
   const particles = Array.from({ length: 8 }, (_, i) => ({
     translateX: useRef(new Animated.Value(0)).current,
@@ -535,7 +567,7 @@ function AnimatedProfileBackground() {
                 ...positions[index],
                 width: size,
                 height: size,
-                backgroundColor: ProfessionalColors.primary,
+                backgroundColor: ProfessionalColors.white,
                 borderRadius: size / 2,
               } as any,
               {
@@ -552,7 +584,7 @@ function AnimatedProfileBackground() {
         );
       })}
 
-      {/* Overlay to ensure content is visible */}
+      {/* Very subtle overlay so particles don't overpower text */}
       <View
         style={{
           position: 'absolute',
@@ -560,7 +592,7 @@ function AnimatedProfileBackground() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(255, 255, 255, 0.6)',
+          backgroundColor: 'rgba(255, 102, 0, 0.08)',
         }}
       />
     </View>
@@ -894,6 +926,7 @@ function AnimatedTopicCard({
 
 export default function HomeScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ welcome?: string; username?: string }>();
   const [searchQuery, setSearchQuery] = useState('');
   const [topics, setTopics] = useState(EXAMPLE_TOPICS);
   const [selectedTopic, setSelectedTopic] = useState<typeof EXAMPLE_TOPICS[0] | null>(null);
@@ -901,12 +934,19 @@ export default function HomeScreen() {
   const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
   const [triangleMeasuresChoiceVisible, setTriangleMeasuresChoiceVisible] = useState(false);
   const [triangleMeasuresModule, setTriangleMeasuresModule] = useState<'3A' | '3B' | null>(null);
-  const [displayName, setDisplayName] = useState(EXAMPLE_USER.name);
+  const [displayName, setDisplayName] = useState(DEFAULT_DISPLAY_NAME);
+  const [profilePhotoUri, setProfilePhotoUri] = useState<string | undefined>(undefined);
+  const [streak, setStreak] = useState(0);
+  const [welcomeModalVisible, setWelcomeModalVisible] = useState(false);
+  const [welcomeVariant, setWelcomeVariant] = useState<'new' | 'back'>('back');
+  const [welcomeUsername, setWelcomeUsername] = useState('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
   const averageProgress = topics.length ? Math.round(topics.reduce((s, t) => s + t.progress, 0) / topics.length) : 0;
+  const completedTopics = topics.filter((t) => t.progress >= 100).length;
+  const level = 1 + Math.min(9, Math.floor(averageProgress / 10));
 
   useEffect(() => {
     // Entrance animations
@@ -933,7 +973,30 @@ export default function HomeScreen() {
     }).start();
   }, [averageProgress]);
 
-  // Load progress and user when screen comes into focus
+  // Show welcome modal when arriving from signup (new) or login (back)
+  useEffect(() => {
+    const w = params.welcome;
+    if (w === 'new' || w === 'back') {
+      setWelcomeVariant(w);
+      let name = '';
+      if (typeof params.username === 'string' && params.username) {
+        try {
+          name = decodeURIComponent(params.username);
+        } catch {
+          name = params.username;
+        }
+      }
+      setWelcomeUsername(name);
+      setWelcomeModalVisible(true);
+    }
+  }, [params.welcome, params.username]);
+
+  const handleCloseWelcomeModal = useCallback(() => {
+    setWelcomeModalVisible(false);
+    router.replace('/tabs');
+  }, [router]);
+
+  // Load progress, user, and streak when screen comes into focus; update streak on activity
   useFocusEffect(
     useCallback(() => {
       const load = async () => {
@@ -947,10 +1010,19 @@ export default function HomeScreen() {
               }))
             );
           }
-          const user = await database.getUserData();
-          setDisplayName(user?.username ?? EXAMPLE_USER.name);
+          const [overlay, user] = await Promise.all([getProfileOverlay(), database.getUserData()]);
+          setDisplayName((overlay.displayName?.trim() || user?.username) ?? DEFAULT_DISPLAY_NAME);
+          setProfilePhotoUri(overlay.photoUri);
+          const newStreak = await database.setLastActivityAndStreak(new Date().toISOString());
+          setStreak(newStreak);
         } catch (error) {
-          console.log('Error loading progress:', error);
+          console.log('Error loading home data:', error);
+          try {
+            const currentStreak = await database.getStreak();
+            setStreak(currentStreak);
+          } catch {
+            setStreak(0);
+          }
         }
       };
       load();
@@ -1018,7 +1090,8 @@ export default function HomeScreen() {
 
   const { isWeb, isWideScreen, width: windowWidth } = useResponsive();
   const useWebLayout = isWeb && isWideScreen;
-  const useThreeColGrid = useWebLayout && windowWidth >= 1100;
+  const useFourColGrid = useWebLayout && windowWidth >= 1400;
+  const useThreeColGrid = useWebLayout && windowWidth >= 1100 && !useFourColGrid;
 
   const getProgressLabel = (progress: number) => {
     if (progress >= 90) return 'Excellent! 🎉';
@@ -1029,7 +1102,9 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <View style={styles.container}>
+      <TabsAnimatedBackground />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, useWebLayout && styles.scrollContentWeb]}
@@ -1047,7 +1122,14 @@ export default function HomeScreen() {
             },
           ]}
         >
-          {/* Animated Background */}
+          {/* Orange gradient background with subtle shimmer animation */}
+          <LinearGradient
+            colors={[ProfessionalColors.primary, ProfessionalColors.primaryDark, ProfessionalColors.primaryDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <HeaderShimmer />
           <AnimatedProfileBackground />
 
           {/* Content Container with zIndex to appear above background */}
@@ -1068,31 +1150,34 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  <Text style={styles.avatarText}>
-                    {(displayName || 'L').charAt(0).toUpperCase()}
-                  </Text>
+                  {profilePhotoUri ? (
+                    <Image source={{ uri: profilePhotoUri }} style={styles.avatarImage as any} />
+                  ) : (
+                    <Text style={styles.avatarText}>
+                      {(displayName || 'L').charAt(0).toUpperCase()}
+                    </Text>
+                  )}
                 </Animated.View>
                 <View style={styles.levelBadge}>
-                  <Text style={styles.levelText}>Lvl {EXAMPLE_USER.level}</Text>
+                  <Text style={styles.levelText}>Lvl {level}</Text>
                 </View>
               </View>
 
               <View style={styles.userInfo}>
                 <Text style={styles.welcomeText}>Welcome back,</Text>
-                <Text style={styles.userName} numberOfLines={1}>{displayName || EXAMPLE_USER.name}</Text>
-                <View style={styles.streakContainer}>
+                <Text style={styles.userName} numberOfLines={1}>{displayName || DEFAULT_DISPLAY_NAME}</Text>
+                <View style={[styles.streakContainer, streak === 0 && styles.streakContainerInactive]}>
                   <Text style={styles.streakIcon}>🔥</Text>
-                  <Text style={styles.streakText}>{EXAMPLE_USER.streak} day streak</Text>
+                  <Text style={styles.streakText}>
+                    {streak === 0 ? 'Start your streak' : streak === 1 ? '1 day streak' : `${streak} day streak`}
+                  </Text>
                 </View>
               </View>
 
               <View style={styles.progressCircle}>
-                <Animated.Text style={styles.progressPercentage}>
-                  {progressAnim.interpolate({
-                    inputRange: [0, 100],
-                    outputRange: ['0%', '100%'],
-                  })}
-                </Animated.Text>
+                <Text style={styles.progressPercentage} numberOfLines={1}>
+                  {Math.round(averageProgress)}%
+                </Text>
                 <Text style={styles.progressLabel}>Overall</Text>
               </View>
             </View>
@@ -1102,6 +1187,7 @@ export default function HomeScreen() {
               <View style={[styles.progressHeader, useWebLayout && styles.progressHeaderWeb]}>
                 <Text style={styles.progressTitle}>Your Learning Progress</Text>
                 <Text style={styles.progressSubtitle}>
+                  {completedTopics > 0 ? `${completedTopics}/${topics.length} topics completed · ` : ''}
                   {getProgressLabel(Math.round(averageProgress))}
                 </Text>
               </View>
@@ -1131,6 +1217,20 @@ export default function HomeScreen() {
                 </View>
               </View>
             </View>
+
+            {/* Web-only: extra stats row */}
+            {useWebLayout && (
+              <View style={styles.headerExtraRow}>
+                <View style={[styles.headerChip, styles.headerChipWeb]}>
+                  <Text style={[styles.headerChipIcon, styles.headerChipIconWeb]}>📚</Text>
+                  <Text style={[styles.headerChipText, styles.headerChipTextWeb]}>{completedTopics}/{topics.length} topics mastered</Text>
+                </View>
+                <View style={[styles.headerChip, styles.headerChipWeb]}>
+                  <Text style={[styles.headerChipIcon, styles.headerChipIconWeb]}>🎯</Text>
+                  <Text style={[styles.headerChipText, styles.headerChipTextWeb]}>{getProgressLabel(Math.round(averageProgress))}</Text>
+                </View>
+              </View>
+            )}
           </View>
         </Animated.View>
 
@@ -1167,7 +1267,7 @@ export default function HomeScreen() {
         {/* Animated Topics List — grid on web for landscape/website layout */}
         <View style={[styles.topicsList, useWebLayout && styles.topicsListWeb]}>
           {filteredTopics.map((topic, index) => (
-            <View key={topic.id} style={useWebLayout ? (useThreeColGrid ? styles.topicCardWrapperWeb3Col : styles.topicCardWrapperWeb) : undefined}>
+            <View key={topic.id} style={useWebLayout ? (useFourColGrid ? styles.topicCardWrapperWeb4Col : useThreeColGrid ? styles.topicCardWrapperWeb3Col : styles.topicCardWrapperWeb) : undefined}>
               <AnimatedTopicCard
                 topic={topic}
                 index={index}
@@ -1232,6 +1332,7 @@ export default function HomeScreen() {
           visible={activitiesModalVisible}
           onClose={() => setActivitiesModalVisible(false)}
           practiceData={QUADRATIC_EQUATIONS_DATA.practiceActivities}
+          topicId={selectedTopic?.id}
         />
       )}
       {selectedTopic?.name === 'Pythagorean Triples' && (
@@ -1239,6 +1340,7 @@ export default function HomeScreen() {
           visible={activitiesModalVisible}
           onClose={() => setActivitiesModalVisible(false)}
           practiceData={PYTHAGOREAN_TRIPLES_DATA.practiceActivities}
+          topicId={selectedTopic?.id}
         />
       )}
       {selectedTopic?.name === 'Triangle Measures' && (
@@ -1249,6 +1351,7 @@ export default function HomeScreen() {
             setTriangleMeasuresModule(null);
           }}
           practiceData={triangleMeasuresModule === '3B' ? OBLIQUE_TRIANGLE_PRACTICE : TRIANGLE_SIMILARITY_DATA.practiceActivities}
+          topicId={selectedTopic?.id}
         />
       )}
       {selectedTopic?.name === 'Area of Triangles' && (
@@ -1256,6 +1359,7 @@ export default function HomeScreen() {
           visible={activitiesModalVisible}
           onClose={() => setActivitiesModalVisible(false)}
           practiceData={AREA_OF_TRIANGLE_DATA.practiceActivities}
+          topicId={selectedTopic?.id}
         />
       )}
       {selectedTopic?.name === 'Variation' && (
@@ -1263,6 +1367,7 @@ export default function HomeScreen() {
           visible={activitiesModalVisible}
           onClose={() => setActivitiesModalVisible(false)}
           practiceData={VARIATION_DATA.practiceActivities}
+          topicId={selectedTopic?.id}
         />
       )}
 
@@ -1304,23 +1409,31 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      <WelcomeModal
+        visible={welcomeModalVisible}
+        variant={welcomeVariant}
+        username={welcomeUsername}
+        onClose={handleCloseWelcomeModal}
+      />
     </SafeAreaView>
+    </View>
   );
 }
 
-// Web: compact sizes so UI doesn't look "zoomed in"; mobile/tablet unchanged
+// Web: larger header text and avatar; mobile/tablet unchanged
 const responsiveValues = {
-  paddingH: isWeb() ? getSpacing(Spacing.md) : (isTablet() ? wp(5) : getSpacing(Spacing.md)),
+  paddingH: isWeb() ? getSpacing(Spacing.lg) : (isTablet() ? wp(6) : wp(5)),
   cardMaxWidth: isWeb() ? undefined : isTablet() ? 800 : undefined,
   topicCardMarginH: isTablet() ? wp(2) : 0,
-  avatarSize: isWeb() ? 44 : (isTablet() ? 90 : isSmallDevice() ? 60 : 70),
-  avatarRadius: isWeb() ? 22 : (isTablet() ? 45 : isSmallDevice() ? 30 : 35),
-  avatarFont: isWeb() ? 20 : (isTablet() ? 36 : isSmallDevice() ? 24 : 28),
-  titleFont: isWeb() ? 18 : (isTablet() ? 28 : isSmallDevice() ? 18 : 22),
-  welcomeFont: isWeb() ? 12 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
-  progressCircleSize: isWeb() ? 52 : (isTablet() ? 90 : isSmallDevice() ? 60 : 70),
-  progressFont: isWeb() ? 14 : (isTablet() ? 22 : isSmallDevice() ? 14 : 18),
-  progressLabelFont: isWeb() ? 10 : (isTablet() ? 12 : isSmallDevice() ? 8 : 10),
+  avatarSize: isWeb() ? 64 : (isTablet() ? 90 : isSmallDevice() ? 60 : 70),
+  avatarRadius: isWeb() ? 32 : (isTablet() ? 45 : isSmallDevice() ? 30 : 35),
+  avatarFont: isWeb() ? 28 : (isTablet() ? 36 : isSmallDevice() ? 24 : 28),
+  titleFont: isWeb() ? 22 : (isTablet() ? 28 : isSmallDevice() ? 18 : 22),
+  welcomeFont: isWeb() ? 16 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+  progressCircleSize: isWeb() ? 68 : (isTablet() ? 90 : isSmallDevice() ? 60 : 70),
+  progressFont: isWeb() ? 20 : (isTablet() ? 22 : isSmallDevice() ? 14 : 18),
+  progressLabelFont: isWeb() ? 12 : (isTablet() ? 12 : isSmallDevice() ? 8 : 10),
   sectionTitleFont: isWeb() ? 20 : (isTablet() ? 30 : isSmallDevice() ? 20 : 24),
   sectionSubtitleFont: isWeb() ? 13 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
   topicIconSize: isWeb() ? 40 : (isTablet() ? 60 : isSmallDevice() ? 40 : 50),
@@ -1331,22 +1444,27 @@ const responsiveValues = {
   statCardMaxWidth: isTablet() ? 250 : undefined,
   statNumberFont: isWeb() ? 18 : (isTablet() ? 26 : isSmallDevice() ? 16 : 20),
   statLabelFont: isWeb() ? 11 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
-  searchFont: isWeb() ? 14 : (isTablet() ? 18 : isSmallDevice() ? 14 : 16),
-  searchIconFont: isWeb() ? 16 : (isTablet() ? 20 : isSmallDevice() ? 16 : 18),
-  progressTitleFont: isWeb() ? 14 : (isTablet() ? 20 : isSmallDevice() ? 14 : 16),
-  progressSubtitleFont: isWeb() ? 12 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
-  progressBarHeight: isWeb() ? 8 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
+  searchFont: isWeb() ? 15 : (isTablet() ? 18 : isSmallDevice() ? 14 : 16),
+  searchIconFont: isWeb() ? 18 : (isTablet() ? 20 : isSmallDevice() ? 16 : 18),
+  progressTitleFont: isWeb() ? 18 : (isTablet() ? 20 : isSmallDevice() ? 14 : 16),
+  progressSubtitleFont: isWeb() ? 14 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+  progressBarHeight: isWeb() ? 10 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
   topicProgressBarHeight: isWeb() ? 6 : (isTablet() ? 10 : isSmallDevice() ? 6 : 8),
-  levelFont: isWeb() ? 10 : (isTablet() ? 12 : isSmallDevice() ? 8 : 10),
-  streakFont: isWeb() ? 11 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
-  streakIconFont: isWeb() ? 12 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
-  topicCardMinHeight: isWeb() ? 128 : 160,
+  levelFont: isWeb() ? 11 : (isTablet() ? 12 : isSmallDevice() ? 8 : 10),
+  streakFont: isWeb() ? 13 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
+  streakIconFont: isWeb() ? 14 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+  topicCardMinHeight: isWeb() ? 180 : 200,
+  searchBarMaxWidth: isWeb() ? 560 : undefined,
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: ProfessionalColors.background,
+  },
+  safeArea: {
+    flex: 1,
+    zIndex: 1,
   },
   scrollView: {
     flex: 1,
@@ -1359,18 +1477,18 @@ const styles = StyleSheet.create({
   },
   webContentWrap: {
     width: '100%',
-    maxWidth: 1400,
-    paddingHorizontal: getSpacing(Spacing.xl),
-    alignSelf: 'center',
+    paddingHorizontal: getSpacing(Spacing.lg),
+    alignSelf: 'stretch',
+    flex: 1,
   },
-  // Enhanced Profile Header
+  // Enhanced Profile Header (orange gradient applied in JSX)
   profileHeader: {
-    backgroundColor: ProfessionalColors.white,
-    padding: getSpacing(Spacing.lg),
+    backgroundColor: 'transparent',
+    padding: getSpacing(Spacing.xl),
     marginTop: getSpacing(Spacing.md),
     marginHorizontal: responsiveValues.paddingH,
     borderRadius: scaleSize(24),
-    minHeight: scaleSize(140),
+    minHeight: scaleSize(200),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: scaleSize(4) },
     shadowOpacity: 0.08,
@@ -1384,8 +1502,10 @@ const styles = StyleSheet.create({
   profileHeaderWeb: {
     padding: getSpacing(Spacing.lg),
     marginTop: getSpacing(Spacing.sm),
-    borderRadius: scaleSize(16),
-    minHeight: scaleSize(120),
+    borderRadius: scaleSize(14),
+    minHeight: scaleSize(140),
+    borderLeftWidth: scaleSize(4),
+    borderLeftColor: 'rgba(255, 255, 255, 0.4)',
   },
   profileContentInner: {
     position: 'relative',
@@ -1394,7 +1514,8 @@ const styles = StyleSheet.create({
   profileContentInnerWeb: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getSpacing(Spacing.lg),
+    flexWrap: 'wrap',
+    gap: getSpacing(Spacing.md),
   },
   profileTopRow: {
     flexDirection: 'row',
@@ -1405,17 +1526,56 @@ const styles = StyleSheet.create({
   profileTopRowWeb: {
     marginBottom: 0,
     flex: 1,
-    minWidth: 260,
-    maxWidth: 380,
+    minWidth: 240,
+    maxWidth: 360,
     gap: getSpacing(Spacing.sm),
   },
   progressSectionWeb: {
     marginTop: 0,
-    flex: 1.2,
-    minWidth: 0,
+    flex: 1.3,
+    minWidth: 240,
   },
   progressHeaderWeb: {
     marginBottom: getSpacing(Spacing.xs),
+  },
+  headerExtraRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: getSpacing(Spacing.sm),
+    marginTop: getSpacing(Spacing.sm),
+    paddingTop: getSpacing(Spacing.sm),
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    width: '100%',
+  },
+  headerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: getSpacing(Spacing.md),
+    paddingVertical: getSpacing(Spacing.xs),
+    borderRadius: scaleSize(20),
+  },
+  headerChipWeb: {
+    paddingHorizontal: getSpacing(Spacing.md),
+    paddingVertical: scaleSize(5),
+    borderRadius: scaleSize(20),
+  },
+  headerChipIcon: {
+    fontSize: scaleFont(14),
+    marginRight: getSpacing(Spacing.xs),
+  },
+  headerChipIconWeb: {
+    fontSize: scaleFont(15),
+    marginRight: getSpacing(Spacing.xs),
+  },
+  headerChipText: {
+    fontSize: scaleFont(13),
+    color: ProfessionalColors.white,
+    fontWeight: '600',
+  },
+  headerChipTextWeb: {
+    fontSize: scaleFont(14),
   },
   avatarContainer: {
     position: 'relative',
@@ -1425,14 +1585,20 @@ const styles = StyleSheet.create({
     width: scaleSize(responsiveValues.avatarSize),
     height: scaleSize(responsiveValues.avatarSize),
     borderRadius: scaleSize(responsiveValues.avatarRadius),
-    backgroundColor: ProfessionalColors.primary,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: ProfessionalColors.primary,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: scaleSize(8) },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.2,
     shadowRadius: scaleSize(12),
     elevation: 8,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: scaleSize(responsiveValues.avatarRadius),
   },
   avatarText: {
     fontSize: scaleFont(responsiveValues.avatarFont),
@@ -1443,7 +1609,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -scaleSize(5),
     right: -scaleSize(5),
-    backgroundColor: ProfessionalColors.warning,
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
     paddingHorizontal: getSpacing(Spacing.sm),
     paddingVertical: scaleSize(4),
     borderRadius: BorderRadius.full,
@@ -1464,24 +1630,27 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: scaleFont(responsiveValues.welcomeFont),
-    color: ProfessionalColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: scaleSize(2),
     fontWeight: '500',
   },
   userName: {
     fontSize: scaleFont(responsiveValues.titleFont),
     fontWeight: 'bold',
-    color: ProfessionalColors.text,
+    color: ProfessionalColors.white,
     marginBottom: getSpacing(Spacing.xs),
   },
   streakContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 102, 0, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
     paddingHorizontal: getSpacing(Spacing.sm),
-    paddingVertical: scaleSize(4),
+    paddingVertical: scaleSize(5),
     borderRadius: scaleSize(12),
     alignSelf: 'flex-start',
+  },
+  streakContainerInactive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   streakIcon: {
     fontSize: scaleFont(responsiveValues.streakIconFont),
@@ -1489,31 +1658,31 @@ const styles = StyleSheet.create({
   },
   streakText: {
     fontSize: scaleFont(responsiveValues.streakFont),
-    color: ProfessionalColors.text,
+    color: ProfessionalColors.white,
     fontWeight: '600',
   },
   progressCircle: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 102, 0, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     padding: getSpacing(Spacing.md),
     borderRadius: scaleSize(20),
     minWidth: scaleSize(responsiveValues.progressCircleSize),
     flexShrink: 0,
-    shadowColor: ProfessionalColors.primary,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: scaleSize(4) },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: scaleSize(8),
     elevation: 4,
   },
   progressPercentage: {
     fontSize: scaleFont(responsiveValues.progressFont),
     fontWeight: 'bold',
-    color: ProfessionalColors.primary,
+    color: ProfessionalColors.white,
   },
   progressLabel: {
     fontSize: scaleFont(responsiveValues.progressLabelFont),
-    color: ProfessionalColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '600',
   },
   progressSection: {
@@ -1528,12 +1697,12 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: scaleFont(responsiveValues.progressTitleFont),
     fontWeight: '700',
-    color: ProfessionalColors.text,
+    color: ProfessionalColors.white,
     flex: 1,
   },
   progressSubtitle: {
     fontSize: scaleFont(responsiveValues.progressSubtitleFont),
-    color: ProfessionalColors.primary,
+    color: 'rgba(255, 255, 255, 0.95)',
     fontWeight: '600',
   },
   progressBarContainer: {
@@ -1546,23 +1715,23 @@ const styles = StyleSheet.create({
   },
   progressMin: {
     fontSize: scaleFont(responsiveValues.progressLabelFont),
-    color: ProfessionalColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.85)',
     fontWeight: '500',
   },
   progressMax: {
     fontSize: scaleFont(responsiveValues.progressLabelFont),
-    color: ProfessionalColors.textSecondary,
+    color: 'rgba(255, 255, 255, 0.85)',
     fontWeight: '500',
   },
   progressBarBackground: {
     height: scaleSize(responsiveValues.progressBarHeight),
-    backgroundColor: ProfessionalColors.border,
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
     borderRadius: BorderRadius.full,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: ProfessionalColors.primary,
+    backgroundColor: ProfessionalColors.white,
     borderRadius: BorderRadius.full,
   },
   progressMarker: {
@@ -1571,7 +1740,7 @@ const styles = StyleSheet.create({
   },
   progressMarkerText: {
     fontSize: scaleFont(responsiveValues.progressLabelFont),
-    color: ProfessionalColors.primary,
+    color: ProfessionalColors.white,
     fontWeight: '700',
   },
   // Search Section
@@ -1579,6 +1748,7 @@ const styles = StyleSheet.create({
     paddingTop: getSpacing(Spacing.md),
     paddingBottom: getSpacing(Spacing.md),
     paddingHorizontal: responsiveValues.paddingH,
+    alignItems: isWeb() ? 'center' : undefined,
   },
   searchBarContainer: {
     flexDirection: 'row',
@@ -1592,8 +1762,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: scaleSize(12),
     elevation: 6,
-    maxWidth: responsiveValues.cardMaxWidth,
-    alignSelf: 'stretch',
+    maxWidth: responsiveValues.searchBarMaxWidth ?? responsiveValues.cardMaxWidth,
+    alignSelf: isWeb() ? 'center' : 'stretch',
+    width: isWeb() ? '100%' : undefined,
   },
   searchIcon: {
     fontSize: scaleFont(responsiveValues.searchIconFont),
@@ -1650,6 +1821,10 @@ const styles = StyleSheet.create({
     width: '31%',
     marginBottom: getSpacing(Spacing.md),
   },
+  topicCardWrapperWeb4Col: {
+    width: '23.5%',
+    marginBottom: getSpacing(Spacing.md),
+  },
   topicCardTouchable: {
     marginHorizontal: 0,
     maxWidth: responsiveValues.cardMaxWidth,
@@ -1676,8 +1851,8 @@ const styles = StyleSheet.create({
   },
   topicCard: {
     flex: 1,
-    padding: getSpacing(Spacing.lg),
-    paddingLeft: getSpacing(Spacing.lg) + scaleSize(6),
+    padding: getSpacing(Spacing.xl),
+    paddingLeft: getSpacing(Spacing.xl) + scaleSize(6),
     overflow: 'hidden',
     minHeight: scaleSize(responsiveValues.topicCardMinHeight),
     borderTopRightRadius: BorderRadius.lg - 1,

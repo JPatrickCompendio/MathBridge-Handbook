@@ -15,6 +15,7 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import TabsAnimatedBackground from '../../components/TabsAnimatedBackground';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { getTopicProgress } from '../../utils/progressStorage';
 import { getCardWidth, getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
@@ -1054,11 +1055,6 @@ export default function AchievementsScreen() {
     });
   };
 
-  const handleShare = () => {
-    console.log('Share achievement:', selectedAchievement?.title);
-    // TODO: Implement share functionality
-  };
-
   const renderHeader = () => (
     <Animated.View 
       style={{ 
@@ -1232,7 +1228,9 @@ export default function AchievementsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <View style={styles.container}>
+      <TabsAnimatedBackground />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <FlatList
         data={filteredAchievements}
         renderItem={({ item, index }) => (
@@ -1301,13 +1299,13 @@ export default function AchievementsScreen() {
               <AnimatedModalContent 
                 achievement={selectedAchievement}
                 onClose={handleCloseModal}
-                onShare={handleShare}
               />
             )}
           </Animated.View>
         </Animated.View>
       </Modal>
     </SafeAreaView>
+    </View>
   );
 }
 
@@ -1315,11 +1313,9 @@ export default function AchievementsScreen() {
 function AnimatedModalContent({ 
   achievement,
   onClose,
-  onShare,
 }: { 
   achievement: Achievement;
   onClose: () => void;
-  onShare: () => void;
 }) {
   const iconScale = useRef(new Animated.Value(0)).current;
   const iconRotate = useRef(new Animated.Value(0)).current;
@@ -1510,15 +1506,6 @@ function AnimatedModalContent({
 
       {/* Actions */}
       <View style={styles.modalActions}>
-        {achievement.earned && (
-          <TouchableOpacity
-            style={styles.modalShareButton}
-            onPress={onShare}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.modalShareButtonText}>Share</Text>
-          </TouchableOpacity>
-        )}
         <TouchableOpacity
           style={styles.modalCloseButton}
           onPress={onClose}
@@ -1594,6 +1581,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: ProfessionalColors.background,
+  },
+  safeArea: {
+    flex: 1,
+    zIndex: 1,
   },
   content: {
     flex: 1,
@@ -2150,23 +2141,6 @@ const styles = StyleSheet.create({
     gap: getSpacing(Spacing.md),
     width: '100%',
     flexWrap: isSmallDevice() ? 'wrap' : 'nowrap',
-  },
-  modalShareButton: {
-    flex: 1,
-    paddingVertical: getSpacing(Spacing.md),
-    borderRadius: scaleSize(BorderRadius.md),
-    backgroundColor: ProfessionalColors.primary,
-    alignItems: 'center',
-    shadowColor: ProfessionalColors.primary,
-    shadowOffset: { width: 0, height: scaleSize(4) },
-    shadowOpacity: 0.4,
-    shadowRadius: scaleSize(8),
-    elevation: 8,
-  },
-  modalShareButtonText: {
-    fontSize: scaleFont(responsiveValues.modalButtonTextFont),
-    fontWeight: '600',
-    color: ProfessionalColors.white,
   },
   modalCloseButton: {
     flex: 1,

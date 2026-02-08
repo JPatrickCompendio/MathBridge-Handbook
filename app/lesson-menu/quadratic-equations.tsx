@@ -16,7 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_1_SECTIONS } from '../../data/lessons/module1_quadratic';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
-import { getSpacing, scaleFont, scaleSize } from '../../utils/responsive';
+import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
+import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+
+const QUADRATIC_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
 
 const QUADRATIC_TOPIC_ID = 1;
 
@@ -41,10 +44,12 @@ function AccordionHeader({
   title,
   isOpen,
   onPress,
+  icon,
 }: {
   title: string;
   isOpen: boolean;
   onPress: () => void;
+  icon?: string;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
   const onPressIn = () => Animated.timing(scale, { toValue: 0.98, duration: 80, useNativeDriver: true }).start();
@@ -52,6 +57,7 @@ function AccordionHeader({
   return (
     <TouchableOpacity onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut} activeOpacity={1}>
       <Animated.View style={[styles.accordionHeader, { transform: [{ scale }] }]}>
+        {icon ? <Text style={styles.accordionIcon}>{icon}</Text> : null}
         <Text style={styles.accordionTitle} numberOfLines={2}>{title}</Text>
         <Animated.Text style={[styles.accordionChevron, isOpen && styles.accordionChevronOpen]}>
           {isOpen ? '▼' : '▶'}
@@ -85,25 +91,16 @@ function SubAccordionHeader({
 
 function AnimatedAccordionBody({ children }: { children: React.ReactNode }) {
   const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(8)).current;
+  const translateY = useRef(new Animated.Value(isWeb() ? 12 : 8)).current;
   useEffect(() => {
+    const duration = isWeb() ? 400 : 280;
     Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 280,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 280,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
+      Animated.timing(opacity, { toValue: 1, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   }, []);
   return (
-    <Animated.View style={[styles.accordionBody, { opacity, transform: [{ translateY }] }]}>
+    <Animated.View style={[styles.accordionBody, isWeb() && styles.accordionBodyWeb, { opacity, transform: [{ translateY }] }]}>
       {children}
     </Animated.View>
   );
@@ -734,12 +731,18 @@ function StandardFormExample({ data, index }: { data: (typeof STANDARD_FORM_EXAM
 }
 
 export default function LessonMenuScreen() {
+  const router = useRouter();
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [expandedMethod, setExpandedMethod] = useState<string | null>(null);
+  const [openedSections, setOpenedSections] = useState<Set<string>>(() => new Set(['I'])); // I is always visible
 
   const toggle = (key: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedSection((prev) => (prev === key ? null : key));
+    setExpandedSection((prev) => {
+      const next = prev === key ? null : key;
+      if (next) setOpenedSections((s) => new Set(s).add(next));
+      return next;
+    });
     if (key !== 'V') setExpandedMethod(null);
   };
 
@@ -756,28 +759,28 @@ export default function LessonMenuScreen() {
   const secV = s.V_Methods_of_Solving_Quadratic_Equations;
 
   const methodKeys = secV?.methods ? Object.keys(secV.methods) : [];
-  const lastSavedProgress = useRef(0);
-
-  const handleScroll = (e: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
-    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-    const maxScroll = contentSize.height - layoutMeasurement.height;
-    if (maxScroll <= 0) return;
-    const percent = Math.min(100, Math.max(0, (contentOffset.y / maxScroll) * 100));
-    if (percent - lastSavedProgress.current >= 5 || percent >= 100) {
-      lastSavedProgress.current = percent;
-      saveTopicContentProgress(QUADRATIC_TOPIC_ID, percent);
-    }
-  };
+  const { ReadingProgressIndicator } = useAccordionReadingProgress(
+    QUADRATIC_TOPIC_ID,
+    QUADRATIC_SECTION_KEYS.length,
+    openedSections,
+    saveTopicContentProgress
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={200}
-      >
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={2}>Quadratic Equations</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, isWeb() && styles.scrollContentWeb]}
+          showsVerticalScrollIndicator={false}
+        >
+        <View style={[styles.scrollInner, isWeb() && styles.scrollInnerWeb]}>
         {/* I. Purpose and Learning Objectives — always visible, no accordion */}
         <SectionFadeIn index={0}>
           <View style={styles.purposeSectionWrap}>
@@ -815,6 +818,7 @@ export default function LessonMenuScreen() {
             title="II. What Is a Quadratic Equation"
             isOpen={expandedSection === 'II'}
             onPress={() => toggle('II')}
+            icon={isWeb() ? '📐' : undefined}
           />
           {expandedSection === 'II' && Array.isArray(secII) && (
             <AnimatedAccordionBody>
@@ -844,6 +848,7 @@ export default function LessonMenuScreen() {
             title="III. Key Words and Concepts"
             isOpen={expandedSection === 'III'}
             onPress={() => toggle('III')}
+            icon={isWeb() ? '📝' : undefined}
           />
           {expandedSection === 'III' && secIII && (
             <AnimatedAccordionBody>
@@ -870,6 +875,7 @@ export default function LessonMenuScreen() {
             title="IV. General Procedure in Solving Quadratic Equations"
             isOpen={expandedSection === 'IV'}
             onPress={() => toggle('IV')}
+            icon={isWeb() ? '📋' : undefined}
           />
           {expandedSection === 'IV' && Array.isArray(secIV) && (
             <AnimatedAccordionBody>
@@ -886,6 +892,7 @@ export default function LessonMenuScreen() {
             title="V. Methods of Solving Quadratic Equations"
             isOpen={expandedSection === 'V'}
             onPress={() => toggle('V')}
+            icon={isWeb() ? '💡' : undefined}
           />
           {expandedSection === 'V' && secV && (
             <AnimatedAccordionBody>
@@ -919,7 +926,10 @@ export default function LessonMenuScreen() {
             </AnimatedAccordionBody>
           )}
         </SectionFadeIn>
-      </ScrollView>
+        </View>
+        </ScrollView>
+        <ReadingProgressIndicator />
+      </View>
     </SafeAreaView>
   );
 }
@@ -929,12 +939,38 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Theme.background,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: getSpacing(Spacing.md),
+    paddingVertical: getSpacing(Spacing.sm),
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.border,
+    backgroundColor: Theme.card,
+  },
+  backButton: {
+    marginRight: getSpacing(Spacing.sm),
+  },
+  backButtonText: {
+    fontSize: scaleFont(16),
+    color: Theme.primary,
+    fontWeight: '600',
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: scaleFont(18),
+    fontWeight: '700',
+    color: Theme.text,
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingBottom: getSpacing(Spacing.xxl),
   },
+  scrollContentWeb: { alignItems: 'center' },
+  scrollInner: { width: '100%' },
+  scrollInnerWeb: { maxWidth: 1200, alignSelf: 'center' },
   section: {
     paddingHorizontal: getSpacing(Spacing.md),
     paddingVertical: getSpacing(Spacing.sm),
@@ -944,7 +980,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   staticSectionTitle: {
-    fontSize: scaleFont(18),
+    fontSize: scaleFont(isWeb() ? 22 : 18),
     fontWeight: '700',
     color: Theme.text,
     marginBottom: getSpacing(Spacing.md),
@@ -954,7 +990,7 @@ const styles = StyleSheet.create({
   staticSectionContent: {
     marginBottom: getSpacing(Spacing.sm),
     width: '100%',
-    maxWidth: scaleSize(520),
+    maxWidth: scaleSize(isWeb() ? 1100 : 520),
     alignItems: 'center',
   },
   purposeCard: {
@@ -974,9 +1010,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   bodyTextCentered: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     color: Theme.text,
-    lineHeight: scaleFont(24),
+    lineHeight: scaleFont(isWeb() ? 28 : 24),
     marginBottom: getSpacing(Spacing.sm),
     textAlign: 'center',
   },
@@ -997,11 +1033,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   accordionTitle: {
-    fontSize: scaleFont(17),
+    fontSize: scaleFont(isWeb() ? 19 : 17),
     fontWeight: '700',
     color: Theme.text,
     flex: 1,
   },
+  accordionIcon: { fontSize: scaleFont(22), marginRight: getSpacing(Spacing.sm) },
   accordionChevron: {
     fontSize: scaleFont(12),
     color: Theme.primary,
@@ -1013,8 +1050,8 @@ const styles = StyleSheet.create({
   },
   accordionBody: {
     backgroundColor: Theme.card,
-    paddingHorizontal: getSpacing(Spacing.md),
-    paddingVertical: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(isWeb() ? Spacing.xl : Spacing.md),
+    paddingVertical: getSpacing(isWeb() ? Spacing.md : Spacing.sm),
     paddingBottom: getSpacing(Spacing.md),
     borderWidth: 1,
     borderTopWidth: 0,
@@ -1028,10 +1065,11 @@ const styles = StyleSheet.create({
     shadowRadius: scaleSize(4),
     elevation: 2,
   },
+  accordionBodyWeb: { borderLeftWidth: 4, borderLeftColor: Theme.primary, backgroundColor: '#FFFCFA' },
   accordionParagraph: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
     marginBottom: getSpacing(Spacing.sm),
   },
   accordionParagraphFirst: {
@@ -1046,14 +1084,14 @@ const styles = StyleSheet.create({
     borderLeftColor: Theme.primary,
   },
   blockHeading: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     fontWeight: '700',
     color: Theme.primary,
     marginTop: getSpacing(Spacing.md),
     marginBottom: getSpacing(Spacing.xs),
   },
   purposeBlockHeading: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     fontWeight: '700',
     color: Theme.primary,
     marginTop: getSpacing(Spacing.md),
@@ -1064,7 +1102,7 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   contentCardLabel: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     fontWeight: '700',
     color: Theme.primary,
     marginBottom: getSpacing(Spacing.sm),
@@ -1081,7 +1119,7 @@ const styles = StyleSheet.create({
     marginBottom: getSpacing(Spacing.xs),
   },
   sectionIISubheading: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     fontWeight: '700',
     color: Theme.text,
     marginTop: getSpacing(Spacing.sm),
@@ -1109,9 +1147,9 @@ const styles = StyleSheet.create({
   },
   sectionIIBulletText: {
     flex: 1,
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
   },
   sectionIINumberedList: {
     marginTop: getSpacing(Spacing.xs),
@@ -1170,9 +1208,9 @@ const styles = StyleSheet.create({
   },
   objectiveItem: {
     flex: 1,
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 17 : 15),
     color: Theme.text,
-    lineHeight: scaleFont(24),
+    lineHeight: scaleFont(isWeb() ? 26 : 24),
   },
   subsectionBlock: {
     marginTop: getSpacing(Spacing.sm),
@@ -1191,7 +1229,7 @@ const styles = StyleSheet.create({
     borderColor: Theme.primary + '30',
   },
   conceptChipText: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     color: Theme.text,
     fontWeight: '500',
   },
@@ -1418,16 +1456,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: getSpacing(Spacing.md),
   },
   tableSectionHeading: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     fontWeight: '700',
     color: Theme.text,
     marginTop: getSpacing(Spacing.md),
     marginBottom: getSpacing(Spacing.xs),
   },
   tableSectionInstruction: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(20),
+    lineHeight: scaleFont(isWeb() ? 25 : 20),
     marginBottom: getSpacing(Spacing.md),
   },
   exampleBlock: {
@@ -1513,9 +1551,9 @@ const styles = StyleSheet.create({
     borderTopColor: Theme.border,
   },
   procedureIntro: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.text,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
     marginBottom: getSpacing(Spacing.md),
     fontWeight: '500',
   },

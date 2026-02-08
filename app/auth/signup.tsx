@@ -202,14 +202,16 @@ export default function SignupScreen() {
         password: formData.password,
         ...(!isWeb() && formData.recoveryPin.trim() ? { recoveryPin: formData.recoveryPin.trim() } : {}),
       });
+      const username = formData.username.trim();
+      const welcomeParam = `welcome=new&username=${encodeURIComponent(username)}`;
       if (isWeb()) {
         Alert.alert(
           'Verify your email',
           'We sent a verification link to your email address. Please check your inbox to verify your account.',
-          [{ text: 'OK', onPress: () => router.replace('/tabs' as never) }]
+          [{ text: 'OK', onPress: () => router.replace(`/tabs?${welcomeParam}` as never) }]
         );
       } else {
-        router.replace('/tabs' as never);
+        router.replace(`/tabs?${welcomeParam}` as never);
       }
     } catch (e: unknown) {
       const message = e && typeof e === 'object' && 'code' in e && (e as { code: string }).code === 'auth/email-already-in-use'

@@ -11,7 +11,10 @@ import {
 } from 'react-native';
 import { BorderRadius, Spacing } from '../constants/colors';
 import { PracticeLevel } from '../data/lessons/module1_quadratic';
-import { getSpacing, scaleFont, scaleSize } from '../utils/responsive';
+import { saveTopicActivitiesProgress } from '../utils/progressStorage';
+import { getSpacing, isWeb, scaleFont, scaleSize } from '../utils/responsive';
+
+const PRACTICE_MODAL_WEB_MAX_WIDTH = 420;
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -31,6 +34,8 @@ interface PracticeActivitiesModalProps {
   visible: boolean;
   onClose: () => void;
   practiceData: PracticeLevel;
+  /** Topic id (1–5) so we can save activities progress when user completes the practice */
+  topicId?: number;
 }
 
 type QuizState = 'level-selection' | 'quiz' | 'summary';
@@ -39,6 +44,7 @@ export default function PracticeActivitiesModal({
   visible,
   onClose,
   practiceData,
+  topicId,
 }: PracticeActivitiesModalProps) {
   const [state, setState] = useState<QuizState>('level-selection');
   const [selectedLevel, setSelectedLevel] = useState<'easy' | 'medium' | 'hard' | null>(null);
@@ -107,6 +113,14 @@ export default function PracticeActivitiesModal({
       setState('quiz');
     }
   }, [selectedLevel, state]);
+
+  // 30% total for activities = 10% per difficulty (Easy, Medium, Hard). Save 33 / 66 / 100; DB merges with max.
+  useEffect(() => {
+    if (state === 'summary' && topicId != null && !Number.isNaN(topicId) && selectedLevel) {
+      const activitiesPercent = selectedLevel === 'easy' ? 33 : selectedLevel === 'medium' ? 66 : 100;
+      saveTopicActivitiesProgress(topicId, activitiesPercent);
+    }
+  }, [state, topicId, selectedLevel]);
 
   const handleLevelSelect = (level: 'easy' | 'medium' | 'hard') => {
     setCurrentQuestionIndex(0);
@@ -222,6 +236,8 @@ export default function PracticeActivitiesModal({
             styles.modalContent,
             state === 'level-selection' && styles.modalContentCompact,
             (state === 'quiz' || state === 'summary') && styles.modalContentQuiz,
+            isWeb() && styles.modalContentWeb,
+            (state === 'quiz' || state === 'summary') && isWeb() && styles.modalContentQuizWeb,
             {
               opacity: fadeAnim,
               transform: [{ scale: scaleAnim }],
@@ -445,7 +461,7 @@ export default function PracticeActivitiesModal({
 
           {state === 'summary' && (
             <View style={styles.summaryContainer}>
-              <Text style={styles.summaryTitle}>Quiz Complete!</Text>
+              <Text style={styles.summaryTitle}>Activity Complete!</Text>
               <Text style={styles.summaryScore}>
                 Score: {score} / {totalQuestions}
               </Text>
@@ -511,6 +527,13 @@ const styles = StyleSheet.create({
   modalContentQuiz: {
     height: undefined,
     maxHeight: 560,
+  },
+  modalContentWeb: {
+    maxWidth: PRACTICE_MODAL_WEB_MAX_WIDTH,
+    width: '100%',
+  },
+  modalContentQuizWeb: {
+    maxWidth: 640,
   },
   quizWrapper: {
     width: '100%',
@@ -622,7 +645,7 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(8),
   },
   difficultyText: {
-    fontSize: scaleFont(10),
+    fontSize: scaleFont(12),
     fontWeight: '600',
     color: ProfessionalColors.primary,
   },
@@ -635,7 +658,7 @@ const styles = StyleSheet.create({
     borderLeftColor: ProfessionalColors.primary,
   },
   questionNumber: {
-    fontSize: scaleFont(9),
+    fontSize: scaleFont(12),
     fontWeight: 'bold',
     color: ProfessionalColors.primary,
     marginBottom: scaleSize(2),
@@ -648,7 +671,7 @@ const styles = StyleSheet.create({
     paddingRight: getSpacing(Spacing.lg),
   },
   progressText: {
-    fontSize: scaleFont(11),
+    fontSize: scaleFont(14),
     color: ProfessionalColors.textSecondary,
     marginBottom: scaleSize(2),
     fontWeight: '500',
@@ -665,10 +688,10 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(2),
   },
   questionText: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(20),
     fontWeight: '600',
     color: ProfessionalColors.text,
-    lineHeight: scaleFont(19),
+    lineHeight: scaleFont(28),
   },
   choicesContainer: {
     width: '100%',
@@ -679,7 +702,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    minHeight: scaleSize(44),
+    minHeight: scaleSize(52),
     paddingVertical: getSpacing(Spacing.sm),
     paddingHorizontal: getSpacing(Spacing.sm),
     borderRadius: scaleSize(BorderRadius.sm),
@@ -735,24 +758,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   choiceLabel: {
-    fontSize: scaleFont(11),
+    fontSize: scaleFont(14),
     fontWeight: 'bold',
     color: ProfessionalColors.primary,
   },
   choiceLabelCorrect: {
-    fontSize: scaleFont(11),
+    fontSize: scaleFont(14),
     fontWeight: 'bold',
     color: ProfessionalColors.success,
   },
   choiceLabelIncorrect: {
-    fontSize: scaleFont(11),
+    fontSize: scaleFont(14),
     fontWeight: 'bold',
     color: ProfessionalColors.error,
   },
   choiceText: {
-    fontSize: scaleFont(11),
+    fontSize: scaleFont(16),
     color: ProfessionalColors.text,
-    lineHeight: scaleFont(15),
+    lineHeight: scaleFont(22),
   },
   checkmark: {
     fontSize: scaleFont(16),
@@ -848,14 +871,16 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     backgroundColor: ProfessionalColors.primary,
-    paddingVertical: getSpacing(Spacing.xs),
-    paddingHorizontal: getSpacing(Spacing.md),
-    borderRadius: scaleSize(BorderRadius.sm),
+    paddingVertical: getSpacing(Spacing.lg),
+    paddingHorizontal: getSpacing(Spacing.xl),
+    borderRadius: scaleSize(BorderRadius.md),
     alignItems: 'center',
-    marginTop: getSpacing(Spacing.xs),
+    justifyContent: 'center',
+    marginTop: getSpacing(Spacing.sm),
+    minHeight: scaleSize(52),
   },
   nextButtonText: {
-    fontSize: scaleFont(12),
+    fontSize: scaleFont(18),
     fontWeight: 'bold',
     color: ProfessionalColors.white,
   },

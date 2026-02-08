@@ -16,7 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_2_SECTIONS } from '../../data/lessons/module2_triangle_triples';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
-import { getSpacing, scaleFont, scaleSize } from '../../utils/responsive';
+import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
+import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+
+const PYTHAGOREAN_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
 
 const PYTHAGOREAN_TOPIC_ID = 2;
 
@@ -41,10 +44,12 @@ function AccordionHeader({
   title,
   isOpen,
   onPress,
+  icon,
 }: {
   title: string;
   isOpen: boolean;
   onPress: () => void;
+  icon?: string;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
   const onPressIn = () => Animated.timing(scale, { toValue: 0.98, duration: 80, useNativeDriver: true }).start();
@@ -52,6 +57,7 @@ function AccordionHeader({
   return (
     <TouchableOpacity onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut} activeOpacity={1}>
       <Animated.View style={[styles.accordionHeader, { transform: [{ scale }] }]}>
+        {icon ? <Text style={styles.accordionIcon}>{icon}</Text> : null}
         <Text style={styles.accordionTitle} numberOfLines={2}>{title}</Text>
         <Text style={[styles.accordionChevron, isOpen && styles.accordionChevronOpen]}>
           {isOpen ? '▼' : '▶'}
@@ -63,25 +69,26 @@ function AccordionHeader({
 
 function AnimatedAccordionBody({ children }: { children: React.ReactNode }) {
   const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(8)).current;
+  const translateY = useRef(new Animated.Value(isWeb() ? 12 : 8)).current;
   useEffect(() => {
+    const duration = isWeb() ? 400 : 280;
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 280,
+        duration,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(translateY, {
         toValue: 0,
-        duration: 280,
+        duration,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start();
   }, []);
   return (
-    <Animated.View style={[styles.accordionBody, { opacity, transform: [{ translateY }] }]}>
+    <Animated.View style={[styles.accordionBody, isWeb() && styles.accordionBodyWeb, { opacity, transform: [{ translateY }] }]}>
       {children}
     </Animated.View>
   );
@@ -119,22 +126,21 @@ function SectionFadeIn({ index, children }: { index: number; children: React.Rea
 export default function PythagoreanTriplesLessonScreen() {
   const router = useRouter();
   const [expandedSection, setExpandedSection] = useState<string | null>('I');
-  const lastSavedProgress = useRef(0);
-
-  const handleScroll = (e: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
-    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-    const maxScroll = contentSize.height - layoutMeasurement.height;
-    if (maxScroll <= 0) return;
-    const percent = Math.min(100, Math.max(0, (contentOffset.y / maxScroll) * 100));
-    if (percent - lastSavedProgress.current >= 5 || percent >= 100) {
-      lastSavedProgress.current = percent;
-      saveTopicContentProgress(PYTHAGOREAN_TOPIC_ID, percent);
-    }
-  };
+  const [openedSections, setOpenedSections] = useState<Set<string>>(() => new Set(['I']));
+  const { ReadingProgressIndicator } = useAccordionReadingProgress(
+    PYTHAGOREAN_TOPIC_ID,
+    PYTHAGOREAN_SECTION_KEYS.length,
+    openedSections,
+    saveTopicContentProgress
+  );
 
   const toggle = (key: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedSection((prev) => (prev === key ? null : key));
+    setExpandedSection((prev) => {
+      const next = prev === key ? null : key;
+      if (next) setOpenedSections((s) => new Set(s).add(next));
+      return next;
+    });
   };
 
   const sec = MODULE_2_SECTIONS;
@@ -159,13 +165,13 @@ export default function PythagoreanTriplesLessonScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={2}>Pythagorean Triples</Text>
       </View>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={200}
-      >
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, isWeb() && styles.scrollContentWeb]}
+          showsVerticalScrollIndicator={false}
+        >
+        <View style={[styles.scrollInner, isWeb() && styles.scrollInnerWeb]}>
         {/* I. Purpose and Learning Objectives */}
         <SectionFadeIn index={0}>
           <View style={styles.purposeSectionWrap}>
@@ -199,6 +205,7 @@ export default function PythagoreanTriplesLessonScreen() {
             title="II. The Pythagorean Theorem and Pythagorean Triples"
             isOpen={expandedSection === 'II'}
             onPress={() => toggle('II')}
+            icon={isWeb() ? '📐' : undefined}
           />
           {expandedSection === 'II' && sectionII && (
             <AnimatedAccordionBody>
@@ -243,6 +250,7 @@ export default function PythagoreanTriplesLessonScreen() {
             title="III. Key Words and Concepts"
             isOpen={expandedSection === 'III'}
             onPress={() => toggle('III')}
+            icon={isWeb() ? '📝' : undefined}
           />
           {expandedSection === 'III' && (
             <AnimatedAccordionBody>
@@ -278,6 +286,7 @@ export default function PythagoreanTriplesLessonScreen() {
             title="IV. Procedure: Steps in Identifying a Triangle Triple"
             isOpen={expandedSection === 'IV'}
             onPress={() => toggle('IV')}
+            icon={isWeb() ? '📋' : undefined}
           />
           {expandedSection === 'IV' && (
             <AnimatedAccordionBody>
@@ -328,6 +337,7 @@ export default function PythagoreanTriplesLessonScreen() {
             title="V. Worked Examples with Step-by-Step Explanation"
             isOpen={expandedSection === 'V'}
             onPress={() => toggle('V')}
+            icon={isWeb() ? '💡' : undefined}
           />
           {expandedSection === 'V' && (
             <AnimatedAccordionBody>
@@ -388,7 +398,10 @@ export default function PythagoreanTriplesLessonScreen() {
             </AnimatedAccordionBody>
           )}
         </SectionFadeIn>
-      </ScrollView>
+        </View>
+        </ScrollView>
+        <ReadingProgressIndicator />
+      </View>
     </SafeAreaView>
   );
 }
@@ -427,6 +440,16 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: getSpacing(Spacing.xxl),
   },
+  scrollContentWeb: {
+    alignItems: 'center',
+  },
+  scrollInner: {
+    width: '100%',
+  },
+  scrollInnerWeb: {
+    maxWidth: 1200,
+    alignSelf: 'center',
+  },
   section: {
     paddingHorizontal: getSpacing(Spacing.md),
     paddingVertical: getSpacing(Spacing.sm),
@@ -436,7 +459,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   staticSectionTitle: {
-    fontSize: scaleFont(18),
+    fontSize: scaleFont(isWeb() ? 22 : 18),
     fontWeight: '700',
     color: Theme.text,
     marginBottom: getSpacing(Spacing.md),
@@ -446,7 +469,7 @@ const styles = StyleSheet.create({
   staticSectionContent: {
     marginBottom: getSpacing(Spacing.sm),
     width: '100%',
-    maxWidth: scaleSize(520),
+    maxWidth: scaleSize(isWeb() ? 1100 : 520),
     alignItems: 'center',
   },
   purposeCard: {
@@ -466,7 +489,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   purposeBlockHeading: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     fontWeight: '700',
     color: Theme.primary,
     marginBottom: getSpacing(Spacing.sm),
@@ -476,9 +499,9 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   bodyTextCentered: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     color: Theme.text,
-    lineHeight: scaleFont(24),
+    lineHeight: scaleFont(isWeb() ? 28 : 24),
     marginBottom: getSpacing(Spacing.sm),
     textAlign: 'center',
   },
@@ -501,9 +524,9 @@ const styles = StyleSheet.create({
   },
   objectiveItem: {
     flex: 1,
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
   },
   accordionHeader: {
     flexDirection: 'row',
@@ -522,7 +545,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   accordionTitle: {
-    fontSize: scaleFont(17),
+    fontSize: scaleFont(isWeb() ? 19 : 17),
     fontWeight: '700',
     color: Theme.text,
     flex: 1,
@@ -538,8 +561,8 @@ const styles = StyleSheet.create({
   },
   accordionBody: {
     backgroundColor: Theme.card,
-    paddingHorizontal: getSpacing(Spacing.md),
-    paddingVertical: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(isWeb() ? Spacing.xl : Spacing.md),
+    paddingVertical: getSpacing(isWeb() ? Spacing.md : Spacing.sm),
     paddingBottom: getSpacing(Spacing.md),
     borderWidth: 1,
     borderTopWidth: 0,
@@ -553,6 +576,15 @@ const styles = StyleSheet.create({
     shadowRadius: scaleSize(4),
     elevation: 2,
   },
+  accordionBodyWeb: {
+    borderLeftWidth: 4,
+    borderLeftColor: Theme.primary,
+    backgroundColor: '#FFFCFA',
+  },
+  accordionIcon: {
+    fontSize: scaleFont(22),
+    marginRight: getSpacing(Spacing.sm),
+  },
   theoremCard: {
     backgroundColor: Theme.white,
     borderRadius: scaleSize(BorderRadius.md),
@@ -562,15 +594,15 @@ const styles = StyleSheet.create({
     marginBottom: getSpacing(Spacing.sm),
   },
   theoremStatement: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     color: Theme.text,
-    lineHeight: scaleFont(24),
+    lineHeight: scaleFont(isWeb() ? 28 : 24),
     marginBottom: getSpacing(Spacing.md),
   },
   sectionIIParagraph: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.text,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
     marginBottom: getSpacing(Spacing.sm),
   },
   sectionIISubsection: {
@@ -580,7 +612,7 @@ const styles = StyleSheet.create({
     borderTopColor: Theme.border,
   },
   sectionIISubheading: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     fontWeight: '700',
     color: Theme.primary,
     marginBottom: getSpacing(Spacing.sm),
@@ -594,19 +626,19 @@ const styles = StyleSheet.create({
     borderLeftColor: Theme.primary,
   },
   exampleTripleLabel: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     fontWeight: '600',
     color: Theme.text,
     marginBottom: getSpacing(Spacing.xs),
   },
   exampleTripleSet: {
-    fontSize: scaleFont(16),
+    fontSize: scaleFont(isWeb() ? 19 : 16),
     fontWeight: '700',
     color: Theme.primary,
     marginBottom: getSpacing(Spacing.xs),
   },
   sectionIIWhereIntro: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     fontWeight: '600',
     color: Theme.text,
     marginTop: getSpacing(Spacing.sm),
@@ -621,15 +653,15 @@ const styles = StyleSheet.create({
     marginBottom: getSpacing(Spacing.xs),
   },
   whereBulletDot: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.primary,
     marginRight: getSpacing(Spacing.sm),
   },
   whereBulletText: {
     flex: 1,
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.text,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
   },
   sectionIIConclusion: {
     marginTop: getSpacing(Spacing.sm),
@@ -640,7 +672,7 @@ const styles = StyleSheet.create({
     paddingVertical: getSpacing(Spacing.sm),
   },
   formulaText: {
-    fontSize: scaleFont(20),
+    fontSize: scaleFont(isWeb() ? 24 : 20),
     fontWeight: '800',
     color: Theme.primary,
   },
@@ -658,7 +690,7 @@ const styles = StyleSheet.create({
     borderColor: Theme.border,
   },
   conceptChipText: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     color: Theme.text,
     fontWeight: '500',
   },
@@ -685,15 +717,15 @@ const styles = StyleSheet.create({
     marginRight: getSpacing(Spacing.sm),
   },
   keyWordTerm: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     fontWeight: '700',
     color: Theme.text,
     flex: 1,
   },
   keyWordDefinition: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
     marginLeft: scaleSize(24),
     marginBottom: getSpacing(Spacing.xs),
   },
@@ -705,26 +737,26 @@ const styles = StyleSheet.create({
     borderLeftColor: Theme.border,
   },
   keyWordSubBullet: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.primary,
     marginRight: getSpacing(Spacing.sm),
   },
   keyWordSubTerm: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     fontWeight: '600',
     color: Theme.text,
     flex: 1,
   },
   keyWordDetail: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(20),
+    lineHeight: scaleFont(isWeb() ? 24 : 20),
     marginLeft: scaleSize(24),
     marginTop: getSpacing(Spacing.xs),
     fontStyle: 'italic',
   },
   keyWordExample: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     color: Theme.primary,
     fontWeight: '600',
     marginLeft: scaleSize(24),
@@ -739,9 +771,9 @@ const styles = StyleSheet.create({
     marginBottom: getSpacing(Spacing.md),
   },
   stepByStepNum: {
-    width: scaleSize(28),
-    height: scaleSize(28),
-    borderRadius: scaleSize(14),
+    width: scaleSize(isWeb() ? 36 : 28),
+    height: scaleSize(isWeb() ? 36 : 28),
+    borderRadius: scaleSize(isWeb() ? 18 : 14),
     backgroundColor: Theme.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -749,67 +781,67 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   stepByStepNumText: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 18 : 14),
     fontWeight: '800',
     color: Theme.white,
   },
   stepByStepText: {
     flex: 1,
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.text,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
   },
   stepByStepTitle: {
     flex: 1,
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     fontWeight: '700',
     color: Theme.text,
   },
   procedureIntroText: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.text,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
     marginBottom: getSpacing(Spacing.md),
   },
   procedureStepCard: {
     marginBottom: getSpacing(Spacing.md),
   },
   procedureStepDetail: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 16 : 14),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(22),
-    marginLeft: scaleSize(36),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
+    marginLeft: scaleSize(isWeb() ? 44 : 36),
     marginTop: getSpacing(Spacing.xs),
   },
   procedureStepBullet: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 16 : 14),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(22),
-    marginLeft: scaleSize(36),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
+    marginLeft: scaleSize(isWeb() ? 44 : 36),
     marginTop: getSpacing(Spacing.xs),
   },
   procedureFormulaWrap: {
-    marginLeft: scaleSize(36),
+    marginLeft: scaleSize(isWeb() ? 44 : 36),
     marginTop: getSpacing(Spacing.sm),
     paddingVertical: getSpacing(Spacing.xs),
   },
   procedureFormulaText: {
-    fontSize: scaleFont(18),
+    fontSize: scaleFont(isWeb() ? 22 : 18),
     fontWeight: '800',
     color: Theme.primary,
   },
   procedureExpression: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 17 : 15),
     fontWeight: '600',
     color: Theme.text,
-    marginLeft: scaleSize(36),
+    marginLeft: scaleSize(isWeb() ? 44 : 36),
     marginTop: getSpacing(Spacing.xs),
   },
   procedureCondition: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 16 : 14),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(22),
-    marginLeft: scaleSize(36),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
+    marginLeft: scaleSize(isWeb() ? 44 : 36),
     marginTop: getSpacing(Spacing.xs),
   },
   workedExampleCard: {
@@ -823,13 +855,13 @@ const styles = StyleSheet.create({
     borderLeftColor: Theme.primary,
   },
   workedExampleTitle: {
-    fontSize: scaleFont(16),
+    fontSize: scaleFont(isWeb() ? 19 : 16),
     fontWeight: '700',
     color: Theme.primary,
     marginBottom: getSpacing(Spacing.xs),
   },
   workedExampleProblem: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     fontWeight: '600',
     color: Theme.text,
     marginBottom: getSpacing(Spacing.sm),
@@ -841,36 +873,36 @@ const styles = StyleSheet.create({
     marginBottom: getSpacing(Spacing.sm),
   },
   workedExampleStepLabel: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     fontWeight: '600',
     color: Theme.text,
     marginBottom: getSpacing(Spacing.xs),
   },
   workedExampleStepText: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.textSecondary,
-    lineHeight: scaleFont(21),
+    lineHeight: scaleFont(isWeb() ? 26 : 21),
     marginLeft: getSpacing(Spacing.sm),
   },
   workedExampleFormula: {
-    fontSize: scaleFont(16),
+    fontSize: scaleFont(isWeb() ? 19 : 16),
     fontWeight: '700',
     color: Theme.primary,
     marginLeft: getSpacing(Spacing.sm),
     marginTop: getSpacing(Spacing.xs),
   },
   workedExampleSubstitution: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     color: Theme.text,
     marginLeft: getSpacing(Spacing.sm),
     marginTop: getSpacing(Spacing.xs),
   },
   workedExampleExtra: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     color: Theme.textSecondary,
     fontStyle: 'italic',
     marginBottom: getSpacing(Spacing.sm),
-    lineHeight: scaleFont(20),
+    lineHeight: scaleFont(isWeb() ? 24 : 20),
   },
   workedExampleConclusionWrap: {
     paddingTop: getSpacing(Spacing.sm),
@@ -878,13 +910,13 @@ const styles = StyleSheet.create({
     borderTopColor: Theme.border,
   },
   workedExampleConclusion: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(isWeb() ? 17 : 14),
     fontWeight: '600',
     color: Theme.text,
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(isWeb() ? 26 : 22),
   },
   workedExamplesTableHeading: {
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(isWeb() ? 18 : 15),
     fontWeight: '700',
     color: Theme.text,
     marginTop: getSpacing(Spacing.sm),
@@ -907,7 +939,7 @@ const styles = StyleSheet.create({
     borderTopColor: Theme.border,
   },
   examplesCell: {
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(isWeb() ? 16 : 13),
     paddingVertical: getSpacing(Spacing.sm),
     paddingHorizontal: getSpacing(Spacing.sm),
     color: Theme.textSecondary,

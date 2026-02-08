@@ -9,8 +9,10 @@
     "web": "expo start --web",
     "lint": "expo lint"
   },
-  "dependencies": {
-    "@expo/vector-icons": "^15.0.3",
+"dependencies": {
+  "@expo/vector-icons": "^15.0.3",
+  "@react-native-async-storage/async-storage": "1.23.1",
+  "expo-image-picker": "~16.0.3",
     "@react-navigation/bottom-tabs": "^7.8.4",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.19",

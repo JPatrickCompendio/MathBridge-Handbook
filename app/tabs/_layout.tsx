@@ -82,8 +82,8 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={() => ({
         headerShown: false,
-        tabBarActiveTintColor: ProfessionalColors.primary,
-        tabBarInactiveTintColor: ProfessionalColors.textSecondary,
+        tabBarActiveTintColor: ProfessionalColors.white,
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.75)',
         tabBarStyle: [
           styles.tabBar,
           {
@@ -155,7 +155,7 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: ProfessionalColors.white,
+    backgroundColor: ProfessionalColors.primary,
     borderTopWidth: 0,
     elevation: 16,
     shadowColor: '#000',
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   iconWrapperActive: {
-    backgroundColor: ProfessionalColors.activeBackground,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
   icon: {
     textAlign: 'center',

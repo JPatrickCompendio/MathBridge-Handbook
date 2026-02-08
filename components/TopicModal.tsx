@@ -330,12 +330,7 @@ export default function TopicModal({
                 <View style={styles.progressSection}>
                   <View style={styles.progressHeader}>
                     <Text style={styles.progressLabel}>Your Progress</Text>
-                    <Animated.Text style={styles.progressValue}>
-                      {progressAnim.interpolate({
-                        inputRange: [0, 100],
-                        outputRange: ['0%', '100%'],
-                      })}
-                    </Animated.Text>
+                    <Text style={styles.progressValue}>{clampedProgress}%</Text>
                   </View>
                   <View style={styles.progressBarContainer}>
                     <Animated.View

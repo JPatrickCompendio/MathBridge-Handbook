@@ -1,5 +1,5 @@
 // Progress storage: per-topic content (0-100) + activities (0-100).
-// Combined = (content + activities) / 2 → 100% when both complete.
+// Combined = content*70% + activities*30% (10% per difficulty: Easy, Medium, Hard).
 // Delegates to platform database (SQLite on mobile, Firebase on web).
 
 import { database } from '../services/database';

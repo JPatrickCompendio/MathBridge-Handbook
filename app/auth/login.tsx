@@ -149,8 +149,9 @@ function FloatingMathSymbol({
   );
 }
 
-// Animated math background layer
+// Animated math background layer (faster on web)
 function MathBackground() {
+  const speedFactor = isWeb() ? 0.25 : 1;
   const symbols = [
     { symbol: BG_SYMBOLS[0], left: 8, top: 12, size: 48, opacity: 0.48, delay: 0, duration: 18000 },
     { symbol: BG_SYMBOLS[1], left: 82, top: 18, size: 36, opacity: 0.42, delay: 800, duration: 22000 },
@@ -174,7 +175,7 @@ function MathBackground() {
           size={scaleSize(s.size)}
           opacity={s.opacity}
           delay={s.delay}
-          duration={s.duration}
+          duration={Math.round(s.duration * speedFactor)}
         />
       ))}
     </View>
@@ -208,17 +209,14 @@ export default function LoginScreen() {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Change symbols every 2 seconds
     const symbolInterval = setInterval(() => {
-      setCurrentSymbolIndex((prevIndex) => 
+      setCurrentSymbolIndex((prevIndex) =>
         (prevIndex + 1) % MATH_SYMBOLS.length
       );
     }, 2000);
 
-    // Continuous 3D rotation animation (original effect)
     const animateMathSymbol = () => {
       Animated.parallel([
-        // Y-axis rotation (3D flip)
         Animated.sequence([
           Animated.timing(rotateYAnim, {
             toValue: 1,
@@ -233,7 +231,6 @@ export default function LoginScreen() {
             useNativeDriver: true,
           }),
         ]),
-        // X-axis rotation
         Animated.sequence([
           Animated.timing(rotateXAnim, {
             toValue: 1,
@@ -248,7 +245,6 @@ export default function LoginScreen() {
             useNativeDriver: true,
           }),
         ]),
-        // Scale pulse
         Animated.sequence([
           Animated.timing(scaleAnim, {
             toValue: 1.1,
@@ -263,15 +259,13 @@ export default function LoginScreen() {
             useNativeDriver: true,
           }),
         ]),
-      ]).start(() => animateMathSymbol()); // Loop animation
+      ]).start(() => animateMathSymbol());
     };
 
     animateMathSymbol();
 
     return () => {
-      if (symbolInterval) {
-        clearInterval(symbolInterval);
-      }
+      clearInterval(symbolInterval);
     };
   }, []);
 
@@ -310,7 +304,8 @@ export default function LoginScreen() {
     try {
       const session = await database.loginUser(email.trim(), password);
       if (session) {
-        router.replace('/tabs' as Href);
+        const welcomeParam = `welcome=back&username=${encodeURIComponent(session.username || email.trim())}`;
+        router.replace(`/tabs?${welcomeParam}` as Href);
       } else {
         setLoginError('Invalid email or password. Create an account if you don\'t have one.');
       }
@@ -399,18 +394,15 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView
-          contentContainerStyle={[
-            styles.scrollContent,
-            isWeb() && styles.scrollContentWeb,
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-        >
-          <View style={[isWeb() && styles.webLoginContainer]}>
-          {/* Header Section */}
-          <View style={styles.header}>
+        {isWeb() ? (
+          <ScrollView
+            contentContainerStyle={[styles.scrollContent, styles.scrollContentWeb]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
+            <View style={styles.webLoginContainer}>
+            <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Animated.View 
                 style={[
@@ -440,7 +432,7 @@ export default function LoginScreen() {
           </View>
 
           {/* Form Section */}
-          <View style={styles.formCard}>
+          <View style={styles.formArea}>
             <View style={styles.form}>
               <Input
                 label={isWeb() ? 'Email Address' : 'Username'}
@@ -513,10 +505,115 @@ export default function LoginScreen() {
                   <Text style={styles.signupLinkText}>Create account</Text>
                 </TouchableOpacity>
               </View>
+              </View>
             </View>
           </View>
-          </View>
         </ScrollView>
+        ) : (
+          <View style={styles.contentNoScroll} pointerEvents="box-none">
+            <View style={[styles.header, styles.headerCompact]}>
+              <View style={[styles.logoContainer, styles.logoCompact]}>
+                <Animated.View
+                  style={[
+                    styles.mathContainer,
+                    styles.mathCompact,
+                    {
+                      transform: [
+                        { rotateY: rotateY },
+                        { rotateX: rotateX },
+                        { scale: scaleAnim },
+                        { perspective: 1000 },
+                      ],
+                    },
+                  ]}
+                >
+                  <View style={[styles.mathSymbol, styles.mathSymbolCompact]}>
+                    <Text style={[styles.symbolText, styles.symbolTextCompact]}>
+                      {MATH_SYMBOLS[currentSymbolIndex]}
+                    </Text>
+                  </View>
+                </Animated.View>
+              </View>
+              <Text style={[styles.title, styles.titleCompact]}>Welcome Back</Text>
+              <Text style={[styles.subtitle, styles.subtitleCompact]}>
+                Sign in to access your learning dashboard
+              </Text>
+            </View>
+            <View style={[styles.formArea, styles.formAreaCompact]}>
+              <View style={[styles.form, styles.formCompact]}>
+                <Input
+                  label="Username"
+                  placeholder="Your username"
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (errors.email) setErrors({ ...errors, email: undefined });
+                  }}
+                  keyboardType="default"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  error={errors.email}
+                  containerStyle={[styles.input, styles.inputCompact]}
+                />
+                <Input
+                  label="Password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (errors.password) setErrors({ ...errors, password: undefined });
+                  }}
+                  secureTextEntry
+                  error={errors.password}
+                  containerStyle={[styles.input, styles.inputCompact]}
+                />
+                <TouchableOpacity
+                  onPress={handleForgotPassword}
+                  style={[styles.forgotPassword, styles.forgotPasswordCompact]}
+                  disabled={resettingPassword}
+                >
+                  <Text style={styles.forgotPasswordText}>
+                    {resettingPassword ? 'Sending…' : 'Forgot your password?'}
+                  </Text>
+                </TouchableOpacity>
+                {forgotPasswordMessage ? (
+                  <Text style={[
+                    styles.forgotPasswordMessage,
+                    forgotPasswordMessage.type === 'success'
+                      ? styles.forgotPasswordMessageSuccess
+                      : styles.forgotPasswordMessageError,
+                  ]}>
+                    {forgotPasswordMessage.text}
+                  </Text>
+                ) : null}
+                {loginError ? (
+                  <Text style={styles.loginErrorText}>{loginError}</Text>
+                ) : null}
+                <Button
+                  title={loading ? 'Signing in...' : 'Sign In'}
+                  onPress={handleLogin}
+                  variant="primary"
+                  size="large"
+                  style={[styles.signInButton, styles.signInButtonCompact]}
+                  disabled={loading}
+                />
+                {loading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={ProfessionalColors.primary}
+                    style={styles.loader}
+                  />
+                ) : null}
+                <View style={[styles.signupContainer, styles.signupContainerCompact]}>
+                  <Text style={styles.signupText}>Don't have an account? </Text>
+                  <TouchableOpacity onPress={() => router.push('/auth/signup')}>
+                    <Text style={styles.signupLinkText}>Create account</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
       </KeyboardAvoidingView>
 
       {!isWeb() ? (
@@ -635,6 +732,64 @@ const styles = StyleSheet.create({
   scrollContentWeb: {
     paddingHorizontal: wp(8),
   },
+  contentNoScroll: {
+    flex: 1,
+    paddingHorizontal: wp(6),
+    justifyContent: 'space-between',
+  },
+  headerCompact: {
+    paddingTop: getSafeAreaTopPadding() + hp(1.5),
+    paddingBottom: getSpacing(Spacing.sm),
+  },
+  logoCompact: {
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  mathCompact: {
+    width: scaleSize(72),
+    height: scaleSize(72),
+  },
+  mathSymbolCompact: {
+    width: scaleSize(56),
+    height: scaleSize(56),
+    borderRadius: scaleSize(28),
+    shadowOffset: { width: 0, height: scaleSize(4) },
+    shadowRadius: scaleSize(8),
+  },
+  symbolTextCompact: {
+    fontSize: scaleFont(24),
+  },
+  titleCompact: {
+    fontSize: scaleFont(26),
+    marginBottom: getSpacing(Spacing.xs),
+  },
+  subtitleCompact: {
+    fontSize: scaleFont(13),
+    lineHeight: scaleFont(18),
+  },
+  formAreaCompact: {
+    flex: 1,
+    minHeight: 0,
+    justifyContent: 'center',
+    paddingTop: getSpacing(Spacing.lg),
+    paddingBottom: getSpacing(Spacing.md),
+  },
+  formCompact: {
+    flex: 0,
+  },
+  inputCompact: {
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  forgotPasswordCompact: {
+    marginBottom: getSpacing(Spacing.sm),
+    marginTop: getSpacing(Spacing.xs),
+  },
+  signInButtonCompact: {
+    marginBottom: getSpacing(Spacing.sm),
+    marginTop: getSpacing(Spacing.xs),
+  },
+  signupContainerCompact: {
+    paddingTop: getSpacing(Spacing.sm),
+  },
   webLoginContainer: {
     maxWidth: 440,
     width: '100%',
@@ -696,19 +851,11 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     paddingHorizontal: wp(8),
   },
-  formCard: {
+  formArea: {
     flex: 1,
-    backgroundColor: ProfessionalColors.background,
-    borderTopLeftRadius: scaleSize(32),
-    borderTopRightRadius: scaleSize(32),
     paddingHorizontal: authResponsiveValues.formCardPaddingH,
     paddingTop: getSpacing(Spacing.xxl),
     paddingBottom: getSpacing(Spacing.xl),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 8,
     maxWidth: authResponsiveValues.formCardMaxWidth,
     alignSelf: 'center',
     width: '100%',

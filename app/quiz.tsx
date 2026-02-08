@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
     Alert,
     Animated,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -13,7 +14,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BorderRadius, Spacing } from '../constants/colors';
 import { saveTopicActivitiesProgress } from '../utils/progressStorage';
-import { getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize } from '../utils/responsive';
+import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize } from '../utils/responsive';
+
+const QUIZ_WEB_MAX_WIDTH = 680;
 
 const ProfessionalColors = {
   primary: '#FF6600',
@@ -59,7 +62,12 @@ const QUESTION_BANK: Question[] = [
   // Geometry - Hard
   { id: 11, question: 'In a right triangle, if one leg is 3 and the other is 4, what is the hypotenuse?', options: ['5', '7', '12', '25'], correctAnswer: 0, explanation: 'Using Pythagorean theorem: 3² + 4² = 9 + 16 = 25, so hypotenuse = √25 = 5', topic: 'Geometry', difficulty: 'hard' },
   { id: 12, question: 'What is the sum of interior angles in a hexagon?', options: ['540°', '720°', '900°', '1080°'], correctAnswer: 1, explanation: 'Formula: (n-2) × 180° = (6-2) × 180° = 720°', topic: 'Geometry', difficulty: 'hard' },
-  
+  { id: 101, question: 'Two sides of a right triangle are 5 and 12. What is the hypotenuse?', options: ['13', '17', '7', '√119'], correctAnswer: 0, explanation: '5² + 12² = 25 + 144 = 169, so hypotenuse = √169 = 13', topic: 'Geometry', difficulty: 'hard' },
+  { id: 102, question: 'What is the area of an equilateral triangle with side length 4?', options: ['4√3', '8', '6√3', '12'], correctAnswer: 0, explanation: 'Area = (s²√3)/4 = (16√3)/4 = 4√3', topic: 'Geometry', difficulty: 'hard' },
+  { id: 103, question: 'In similar triangles, corresponding sides are:', options: ['equal', 'proportional', 'parallel', 'perpendicular'], correctAnswer: 1, explanation: 'In similar triangles, corresponding sides are in proportion.', topic: 'Geometry', difficulty: 'hard' },
+  { id: 104, question: 'What is the length of the diagonal of a square with side 6?', options: ['6', '6√2', '12', '3√2'], correctAnswer: 1, explanation: 'Diagonal = side × √2 = 6√2', topic: 'Geometry', difficulty: 'hard' },
+  { id: 105, question: 'The legs of a right triangle are 8 and 15. What is the hypotenuse?', options: ['17', '23', '7', '√161'], correctAnswer: 0, explanation: '8² + 15² = 64 + 225 = 289, so hypotenuse = √289 = 17', topic: 'Geometry', difficulty: 'hard' },
+
   // Algebra - Easy
   { id: 13, question: 'What is the solution to x + 7 = 12?', options: ['5', '7', '12', '19'], correctAnswer: 0, explanation: 'x + 7 = 12, so x = 12 - 7 = 5', topic: 'Algebra', difficulty: 'easy' },
   { id: 14, question: 'What does a variable represent?', options: ['A fixed value', 'An unknown value', 'A constant', 'An operation'], correctAnswer: 1, explanation: 'A variable represents an unknown or changeable value.', topic: 'Algebra', difficulty: 'easy' },
@@ -75,7 +83,12 @@ const QUESTION_BANK: Question[] = [
   // Algebra - Hard
   { id: 23, question: 'What is the degree of a quadratic equation?', options: ['1', '2', '3', '4'], correctAnswer: 1, explanation: 'A quadratic equation has degree 2.', topic: 'Algebra', difficulty: 'hard' },
   { id: 24, question: 'What is the discriminant of x² - 5x + 6 = 0?', options: ['1', '-1', '25', '24'], correctAnswer: 0, explanation: 'Discriminant = b² - 4ac = (-5)² - 4(1)(6) = 25 - 24 = 1', topic: 'Algebra', difficulty: 'hard' },
-  
+  { id: 106, question: 'Solve x² - 9 = 0.', options: ['x = ±3', 'x = 3', 'x = -3', 'x = 9'], correctAnswer: 0, explanation: 'x² = 9, so x = ±√9 = ±3', topic: 'Algebra', difficulty: 'hard' },
+  { id: 107, question: 'Factor x² - 4x + 4.', options: ['(x-2)²', '(x+2)²', '(x-4)(x+1)', '(x-1)(x-4)'], correctAnswer: 0, explanation: 'x² - 4x + 4 = (x - 2)²', topic: 'Algebra', difficulty: 'hard' },
+  { id: 108, question: 'What are the roots of x² + 5x + 6 = 0?', options: ['-2 and -3', '2 and 3', '-1 and -6', '1 and 6'], correctAnswer: 0, explanation: 'Factoring: (x+2)(x+3)=0, so x = -2 or x = -3', topic: 'Algebra', difficulty: 'hard' },
+  { id: 109, question: 'Solve 2x² - 8 = 0.', options: ['x = ±2', 'x = 2', 'x = -2', 'x = ±4'], correctAnswer: 0, explanation: '2x² = 8, x² = 4, so x = ±2', topic: 'Algebra', difficulty: 'hard' },
+  { id: 110, question: 'For ax² + bx + c = 0, the sum of roots equals:', options: ['-b/a', 'b/a', 'c/a', '-c/a'], correctAnswer: 0, explanation: 'For a quadratic, sum of roots = -b/a', topic: 'Algebra', difficulty: 'hard' },
+
   // Statistics - Easy
   { id: 25, question: 'What is the mean of [2, 4, 6, 8, 10]?', options: ['5', '6', '7', '8'], correctAnswer: 1, explanation: 'Mean = (2 + 4 + 6 + 8 + 10) / 5 = 30 / 5 = 6', topic: 'Statistics', difficulty: 'easy' },
   { id: 26, question: 'What is a sample?', options: ['The entire group', 'A subset of the population', 'A type of data', 'A statistic'], correctAnswer: 1, explanation: 'A sample is a subset of the population.', topic: 'Statistics', difficulty: 'easy' },
@@ -102,9 +115,15 @@ const QUESTION_BANK: Question[] = [
   { id: 42, question: 'What is the radius of a unit circle?', options: ['0', '1', '2', 'π'], correctAnswer: 1, explanation: 'A unit circle has a radius of exactly 1 unit.', topic: 'Trigonometry', difficulty: 'medium' },
   { id: 43, question: 'How many radians are in a full circle?', options: ['90', '180', '360', '2π'], correctAnswer: 3, explanation: 'A full circle contains 2π radians.', topic: 'Trigonometry', difficulty: 'medium' },
   { id: 44, question: 'Where is the unit circle centered?', options: ['(1, 1)', '(0, 0)', '(0, 1)', '(1, 0)'], correctAnswer: 1, explanation: 'The unit circle is centered at the origin (0, 0).', topic: 'Trigonometry', difficulty: 'medium' },
+  { id: 111, question: 'What is cos(0°)?', options: ['0', '0.5', '1', '√2/2'], correctAnswer: 2, explanation: 'cos(0°) = 1', topic: 'Trigonometry', difficulty: 'medium' },
   // Trigonometry - Hard
   { id: 45, question: 'What is sin(90°)?', options: ['0', '0.5', '1', '√2/2'], correctAnswer: 2, explanation: 'sin(90°) = 1', topic: 'Trigonometry', difficulty: 'hard' },
-  
+  { id: 112, question: 'What is tan(45°)?', options: ['0', '1', '√2', '√2/2'], correctAnswer: 1, explanation: 'tan(45°) = 1', topic: 'Trigonometry', difficulty: 'hard' },
+  { id: 113, question: 'In a right triangle, if opposite = 3 and hypotenuse = 5, what is sin(θ)?', options: ['3/5', '4/5', '5/3', '3/4'], correctAnswer: 0, explanation: 'sin(θ) = opposite/hypotenuse = 3/5', topic: 'Trigonometry', difficulty: 'hard' },
+  { id: 114, question: 'What is the area of a triangle with two sides 7 and 10 and included angle 60°?', options: ['(35√3)/2', '35', '70', '35√3'], correctAnswer: 0, explanation: 'Area = (1/2)ab sin C = (1/2)(7)(10)sin 60° = 35(√3/2)', topic: 'Trigonometry', difficulty: 'hard' },
+  { id: 115, question: 'What is cos(90°)?', options: ['0', '1', '-1', '√2/2'], correctAnswer: 0, explanation: 'cos(90°) = 0', topic: 'Trigonometry', difficulty: 'hard' },
+  { id: 116, question: 'If sin(θ) = 0.6 and the hypotenuse is 10, what is the opposite side?', options: ['6', '8', '10', '0.06'], correctAnswer: 0, explanation: 'opposite = hypotenuse × sin(θ) = 10 × 0.6 = 6', topic: 'Trigonometry', difficulty: 'hard' },
+
   // Variation - Easy
   { id: 46, question: 'Which is the formula for direct variation?', options: ['y = k/x', 'y = kx', 'y = kx²', 'y = x/k'], correctAnswer: 1, explanation: 'Direct variation has the form y = kx, where k is the constant of variation.', topic: 'Variation', difficulty: 'easy' },
   { id: 47, question: 'If y varies directly with x, and x doubles, y:', options: ['halves', 'doubles', 'stays the same', 'becomes zero'], correctAnswer: 1, explanation: 'In direct variation, y is proportional to x, so if x doubles, y doubles.', topic: 'Variation', difficulty: 'easy' },
@@ -126,7 +145,16 @@ const QUESTION_BANK: Question[] = [
   
 ];
 
-// Get questions based on filters
+// Map activity topicId (1–5) to question bank topic names
+const TOPIC_ID_TO_BANK: { [key: string]: string } = {
+  '1': 'Algebra',       // Quadratic Equations → Algebra
+  '2': 'Geometry',     // Pythagorean Triples → Geometry
+  '3': 'Geometry',     // Triangle Measures → Geometry
+  '4': 'Trigonometry', // Area of Triangles → Trigonometry
+  '5': 'Variation',
+};
+
+// Get questions based on topic + difficulty (used by Activities topic practice)
 const getQuestions = (
   topicId?: string,
   difficulty?: string,
@@ -134,33 +162,35 @@ const getQuestions = (
 ): Question[] => {
   let filtered = QUESTION_BANK;
 
-  // Filter by topic
-  if (topicId) {
-    const topicMap: { [key: string]: string } = {
-      '1': 'Quadratic Equations',
-      '2': 'Algebra',
-      '3': 'Statistics',
-      '4': 'Trigonometry',
-      '5': 'Variation',
-    };
-    const topicName = topicMap[topicId];
-    if (topicName) {
-      filtered = filtered.filter((q) => q.topic === topicName);
-    }
+  if (topicId && TOPIC_ID_TO_BANK[topicId]) {
+    const topicName = TOPIC_ID_TO_BANK[topicId];
+    filtered = filtered.filter((q) => q.topic === topicName);
   }
 
-  // Filter by difficulty
   if (difficulty && difficulty !== 'mixed') {
     filtered = filtered.filter((q) => q.difficulty === difficulty);
   }
 
-  // Shuffle and select
+  // If no questions match (e.g. wrong params), use whole bank and optionally filter by difficulty only
+  if (filtered.length === 0) {
+    filtered = difficulty && difficulty !== 'mixed'
+      ? QUESTION_BANK.filter((q) => q.difficulty === difficulty)
+      : [...QUESTION_BANK];
+  }
+
   const shuffled = [...filtered].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(count, shuffled.length));
 };
 
 export default function QuizScreen() {
   const router = useRouter();
+  const goBackFromQuiz = () => {
+    if (isWeb()) {
+      router.replace('/tabs/activities' as any);
+    } else {
+      router.back();
+    }
+  };
   const params = useLocalSearchParams<{
     mode?: string;
     questionCount?: string;
@@ -460,17 +490,31 @@ export default function QuizScreen() {
       : 0;
 
   if (!quizStarted) {
+    // No questions available (e.g. topic/difficulty had no match before fallback)
+    if (questions.length === 0) {
+      return (
+        <SafeAreaView style={[styles.container, isWeb() && styles.containerWeb]} edges={['top', 'left', 'right']}>
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>No questions available for this topic and difficulty.</Text>
+            <TouchableOpacity style={styles.startButton} onPress={goBackFromQuiz} activeOpacity={0.8}>
+              <Text style={styles.startButtonText}>Back to Activities</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      );
+    }
+
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={[styles.container, isWeb() && styles.containerWeb]} edges={['top', 'left', 'right']}>
         <ScrollView
-          style={styles.scrollView}
+          style={[styles.scrollView, isWeb() && styles.scrollViewWeb]}
           contentContainerStyle={styles.startScreen}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.startHeader}>
             <TouchableOpacity
               style={styles.backButton}
-              onPress={() => router.back()}
+              onPress={goBackFromQuiz}
               activeOpacity={0.7}
             >
               <Text style={styles.backIcon}>←</Text>
@@ -481,7 +525,7 @@ export default function QuizScreen() {
               {params.mode === 'marathon' && '🏃 Marathon'}
               {params.mode === 'blind' && '👁️ Blind Mode'}
               {params.mode === 'random' && '🎯 Random Practice'}
-              {params.mode === 'topic' && `📚 ${params.topicName || 'Topic'} Practice`}
+              {(params.mode === 'topic' || params.mode === 'topic-quiz') && `📚 ${params.topicName || 'Topic'} Practice`}
               {!params.mode && 'Quiz'}
             </Text>
           </View>
@@ -515,9 +559,9 @@ export default function QuizScreen() {
     const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={[styles.container, isWeb() && styles.containerWeb]} edges={['top', 'left', 'right']}>
         <ScrollView
-          style={styles.scrollView}
+          style={[styles.scrollView, isWeb() && styles.scrollViewWeb]}
           contentContainerStyle={styles.resultsContent}
           showsVerticalScrollIndicator={false}
         >
@@ -572,7 +616,7 @@ export default function QuizScreen() {
 
             <TouchableOpacity
               style={styles.homeButton}
-              onPress={() => router.back()}
+              onPress={goBackFromQuiz}
               activeOpacity={0.8}
             >
               <Text style={styles.homeButtonText}>Back to Activities</Text>
@@ -585,7 +629,7 @@ export default function QuizScreen() {
 
   if (!currentQuestion) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={[styles.container, isWeb() && styles.containerWeb]} edges={['top', 'left', 'right']}>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading questions...</Text>
         </View>
@@ -598,21 +642,27 @@ export default function QuizScreen() {
   const showAnswer = isSurvivalMode && selectedAnswer !== undefined;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <View style={styles.quizContainer}>
+    <SafeAreaView style={[styles.container, isWeb() && styles.containerWeb]} edges={['top', 'left', 'right']}>
+      <View style={[styles.quizContainer, isWeb() && styles.quizContainerWeb]}>
         {/* Header with progress and timer */}
         <View style={styles.quizHeader}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => {
-              Alert.alert(
-                'Exit Quiz',
-                'Are you sure you want to exit? Your progress will be lost.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Exit', onPress: () => router.back(), style: 'destructive' },
-                ]
-              );
+              if (isWeb()) {
+                if (typeof window !== 'undefined' && window.confirm('Are you sure you want to exit? Your progress will be lost.')) {
+                  goBackFromQuiz();
+                }
+              } else {
+                Alert.alert(
+                  'Exit Quiz',
+                  'Are you sure you want to exit? Your progress will be lost.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Exit', onPress: goBackFromQuiz, style: 'destructive' },
+                  ]
+                );
+              }
             }}
             activeOpacity={0.7}
           >
@@ -786,6 +836,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: ProfessionalColors.background,
   },
+  containerWeb: {
+    alignItems: 'center',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -871,6 +924,19 @@ const styles = StyleSheet.create({
   quizContainer: {
     flex: 1,
   },
+  quizContainerWeb: {
+    maxWidth: QUIZ_WEB_MAX_WIDTH,
+    width: '100%',
+    alignSelf: 'center',
+    marginVertical: 24,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+  },
   quizHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -887,7 +953,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   questionCounter: {
-    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     fontWeight: '600',
     color: ProfessionalColors.text,
   },
@@ -958,11 +1024,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   questionText: {
-    fontSize: scaleFont(isTablet() ? 24 : isSmallDevice() ? 18 : 20),
+    fontSize: scaleFont(isTablet() ? 28 : isSmallDevice() ? 20 : 24),
     fontWeight: '600',
     color: ProfessionalColors.text,
     marginBottom: getSpacing(Spacing.xl),
-    lineHeight: scaleFont(isTablet() ? 34 : isSmallDevice() ? 26 : 28),
+    lineHeight: scaleFont(isTablet() ? 38 : isSmallDevice() ? 28 : 32),
   },
   optionsContainer: {
     gap: getSpacing(Spacing.md),
@@ -991,7 +1057,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${ProfessionalColors.error}20`,
   },
   optionText: {
-    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
+    fontSize: scaleFont(isTablet() ? 20 : isSmallDevice() ? 16 : 18),
     color: ProfessionalColors.text,
     flex: 1,
     minWidth: 0,
@@ -1085,20 +1151,20 @@ const styles = StyleSheet.create({
   },
   navButton: {
     flex: 1,
-    padding: getSpacing(Spacing.md),
+    padding: getSpacing(Spacing.lg),
     borderRadius: scaleSize(BorderRadius.md),
     backgroundColor: ProfessionalColors.background,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: ProfessionalColors.border,
-    minHeight: scaleSize(44),
+    minHeight: scaleSize(54),
   },
   navButtonDisabled: {
     opacity: 0.5,
   },
   navButtonText: {
-    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+    fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     fontWeight: '600',
     color: ProfessionalColors.text,
     textAlign: 'center',
@@ -1115,6 +1181,11 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  scrollViewWeb: {
+    maxWidth: QUIZ_WEB_MAX_WIDTH,
+    width: '100%',
+    alignSelf: 'center',
   },
   resultsContent: {
     padding: getSpacing(Spacing.lg),

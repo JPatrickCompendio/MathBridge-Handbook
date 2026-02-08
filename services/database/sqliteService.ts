@@ -35,8 +35,9 @@ function getDb(): Promise<SQLite.SQLiteDatabase> {
   return dbPromise;
 }
 
+// 70% reading + 30% activities (10% per difficulty: Easy, Medium, Hard)
 function computeCombined(content: number, activities: number): number {
-  return Math.round(Math.min(100, (content + activities) / 2));
+  return Math.round(Math.min(100, Math.max(0, content * 0.70 + activities * 0.30)));
 }
 
 async function ensureTables(db: SQLite.SQLiteDatabase): Promise<void> {
@@ -152,7 +153,7 @@ const sqliteService: DatabaseService = {
       `INSERT INTO progress (topic_id, content, activities, updated_at) VALUES (?, ?, ?, ?)
        ON CONFLICT(topic_id) DO UPDATE SET
          content = max(content, excluded.content),
-         activities = excluded.activities,
+         activities = max(activities, excluded.activities),
          updated_at = excluded.updated_at`,
       [topicId, contentP, activitiesP, now]
     );
@@ -278,6 +279,42 @@ const sqliteService: DatabaseService = {
       "INSERT INTO activity_meta (key, value) VALUES ('last_activity', ?) ON CONFLICT(key) DO UPDATE SET value = ?",
       [iso, iso]
     );
+  },
+
+  async getStreak(): Promise<number> {
+    const db = await getDb();
+    await ensureTables(db);
+    const row = await db.getFirstAsync<{ value: string }>(
+      "SELECT value FROM activity_meta WHERE key = 'streak'"
+    );
+    if (!row?.value) return 0;
+    const n = parseInt(row.value, 10);
+    return Number.isNaN(n) ? 0 : Math.max(0, n);
+  },
+
+  async setLastActivityAndStreak(iso: string): Promise<number> {
+    const db = await getDb();
+    await ensureTables(db);
+    const today = iso.slice(0, 10); // YYYY-MM-DD
+    const lastDateRow = await db.getFirstAsync<{ value: string }>(
+      "SELECT value FROM activity_meta WHERE key = 'last_activity_date'"
+    );
+    const streakRow = await db.getFirstAsync<{ value: string }>(
+      "SELECT value FROM activity_meta WHERE key = 'streak'"
+    );
+    const lastDate = lastDateRow?.value ?? null;
+    let streak = streakRow?.value ? Math.max(0, parseInt(streakRow.value, 10) || 0) : 0;
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    if (lastDate !== today) {
+      if (lastDate === yesterday) streak += 1;
+      else if (lastDate != null) streak = 1;
+      else streak = 0;
+    }
+    await db.runAsync(
+      "INSERT INTO activity_meta (key, value) VALUES ('last_activity', ?), ('last_activity_date', ?), ('streak', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      [iso, today, String(streak)]
+    );
+    return streak;
   },
 
   async clearAllProgress(): Promise<void> {

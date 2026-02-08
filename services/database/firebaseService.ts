@@ -83,8 +83,9 @@ function setSession(session: Session | null): void {
   else localStorage.removeItem(SESSION_KEY);
 }
 
+// 70% reading + 30% activities (10% per difficulty: Easy, Medium, Hard)
 function computeCombined(content: number, activities: number): number {
-  return Math.round(Math.min(100, (content + activities) / 2));
+  return Math.round(Math.min(100, Math.max(0, content * 0.70 + activities * 0.30)));
 }
 
 const firebaseService: DatabaseService = {
@@ -172,7 +173,7 @@ const firebaseService: DatabaseService = {
     const current = existing[String(topicId)] ?? { content: 0, activities: 0 };
     existing[String(topicId)] = {
       content: Math.max(current.content, contentP),
-      activities: activitiesP,
+      activities: Math.max(current.activities, activitiesP),
     };
     await setDoc(progressRef, existing);
   },
@@ -282,6 +283,42 @@ const firebaseService: DatabaseService = {
     const database = getDb();
     const metaRef = doc(database, 'activity_meta', userId);
     await setDoc(metaRef, { lastActivity: iso }, { merge: true });
+  },
+
+  async getStreak(): Promise<number> {
+    const userId = getCurrentUserId();
+    const database = getDb();
+    const metaRef = doc(database, 'activity_meta', userId);
+    const snap = await getDoc(metaRef);
+    const data = snap.exists() ? snap.data() : {};
+    const n = data?.streak;
+    if (n == null) return 0;
+    const val = typeof n === 'number' ? n : parseInt(String(n), 10);
+    return Number.isNaN(val) ? 0 : Math.max(0, val);
+  },
+
+  async setLastActivityAndStreak(iso: string): Promise<number> {
+    const userId = getCurrentUserId();
+    const database = getDb();
+    const metaRef = doc(database, 'activity_meta', userId);
+    const snap = await getDoc(metaRef);
+    const data = snap.exists() ? snap.data() : {};
+    const today = iso.slice(0, 10);
+    const lastDate = (data?.lastActivityDate as string) ?? null;
+    let streak = typeof data?.streak === 'number' ? data.streak : parseInt(String(data?.streak ?? 0), 10) || 0;
+    streak = Math.max(0, streak);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    if (lastDate !== today) {
+      if (lastDate === yesterday) streak += 1;
+      else if (lastDate != null) streak = 1;
+      else streak = 0;
+    }
+    await setDoc(metaRef, {
+      lastActivity: iso,
+      lastActivityDate: today,
+      streak,
+    }, { merge: true });
+    return streak;
   },
 
   async clearAllProgress(): Promise<void> {
