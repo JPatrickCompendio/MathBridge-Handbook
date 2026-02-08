@@ -19,6 +19,10 @@ export interface User {
   username: string;
   email: string;
   createdAt: string; // ISO
+  /** Display name (e.g. from profile edit). Web/Firebase only. */
+  displayName?: string;
+  /** Profile photo URL (e.g. Cloudinary). Web/Firebase only. */
+  photoUrl?: string;
 }
 
 export interface UserCredentials {
@@ -94,4 +98,7 @@ export interface DatabaseService {
 
   /** Reset password with recovery PIN (SQLite/app only; throws on web) */
   resetPasswordWithPin(email: string, recoveryPin: string, newPassword: string): Promise<void>;
+
+  /** Update profile (displayName, photoUrl). Firebase/web only; no-op on native. */
+  updateUserProfile?(updates: { displayName?: string; photoUrl?: string }): Promise<void>;
 }

@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   UIManager,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BorderRadius, Spacing } from '../../constants/colors';
@@ -759,6 +760,7 @@ export default function LessonMenuScreen() {
   const secV = s.V_Methods_of_Solving_Quadratic_Equations;
 
   const methodKeys = secV?.methods ? Object.keys(secV.methods) : [];
+  const { width: windowWidth } = useWindowDimensions();
   const { ReadingProgressIndicator } = useAccordionReadingProgress(
     QUADRATIC_TOPIC_ID,
     QUADRATIC_SECTION_KEYS.length,
@@ -777,10 +779,14 @@ export default function LessonMenuScreen() {
       <View style={{ flex: 1 }}>
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={[styles.scrollContent, isWeb() && styles.scrollContentWeb]}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isWeb() && styles.scrollContentWeb,
+            isWeb() && { maxWidth: windowWidth, alignSelf: 'stretch', width: '100%' },
+          ]}
           showsVerticalScrollIndicator={false}
         >
-        <View style={[styles.scrollInner, isWeb() && styles.scrollInnerWeb]}>
+        <View style={[styles.scrollInner, isWeb() && styles.scrollInnerWeb, isWeb() && { maxWidth: windowWidth }]}>
         {/* I. Purpose and Learning Objectives — always visible, no accordion */}
         <SectionFadeIn index={0}>
           <View style={styles.purposeSectionWrap}>
@@ -852,18 +858,22 @@ export default function LessonMenuScreen() {
           />
           {expandedSection === 'III' && secIII && (
             <AnimatedAccordionBody>
-              <View style={styles.conceptsGrid}>
-                {secIII
-                  .split(/\n/)
-                  .map((line) => line.replace(/^[•·]\s*/, '').trim())
-                  .filter(Boolean)
-                  .map((item, idx) => (
-                    <FadeInBlock key={idx} delay={idx * 50}>
-                      <View style={styles.conceptChip}>
-                        <Text style={styles.conceptChipText}>{item}</Text>
-                      </View>
-                    </FadeInBlock>
-                  ))}
+              <View style={[styles.conceptsGridWrap, { maxWidth: windowWidth }]}>
+                <View style={styles.conceptsGrid}>
+                  {secIII
+                    .split(/\n/)
+                    .map((line) => line.replace(/^[•·]\s*/, '').trim())
+                    .filter(Boolean)
+                    .map((item, idx) => (
+                      <FadeInBlock key={idx} delay={idx * 50}>
+                        <View style={styles.conceptChipWrapper}>
+                          <View style={styles.conceptChip}>
+                            <Text style={[styles.conceptChipText, isWeb() && styles.conceptChipTextWeb]}>{item}</Text>
+                          </View>
+                        </View>
+                      </FadeInBlock>
+                    ))}
+                </View>
               </View>
             </AnimatedAccordionBody>
           )}
@@ -1050,6 +1060,10 @@ const styles = StyleSheet.create({
   },
   accordionBody: {
     backgroundColor: Theme.card,
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
+    overflow: 'hidden',
     paddingHorizontal: getSpacing(isWeb() ? Spacing.xl : Spacing.md),
     paddingVertical: getSpacing(isWeb() ? Spacing.md : Spacing.sm),
     paddingBottom: getSpacing(Spacing.md),
@@ -1215,10 +1229,20 @@ const styles = StyleSheet.create({
   subsectionBlock: {
     marginTop: getSpacing(Spacing.sm),
   },
+  conceptsGridWrap: {
+    width: '100%',
+    maxWidth: '100%',
+    overflow: 'hidden',
+  },
   conceptsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
+    width: '100%',
+    minWidth: 0,
     gap: getSpacing(Spacing.sm),
+  },
+  conceptChipWrapper: {
+    width: '100%',
+    minWidth: 0,
   },
   conceptChip: {
     backgroundColor: Theme.primary + '14',
@@ -1227,11 +1251,18 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(BorderRadius.full),
     borderWidth: 1,
     borderColor: Theme.primary + '30',
+    width: '100%',
+    minWidth: 0,
+    alignSelf: 'stretch',
   },
   conceptChipText: {
     fontSize: scaleFont(isWeb() ? 16 : 13),
     color: Theme.text,
     fontWeight: '500',
+  },
+  conceptChipTextWeb: {
+    wordBreak: 'break-word' as const,
+    overflowWrap: 'break-word' as const,
   },
   methodsSubtitle: {
     fontSize: scaleFont(13),

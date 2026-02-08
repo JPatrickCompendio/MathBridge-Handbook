@@ -561,6 +561,8 @@ const styles = StyleSheet.create({
   },
   accordionBody: {
     backgroundColor: Theme.card,
+    width: '100%',
+    minWidth: 0,
     paddingHorizontal: getSpacing(isWeb() ? Spacing.xl : Spacing.md),
     paddingVertical: getSpacing(isWeb() ? Spacing.md : Spacing.sm),
     paddingBottom: getSpacing(Spacing.md),
@@ -696,12 +698,15 @@ const styles = StyleSheet.create({
   },
   keyWordsList: {
     marginBottom: getSpacing(Spacing.sm),
+    width: '100%',
   },
   keyWordItem: {
     marginBottom: getSpacing(Spacing.md),
     paddingBottom: getSpacing(Spacing.sm),
     borderBottomWidth: 1,
     borderBottomColor: Theme.border,
+    width: '100%',
+    minWidth: 0,
   },
   keyWordItemLast: {
     borderBottomWidth: 0,
@@ -710,6 +715,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: getSpacing(Spacing.xs),
+    flexWrap: 'wrap',
   },
   keyWordBullet: {
     fontSize: scaleFont(16),
@@ -721,6 +727,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Theme.text,
     flex: 1,
+    minWidth: 0,
   },
   keyWordDefinition: {
     fontSize: scaleFont(isWeb() ? 17 : 14),
@@ -746,6 +753,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Theme.text,
     flex: 1,
+    minWidth: 0,
   },
   keyWordDetail: {
     fontSize: scaleFont(isWeb() ? 16 : 13),

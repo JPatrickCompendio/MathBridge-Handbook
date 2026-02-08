@@ -20,6 +20,7 @@ import {
   getDocs,
   getFirestore,
   setDoc,
+  updateDoc,
   addDoc,
   query,
   where,
@@ -159,7 +160,21 @@ const firebaseService: DatabaseService = {
       username: d.username,
       email: d.email,
       createdAt: d.createdAt,
+      displayName: d.displayName,
+      photoUrl: d.photoUrl,
     };
+  },
+
+  async updateUserProfile(updates: { displayName?: string; photoUrl?: string }): Promise<void> {
+    const userId = getCurrentUserId();
+    if (userId === GUEST_USER_ID) return;
+    const database = getDb();
+    const userRef = doc(database, 'users', userId);
+    const payload: Record<string, string> = {};
+    if (updates.displayName !== undefined) payload.displayName = updates.displayName;
+    if (updates.photoUrl !== undefined) payload.photoUrl = updates.photoUrl;
+    if (Object.keys(payload).length === 0) return;
+    await updateDoc(userRef, payload);
   },
 
   async saveProgress(topicId: number, content: number, activities: number): Promise<void> {

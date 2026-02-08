@@ -576,6 +576,7 @@ export default function ProfileScreen() {
   const [profilePhotoUri, setProfilePhotoUri] = useState<string | undefined>(undefined);
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editPhotoUri, setEditPhotoUri] = useState<string | undefined>(undefined);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -585,9 +586,8 @@ export default function ProfileScreen() {
           setTopics((prev) => prev.map((t) => ({ ...t, progress: (saved as Record<number, number>)[t.id] ?? 0 })));
         }
         const overlay = await getProfileOverlay();
-        setProfilePhotoUri(overlay.photoUri);
         const user = await database.getUserData();
-        const displayName = (overlay.displayName?.trim() || user?.username) ?? '';
+        const displayName = (overlay.displayName?.trim() || user?.username || user?.displayName) ?? '';
         if (user) {
           const isLocalEmail = user.email.startsWith('_local_') && user.email.endsWith('@app');
           setUserData({
@@ -596,8 +596,14 @@ export default function ProfileScreen() {
             memberSince: user.createdAt ?? '',
             avatar: ((displayName || user.username) ?? '').charAt(0).toUpperCase() || '?',
           });
+          if (isWeb() && user.photoUrl) {
+            setProfilePhotoUri(user.photoUrl);
+          } else {
+            setProfilePhotoUri(overlay.photoUri);
+          }
         } else {
           setUserData(getDefaultUser());
+          setProfilePhotoUri(overlay.photoUri);
         }
       };
       load();
@@ -643,14 +649,38 @@ export default function ProfileScreen() {
 
   const handleSaveProfile = async () => {
     const name = editDisplayName.trim();
-    await setProfileOverlay({ displayName: name || undefined, photoUri: editPhotoUri });
-    setProfilePhotoUri(editPhotoUri);
-    setUserData((prev) => ({
-      ...prev,
-      name: name || prev.name,
-      avatar: (name || userData.name || '').charAt(0).toUpperCase() || '?',
-    }));
-    setEditModalVisible(false);
+    setSavingProfile(true);
+    try {
+      let photoUriToSave: string | undefined = editPhotoUri;
+      if (isWeb() && typeof database.updateUserProfile === 'function') {
+        if (editPhotoUri?.startsWith('data:')) {
+          const { uploadImageToCloudinary } = await import('../../utils/cloudinaryUpload');
+          const { secure_url } = await uploadImageToCloudinary(editPhotoUri);
+          photoUriToSave = secure_url;
+        }
+        await database.updateUserProfile({
+          displayName: name || undefined,
+          photoUrl: photoUriToSave,
+        });
+      }
+      await setProfileOverlay({ displayName: name || undefined, photoUri: photoUriToSave });
+      setProfilePhotoUri(photoUriToSave);
+      setUserData((prev) => ({
+        ...prev,
+        name: name || prev.name,
+        avatar: (name || userData.name || '').charAt(0).toUpperCase() || '?',
+      }));
+      setEditModalVisible(false);
+    } catch (e) {
+      console.warn('Save profile failed:', e);
+      if (isWeb() && typeof window !== 'undefined' && window.alert) {
+        window.alert('Failed to save profile. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to save profile. Please try again.');
+      }
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleCloseEditModal = () => {
@@ -1033,11 +1063,12 @@ export default function ProfileScreen() {
                 <Text style={styles.modalButtonCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonConfirm]}
+                style={[styles.modalButton, styles.modalButtonConfirm, savingProfile && { opacity: 0.7 }]}
                 onPress={handleSaveProfile}
+                disabled={savingProfile}
                 activeOpacity={0.7}
               >
-                <Text style={styles.modalButtonConfirmText}>Save</Text>
+                <Text style={styles.modalButtonConfirmText}>{savingProfile ? 'Saving…' : 'Save'}</Text>
               </TouchableOpacity>
             </View>
           </View>

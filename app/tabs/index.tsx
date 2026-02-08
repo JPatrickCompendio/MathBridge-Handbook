@@ -1011,8 +1011,12 @@ export default function HomeScreen() {
             );
           }
           const [overlay, user] = await Promise.all([getProfileOverlay(), database.getUserData()]);
-          setDisplayName((overlay.displayName?.trim() || user?.username) ?? DEFAULT_DISPLAY_NAME);
-          setProfilePhotoUri(overlay.photoUri);
+          setDisplayName((overlay.displayName?.trim() || user?.username || user?.displayName) ?? DEFAULT_DISPLAY_NAME);
+          if (isWeb() && user?.photoUrl) {
+            setProfilePhotoUri(user.photoUrl);
+          } else {
+            setProfilePhotoUri(overlay.photoUri);
+          }
           const newStreak = await database.setLastActivityAndStreak(new Date().toISOString());
           setStreak(newStreak);
         } catch (error) {
@@ -1090,6 +1094,7 @@ export default function HomeScreen() {
 
   const { isWeb, isWideScreen, width: windowWidth } = useResponsive();
   const useWebLayout = isWeb && isWideScreen;
+  const useNarrowWeb = isWeb && !isWideScreen; // web on mobile/narrow viewport
   const useFourColGrid = useWebLayout && windowWidth >= 1400;
   const useThreeColGrid = useWebLayout && windowWidth >= 1100 && !useFourColGrid;
 
@@ -1116,6 +1121,7 @@ export default function HomeScreen() {
           style={[
             styles.profileHeader as any,
             useWebLayout && styles.profileHeaderWeb,
+            useNarrowWeb && styles.profileHeaderNarrowWeb,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
@@ -1133,9 +1139,9 @@ export default function HomeScreen() {
           <AnimatedProfileBackground />
 
           {/* Content Container with zIndex to appear above background */}
-          <View style={[styles.profileContentInner, useWebLayout && styles.profileContentInnerWeb]}>
+          <View style={[styles.profileContentInner, useWebLayout && styles.profileContentInnerWeb, useNarrowWeb && styles.profileContentInnerNarrowWeb]}>
             {/* Top Row: Avatar, Name, and Stats */}
-            <View style={[styles.profileTopRow, useWebLayout && styles.profileTopRowWeb]}>
+            <View style={[styles.profileTopRow, useWebLayout && styles.profileTopRowWeb, useNarrowWeb && styles.profileTopRowNarrowWeb]}>
               <View style={styles.avatarContainer}>
                 <Animated.View 
                   style={[
@@ -1165,7 +1171,7 @@ export default function HomeScreen() {
 
               <View style={styles.userInfo}>
                 <Text style={styles.welcomeText}>Welcome back,</Text>
-                <Text style={styles.userName} numberOfLines={1}>{displayName || DEFAULT_DISPLAY_NAME}</Text>
+                <Text style={styles.userName} numberOfLines={useNarrowWeb ? 2 : 1}>{displayName || DEFAULT_DISPLAY_NAME}</Text>
                 <View style={[styles.streakContainer, streak === 0 && styles.streakContainerInactive]}>
                   <Text style={styles.streakIcon}>🔥</Text>
                   <Text style={styles.streakText}>
@@ -1183,7 +1189,7 @@ export default function HomeScreen() {
             </View>
 
             {/* Progress Section with Animated Bar — on web sits beside top row for wide compact header */}
-            <View style={[styles.progressSection, useWebLayout && styles.progressSectionWeb]}>
+            <View style={[styles.progressSection, useWebLayout && styles.progressSectionWeb, useNarrowWeb && styles.progressSectionNarrowWeb]}>
               <View style={[styles.progressHeader, useWebLayout && styles.progressHeaderWeb]}>
                 <Text style={styles.progressTitle}>Your Learning Progress</Text>
                 <Text style={styles.progressSubtitle}>
@@ -1507,6 +1513,12 @@ const styles = StyleSheet.create({
     borderLeftWidth: scaleSize(4),
     borderLeftColor: 'rgba(255, 255, 255, 0.4)',
   },
+  profileHeaderNarrowWeb: {
+    marginHorizontal: getSpacing(Spacing.sm),
+    padding: getSpacing(Spacing.md),
+    minHeight: scaleSize(140),
+    borderRadius: scaleSize(12),
+  },
   profileContentInner: {
     position: 'relative',
     zIndex: 1,
@@ -1516,6 +1528,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: getSpacing(Spacing.md),
+  },
+  profileContentInnerNarrowWeb: {
+    width: '100%',
+    minWidth: 0,
   },
   profileTopRow: {
     flexDirection: 'row',
@@ -1530,10 +1546,19 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     gap: getSpacing(Spacing.sm),
   },
+  profileTopRowNarrowWeb: {
+    flexWrap: 'wrap',
+    minWidth: 0,
+    maxWidth: '100%',
+  },
   progressSectionWeb: {
     marginTop: 0,
     flex: 1.3,
     minWidth: 240,
+  },
+  progressSectionNarrowWeb: {
+    width: '100%',
+    minWidth: 0,
   },
   progressHeaderWeb: {
     marginBottom: getSpacing(Spacing.xs),

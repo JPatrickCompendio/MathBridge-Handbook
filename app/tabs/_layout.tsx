@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { Animated, Platform, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useWindowDimensions } from 'react-native';
 import { BorderRadius } from '../../constants/colors';
 import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
 
@@ -68,6 +69,8 @@ function TabIcon({
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const narrowTabs = width < 420;
   // Calculate bottom padding: base padding + safe area bottom inset
   const baseBottomPadding = Platform.OS === 'ios' ? getSpacing(8) : getSpacing(6);
   const bottomPadding = Math.max(baseBottomPadding, insets.bottom + getSpacing(4));
@@ -134,9 +137,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="achievements"
         options={{
-          title: 'Achievements',
+          title: narrowTabs ? 'Achieve' : 'Achievements',
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon emoji="🏆" focused={focused} label="Achievements" />
+            <TabIcon emoji="🏆" focused={focused} label={narrowTabs ? 'Achieve' : 'Achievements'} />
           ),
         }}
       />

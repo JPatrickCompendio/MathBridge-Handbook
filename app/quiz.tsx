@@ -212,6 +212,7 @@ export default function QuizScreen() {
   const [survivalEnded, setSurvivalEnded] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
   const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<number>>(new Set());
+  const [submittedBlindIds, setSubmittedBlindIds] = useState<Set<number>>(new Set());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -373,6 +374,9 @@ export default function QuizScreen() {
       const typed = typedAnswers[currentQuestion.id]?.toLowerCase().trim();
       const correct = currentQuestion.options[currentQuestion.correctAnswer].toLowerCase().trim();
       
+      // Mark this question as submitted (user cannot proceed without submitting)
+      setSubmittedBlindIds((prev) => new Set([...prev, currentQuestion.id]));
+      
       // Check if answer is correct
       const isCorrect = typed === correct || 
         typed === correct.replace(/[^\d.-]/g, '') ||
@@ -459,6 +463,7 @@ export default function QuizScreen() {
     setSurvivalEnded(false);
     setQuizStarted(false);
     setAnsweredQuestionIds(new Set());
+    setSubmittedBlindIds(new Set());
     setTimeLeft(null);
     
     // Reload questions
@@ -640,6 +645,9 @@ export default function QuizScreen() {
   const selectedAnswer = selectedAnswers[currentQuestion.id];
   const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
   const showAnswer = isSurvivalMode && selectedAnswer !== undefined;
+  const hasAnsweredCurrent = isBlindMode
+    ? submittedBlindIds.has(currentQuestion.id)
+    : selectedAnswers[currentQuestion.id] !== undefined;
 
   return (
     <SafeAreaView style={[styles.container, isWeb() && styles.containerWeb]} edges={['top', 'left', 'right']}>
@@ -804,11 +812,20 @@ export default function QuizScreen() {
 
           {!isSurvivalMode && (
             <TouchableOpacity
-              style={styles.navButton}
+              style={[
+                styles.navButton,
+                !hasAnsweredCurrent && styles.navButtonDisabled,
+              ]}
               onPress={handleNextQuestion}
+              disabled={!hasAnsweredCurrent}
               activeOpacity={0.7}
             >
-              <Text style={styles.navButtonText}>
+              <Text
+                style={[
+                  styles.navButtonText,
+                  !hasAnsweredCurrent && styles.navButtonTextDisabled,
+                ]}
+              >
                 {currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next →'}
               </Text>
             </TouchableOpacity>
@@ -816,11 +833,22 @@ export default function QuizScreen() {
 
           {currentQuestionIndex === questions.length - 1 && !isSurvivalMode && (
             <TouchableOpacity
-              style={[styles.navButton, styles.finishButton]}
+              style={[
+                styles.navButton,
+                styles.finishButton,
+                !hasAnsweredCurrent && styles.navButtonDisabled,
+              ]}
               onPress={handleFinishQuiz}
+              disabled={!hasAnsweredCurrent}
               activeOpacity={0.8}
             >
-              <Text style={[styles.navButtonText, styles.finishButtonText]}>
+              <Text
+                style={[
+                  styles.navButtonText,
+                  styles.finishButtonText,
+                  !hasAnsweredCurrent && styles.navButtonTextDisabled,
+                ]}
+              >
                 Finish Quiz
               </Text>
             </TouchableOpacity>
