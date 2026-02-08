@@ -7,7 +7,10 @@ import {
   Animated,
   Easing,
   Image,
+  InteractionManager,
+  Linking,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -642,35 +645,53 @@ export default function ProfileScreen() {
     setEditModalVisible(true);
   };
 
-  const handlePickImage = async () => {
-    try {
-      // Load picker only when user taps (avoids native module load on profile open; can crash on some Android 14 devices)
-      const ImagePicker = await import('expo-image-picker');
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        if (isWeb()) return;
-        Alert.alert('Permission needed', 'Allow access to your photos to set a profile picture.');
-        return;
+  const handlePickImage = () => {
+    // Defer off the touch handler so native module runs after UI has settled (reduces Android crash risk)
+    InteractionManager.runAfterInteractions(async () => {
+      try {
+        const ImagePicker = await import('expo-image-picker');
+        const isAndroid = Platform.OS === 'android';
+
+        // Always request permission on native so the system asks to access gallery / Google Photos
+        if (!isWeb()) {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert(
+              'Photo access',
+              'Allow access to your photos so you can choose a profile picture from your gallery or Google Photos. You can change this later in Settings.',
+              [
+                { text: 'Not now', style: 'cancel' },
+                { text: 'Open Settings', onPress: () => Linking.openSettings() },
+              ],
+              { cancelable: true }
+            );
+            return;
+          }
+        }
+
+        // On Android, disable cropping to avoid CropImageContract crash on many devices
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: !isAndroid,
+          aspect: isAndroid ? undefined : [1, 1],
+          quality: 0.8,
+          base64: isWeb(),
+        });
+
+        if (!result.canceled && result.assets?.[0]) {
+          const asset = result.assets[0];
+          const uri = isWeb() && asset.base64
+            ? `data:image/jpeg;base64,${asset.base64}`
+            : asset.uri;
+          if (uri) setEditPhotoUri(uri);
+        }
+      } catch (e) {
+        console.warn('Image picker error:', e);
+        if (!isWeb()) {
+          Alert.alert('Error', 'Could not open image picker. Try again or use a different photo.');
+        }
       }
-      // On native, avoid base64 to prevent large data URIs that can crash or OOM on Android
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions?.Images ?? ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-        base64: isWeb(),
-      });
-      if (!result.canceled && result.assets?.[0]) {
-        const asset = result.assets[0];
-        const uri = isWeb() && asset.base64
-          ? `data:image/jpeg;base64,${asset.base64}`
-          : asset.uri;
-        if (uri) setEditPhotoUri(uri);
-      }
-    } catch (e) {
-      console.warn('Image picker error:', e);
-      if (!isWeb()) Alert.alert('Error', 'Could not open image picker. Try again or use a different photo.');
-    }
+    });
   };
 
   const handleSaveProfile = async () => {
