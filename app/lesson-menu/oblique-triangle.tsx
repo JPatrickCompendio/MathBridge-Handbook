@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AccordionRevealBody from '../../components/AccordionRevealBody';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_3B_OBLIQUE_TRIANGLE_SECTIONS } from '../../data/lessons/module3b_oblique_triangle';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
@@ -67,22 +68,6 @@ function AccordionHeader({
   );
 }
 
-function AnimatedAccordionBody({ children }: { children: React.ReactNode }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(isWeb() ? 12 : 8)).current;
-  useEffect(() => {
-    const duration = isWeb() ? 400 : 280;
-    Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-  }, []);
-  return (
-    <Animated.View style={[styles.accordionBody, isWeb() && styles.accordionBodyWeb, { opacity, transform: [{ translateY }] }]}>
-      {children}
-    </Animated.View>
-  );
-}
 
 function SectionFadeIn({ index, children }: { index: number; children: React.ReactNode }) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -201,7 +186,7 @@ export default function ObliqueTriangleLessonScreen() {
             icon={isWeb() ? '🔺' : undefined}
           />
           {expandedSection === 'II' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <Text style={styles.paragraph}>{whatAre.definition || ''}</Text>
               <Text style={styles.paragraph}>{whatAre.general_note || ''}</Text>
               <View style={styles.bulletList}>
@@ -247,7 +232,7 @@ export default function ObliqueTriangleLessonScreen() {
               </View>
 
               <Text style={[styles.paragraph, styles.conclusionText]}>{whatAre.conclusion || ''}</Text>
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -260,7 +245,7 @@ export default function ObliqueTriangleLessonScreen() {
             icon={isWeb() ? '📝' : undefined}
           />
           {expandedSection === 'III' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <View style={styles.keyWordsList}>
                 {keyWordTerms.map((item: { term?: string; definition?: string }, idx: number) => (
                   <View key={idx} style={[styles.keyWordItem, idx === keyWordTerms.length - 1 && styles.keyWordItemLast]}>
@@ -272,7 +257,7 @@ export default function ObliqueTriangleLessonScreen() {
                   </View>
                 ))}
               </View>
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -285,7 +270,7 @@ export default function ObliqueTriangleLessonScreen() {
             icon={isWeb() ? '📐' : undefined}
           />
           {expandedSection === 'IV' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <Text style={styles.paragraph}>{(lawOfSines as { when_used_intro?: string }).when_used_intro || 'The Law of Sines is used when:'}</Text>
               <View style={styles.bulletList}>
                 {whenUsed.map((line: string, i: number) => (
@@ -366,7 +351,7 @@ export default function ObliqueTriangleLessonScreen() {
                   )}
                 </View>
               ))}
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -379,7 +364,7 @@ export default function ObliqueTriangleLessonScreen() {
             icon={isWeb() ? '📐' : undefined}
           />
           {expandedSection === 'V' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <Text style={styles.paragraph}>{(lawOfCosines as { when_used_intro?: string }).when_used_intro || 'The Law of Cosines is used when:'}</Text>
               <View style={styles.bulletList}>
                 {cosinesWhenUsed.map((line: string, i: number) => (
@@ -440,7 +425,7 @@ export default function ObliqueTriangleLessonScreen() {
                   )}
                 </View>
               ))}
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
         </View>

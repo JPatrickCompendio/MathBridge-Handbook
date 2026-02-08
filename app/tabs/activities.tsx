@@ -1,9 +1,11 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Alert,
     Animated,
+    Dimensions,
     Easing,
     ScrollView,
     StyleSheet,
@@ -40,7 +42,7 @@ const EXAMPLE_TOPICS = [
   {
     id: 1,
     name: 'Quadratic Equations',
-    icon: '📐',
+    icon: '🧮',
     mastery: 0,
     difficulties: {
       easy: { score: '0/10', completed: false, perfect: false },
@@ -51,7 +53,7 @@ const EXAMPLE_TOPICS = [
   {
     id: 2,
     name: 'Pythagorean Triples',
-    icon: '🔺',
+    icon: '🎯',
     mastery: 0,
     difficulties: {
       easy: { score: '0/10', completed: false, perfect: false },
@@ -93,6 +95,103 @@ const EXAMPLE_TOPICS = [
     },
   },
 ];
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const SHINE_BAND_WIDTH = Math.max(SCREEN_WIDTH, 400) * 0.8;
+const SHINE_DURATION = 2200;
+
+/** White–orange gradient with a sweeping shine effect (activities tab). */
+function ActivitiesGradientBackground() {
+  const shineX = useRef(new Animated.Value(0)).current;
+  const shineOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const sweep = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(shineX, {
+            toValue: 1,
+            duration: SHINE_DURATION,
+            easing: Easing.inOut(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.sequence([
+            Animated.timing(shineOpacity, {
+              toValue: 1,
+              duration: SHINE_DURATION * 0.2,
+              easing: Easing.out(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(shineOpacity, {
+              toValue: 1,
+              duration: SHINE_DURATION * 0.6,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.timing(shineOpacity, {
+              toValue: 0,
+              duration: SHINE_DURATION * 0.2,
+              easing: Easing.in(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+        Animated.delay(1400),
+        Animated.parallel([
+          Animated.timing(shineX, { toValue: 0, duration: 0, useNativeDriver: true }),
+          Animated.timing(shineOpacity, { toValue: 0, duration: 0, useNativeDriver: true }),
+        ]),
+      ]),
+      { iterations: -1 }
+    );
+    sweep.start();
+    return () => sweep.stop();
+  }, [shineX, shineOpacity]);
+
+  const translateX = shineX.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-SCREEN_WIDTH - SHINE_BAND_WIDTH, SCREEN_WIDTH + SHINE_BAND_WIDTH],
+  });
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <LinearGradient
+        colors={['#FFFFFF', '#FFF5F0', '#FFE8DC', '#FFF5F0', '#FFFFFF']}
+        locations={[0, 0.25, 0.5, 0.75, 1]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      <View style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]} pointerEvents="none">
+        <Animated.View
+          style={[
+            {
+              position: 'absolute',
+              top: -SCREEN_HEIGHT * 0.2,
+              left: 0,
+              width: SHINE_BAND_WIDTH,
+              height: SCREEN_HEIGHT * 1.4,
+              transform: [
+                { translateX },
+                { rotate: '-25deg' },
+              ],
+              opacity: shineOpacity,
+            },
+          ]}
+          pointerEvents="none"
+        >
+          <LinearGradient
+            colors={['transparent', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.95)', 'rgba(255,255,255,0.4)', 'transparent']}
+            locations={[0, 0.35, 0.5, 0.65, 1]}
+            style={{ flex: 1, width: SHINE_BAND_WIDTH }}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          />
+        </Animated.View>
+      </View>
+    </View>
+  );
+}
 
 const PRACTICE_MODES = [
   {
@@ -418,6 +517,7 @@ export default function ActivitiesScreen() {
   return (
     <View style={styles.container}>
       <TabsAnimatedBackground />
+      <ActivitiesGradientBackground />
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.scrollView}
@@ -710,7 +810,7 @@ const responsiveValues = {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ProfessionalColors.background,
+    backgroundColor: ProfessionalColors.white,
   },
   safeArea: {
     flex: 1,

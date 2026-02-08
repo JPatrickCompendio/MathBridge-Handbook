@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AccordionRevealBody from '../../components/AccordionRevealBody';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_2_SECTIONS } from '../../data/lessons/module2_triangle_triples';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
@@ -67,32 +68,6 @@ function AccordionHeader({
   );
 }
 
-function AnimatedAccordionBody({ children }: { children: React.ReactNode }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(isWeb() ? 12 : 8)).current;
-  useEffect(() => {
-    const duration = isWeb() ? 400 : 280;
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-  return (
-    <Animated.View style={[styles.accordionBody, isWeb() && styles.accordionBodyWeb, { opacity, transform: [{ translateY }] }]}>
-      {children}
-    </Animated.View>
-  );
-}
 
 function SectionFadeIn({ index, children }: { index: number; children: React.ReactNode }) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -208,7 +183,7 @@ export default function PythagoreanTriplesLessonScreen() {
             icon={isWeb() ? '📐' : undefined}
           />
           {expandedSection === 'II' && sectionII && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <View style={styles.theoremCard}>
                 <Text style={styles.sectionIIParagraph}>{sectionII.theorem_definition}</Text>
                 <View style={styles.formulaBlock}>
@@ -240,7 +215,7 @@ export default function PythagoreanTriplesLessonScreen() {
                 </View>
                 <Text style={[styles.sectionIIParagraph, styles.sectionIIConclusion]}>{sectionII.conclusion}</Text>
               </View>
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -253,7 +228,7 @@ export default function PythagoreanTriplesLessonScreen() {
             icon={isWeb() ? '📝' : undefined}
           />
           {expandedSection === 'III' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <View style={styles.keyWordsList}>
                 {keyWordTerms.map((item: { term?: string; definition?: string; subterms?: Array<{ term?: string; definition?: string; detail?: string; example?: string }> }, idx: number) => (
                   <View key={idx} style={[styles.keyWordItem, idx === keyWordTerms.length - 1 && styles.keyWordItemLast]}>
@@ -276,7 +251,7 @@ export default function PythagoreanTriplesLessonScreen() {
                   </View>
                 ))}
               </View>
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -289,7 +264,7 @@ export default function PythagoreanTriplesLessonScreen() {
             icon={isWeb() ? '📋' : undefined}
           />
           {expandedSection === 'IV' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               {procedureIntro ? (
                 <Text style={styles.procedureIntroText}>{procedureIntro}</Text>
               ) : null}
@@ -327,7 +302,7 @@ export default function PythagoreanTriplesLessonScreen() {
                     </View>
                   ))}
               </View>
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -340,7 +315,7 @@ export default function PythagoreanTriplesLessonScreen() {
             icon={isWeb() ? '💡' : undefined}
           />
           {expandedSection === 'V' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               {workedExamples.length > 0 ? (
                 <>
                   {workedExamples.map((ex: { exampleNum?: number; problem?: string; steps?: Array<{ label?: string; text?: string; formula?: string; substitution?: string }>; extra?: string; conclusion?: string }, idx: number) => (
@@ -395,7 +370,7 @@ export default function PythagoreanTriplesLessonScreen() {
                   ))}
                 </View>
               )}
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
         </View>

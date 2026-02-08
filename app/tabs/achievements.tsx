@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Animated,
+    Dimensions,
     Easing,
     FlatList,
     Modal,
@@ -40,6 +41,59 @@ const RarityColors = {
   epic: '#AB47BC',
   legendary: '#FFA726',
 };
+
+/** White–orange gradient with a soft breathing glow (achievements tab). */
+function AchievementsBackground() {
+  const breath = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(breath, {
+          toValue: 1,
+          duration: 2800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(breath, {
+          toValue: 0,
+          duration: 2800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+      { iterations: -1 }
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [breath]);
+
+  const overlayOpacity = breath.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.05, 0.2],
+  });
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <LinearGradient
+        colors={['#FFFFFF', '#FFF5F0', '#FFE8DC', '#FFF5F0', '#FFFFFF']}
+        locations={[0, 0.25, 0.5, 0.75, 1]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: overlayOpacity }]} pointerEvents="none">
+        <LinearGradient
+          colors={['#FF6600', '#FF8533', '#FF6600']}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+      </Animated.View>
+    </View>
+  );
+}
 
 type Achievement = {
   id: string;
@@ -116,7 +170,7 @@ const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
     description: 'Complete all Quadratic Equations content and activities (100%)',
     type: 'badge',
     category: 'topic_mastery',
-    icon: '📐',
+    icon: '🧮',
     color: '#4ECDC4',
     earned: false,
     rarity: 'rare',
@@ -130,7 +184,7 @@ const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
     description: 'Complete all Pythagorean Triples content and activities (100%)',
     type: 'badge',
     category: 'topic_mastery',
-    icon: '🔺',
+    icon: '🎯',
     color: '#45B7D1',
     earned: false,
     rarity: 'rare',
@@ -1229,6 +1283,7 @@ export default function AchievementsScreen() {
 
   return (
     <View style={styles.container}>
+      <AchievementsBackground />
       <TabsAnimatedBackground />
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <FlatList
@@ -1580,7 +1635,7 @@ const responsiveValues = {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ProfessionalColors.background,
+    backgroundColor: ProfessionalColors.white,
   },
   safeArea: {
     flex: 1,

@@ -234,12 +234,12 @@ type Question = {
 const TOPIC_INFO: { [key: string]: { name: string; icon: string; description: string } } = {
   '1': {
     name: 'Quadratic Equations',
-    icon: '📐',
+    icon: '🧮',
     description: 'Learn to identify and apply steps in solving quadratic equations',
   },
   '2': {
     name: 'Pythagorean Triples',
-    icon: '🔺',
+    icon: '🎯',
     description: 'Identifying triangle triples',
   },
   '3': {

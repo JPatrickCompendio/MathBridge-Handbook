@@ -52,8 +52,8 @@ const ProfessionalColors = {
 const DEFAULT_DISPLAY_NAME = 'Learner';
 
 const EXAMPLE_TOPICS = [
-  { id: 1, name: 'Quadratic Equations', progress: 0, icon: '📐', subtitle: 'Solving Quadratic Equations' },
-  { id: 2, name: 'Pythagorean Triples', progress: 0, icon: '🔺', subtitle: 'Identifying Triangle Triples' },
+  { id: 1, name: 'Quadratic Equations', progress: 0, icon: '🧮', subtitle: 'Solving Quadratic Equations' },
+  { id: 2, name: 'Pythagorean Triples', progress: 0, icon: '🎯', subtitle: 'Identifying Triangle Triples' },
   { id: 3, name: 'Triangle Measures', progress: 0, icon: '△', subtitle: 'Similar Triangles & Oblique' },
   { id: 4, name: 'Area of Triangles', progress: 0, icon: '📐', subtitle: 'Area Formula & Problems' },
   { id: 5, name: 'Variation', progress: 0, icon: '📊', subtitle: 'Direct, Inverse, Joint & Combined' },
@@ -607,24 +607,24 @@ function Rotating3DIcon({ icon, delay = 0 }: { icon: string; delay?: number }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Infinite 3D rotation
+    // Infinite 3D rotation (faster)
     const rotateAnimation = Animated.loop(
       Animated.parallel([
         Animated.timing(rotateX, {
           toValue: 1,
-          duration: 4000 + delay * 200,
+          duration: 1800 + delay * 80,
           easing: Easing.linear,
           useNativeDriver: true,
         }),
         Animated.timing(rotateY, {
           toValue: 1,
-          duration: 5000 + delay * 200,
+          duration: 2200 + delay * 80,
           easing: Easing.linear,
           useNativeDriver: true,
         }),
         Animated.timing(rotateZ, {
           toValue: 1,
-          duration: 6000 + delay * 200,
+          duration: 2600 + delay * 80,
           easing: Easing.linear,
           useNativeDriver: true,
         }),
@@ -632,18 +632,18 @@ function Rotating3DIcon({ icon, delay = 0 }: { icon: string; delay?: number }) {
       { iterations: -1 }
     );
 
-    // Floating animation
+    // Floating animation (faster)
     const floatAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(floatAnim, {
           toValue: 1,
-          duration: 2000 + delay * 100,
+          duration: 900 + delay * 40,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(floatAnim, {
           toValue: 0,
-          duration: 2000 + delay * 100,
+          duration: 900 + delay * 40,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
@@ -1446,9 +1446,9 @@ const responsiveValues = {
   progressLabelFont: isWeb() ? 12 : (isTablet() ? 12 : isSmallDevice() ? 8 : 10),
   sectionTitleFont: isWeb() ? 20 : (isTablet() ? 30 : isSmallDevice() ? 20 : 24),
   sectionSubtitleFont: isWeb() ? 13 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
-  topicIconSize: isWeb() ? 40 : (isTablet() ? 60 : isSmallDevice() ? 40 : 50),
-  topicIconRadius: isWeb() ? 20 : (isTablet() ? 30 : isSmallDevice() ? 20 : 25),
-  topicIconFont: isWeb() ? 18 : (isTablet() ? 28 : isSmallDevice() ? 18 : 22),
+  topicIconSize: isWeb() ? 46 : (isTablet() ? 68 : isSmallDevice() ? 44 : 56),
+  topicIconRadius: isWeb() ? 23 : (isTablet() ? 34 : isSmallDevice() ? 22 : 28),
+  topicIconFont: isWeb() ? 20 : (isTablet() ? 32 : isSmallDevice() ? 20 : 25),
   topicNameFont: isWeb() ? 15 : (isTablet() ? 22 : isSmallDevice() ? 16 : 18),
   topicSubtitleFont: isWeb() ? 11 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
   statCardMaxWidth: isTablet() ? 250 : undefined,

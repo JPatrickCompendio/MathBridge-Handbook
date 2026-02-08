@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AccordionRevealBody from '../../components/AccordionRevealBody';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_3_TRIANGLE_SIMILARITY_SECTIONS } from '../../data/lessons/module3_triangle_similarity';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
@@ -77,22 +78,6 @@ function AccordionHeader({
   );
 }
 
-function AnimatedAccordionBody({ children }: { children: React.ReactNode }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(isWeb() ? 12 : 8)).current;
-  useEffect(() => {
-    const duration = isWeb() ? 400 : 280;
-    Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-  }, []);
-  return (
-    <Animated.View style={[styles.accordionBody, isWeb() && styles.accordionBodyWeb, { opacity, transform: [{ translateY }] }]}>
-      {children}
-    </Animated.View>
-  );
-}
 
 function SectionFadeIn({ index, children }: { index: number; children: React.ReactNode }) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -208,7 +193,7 @@ export default function TriangleSimilarityLessonScreen() {
             icon={isWeb() ? '🔺' : undefined}
           />
           {expandedSection === 'II' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <Text style={styles.paragraph}>Two triangles are similar if:</Text>
               <View style={styles.bulletList}>
                 {(whatAre.conditions || []).map((c: string, idx: number) => (
@@ -221,7 +206,7 @@ export default function TriangleSimilarityLessonScreen() {
               {(whatAre.notes || []).map((note: string, idx: number) => (
                 <Text key={idx} style={styles.paragraph}>{note}</Text>
               ))}
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -234,7 +219,7 @@ export default function TriangleSimilarityLessonScreen() {
             icon={isWeb() ? '📝' : undefined}
           />
           {expandedSection === 'III' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <View style={styles.keyWordsList}>
                 {keyWordTerms.map((item: { term?: string; definition?: string }, idx: number) => (
                   <View key={idx} style={[styles.keyWordItem, idx === keyWordTerms.length - 1 && styles.keyWordItemLast]}>
@@ -246,7 +231,7 @@ export default function TriangleSimilarityLessonScreen() {
                   </View>
                 ))}
               </View>
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -259,7 +244,7 @@ export default function TriangleSimilarityLessonScreen() {
             icon={isWeb() ? '📐' : undefined}
           />
           {expandedSection === 'IV' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <Text style={styles.paragraph}>{correspondingParts.definition}</Text>
 
               <View style={styles.correspondingSubsection}>
@@ -304,7 +289,7 @@ export default function TriangleSimilarityLessonScreen() {
               <Text style={styles.paragraph}>
                 Correct matching of parts is important when checking triangle similarity.
               </Text>
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -317,7 +302,7 @@ export default function TriangleSimilarityLessonScreen() {
             icon={isWeb() ? '💡' : undefined}
           />
           {expandedSection === 'V' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <Text style={styles.paragraph}>There are three methods used to determine triangle similarity.</Text>
               {methodKeys.map((key: string, methodIndex: number) => {
                 const method = methods[key];
@@ -396,7 +381,7 @@ export default function TriangleSimilarityLessonScreen() {
                   </View>
                 );
               })}
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
         </View>

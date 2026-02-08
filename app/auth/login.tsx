@@ -519,7 +519,12 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
         ) : (
-          <View style={styles.contentNoScroll} pointerEvents="box-none">
+          <ScrollView
+            style={styles.scrollViewApp}
+            contentContainerStyle={styles.scrollContentApp}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             <View style={[styles.header, styles.headerCompact]}>
               <View style={[styles.logoContainer, styles.logoCompact]}>
                 <Animated.View
@@ -621,7 +626,7 @@ export default function LoginScreen() {
                 </View>
               </View>
             </View>
-          </View>
+          </ScrollView>
         )}
       </KeyboardAvoidingView>
 
@@ -659,12 +664,13 @@ export default function LoginScreen() {
                     />
                     <Input
                       label="Recovery PIN"
-                      placeholder="4–6 digits you set when signing up"
+                      placeholder="4-6 digits you set"
                       value={resetPin}
                       onChangeText={setResetPin}
                       keyboardType="number-pad"
                       maxLength={6}
                       containerStyle={styles.input}
+                      style={styles.inputPlaceholderSmall}
                     />
                     <Input
                       label="New password"
@@ -741,10 +747,13 @@ const styles = StyleSheet.create({
   scrollContentWeb: {
     paddingHorizontal: wp(8),
   },
-  contentNoScroll: {
+  scrollViewApp: {
     flex: 1,
+  },
+  scrollContentApp: {
+    flexGrow: 1,
     paddingHorizontal: wp(6),
-    justifyContent: 'space-between',
+    paddingBottom: hp(8),
   },
   headerCompact: {
     paddingTop: getSafeAreaTopPadding() + hp(1.5),
@@ -776,9 +785,6 @@ const styles = StyleSheet.create({
     lineHeight: scaleFont(18),
   },
   formAreaCompact: {
-    flex: 1,
-    minHeight: 0,
-    justifyContent: 'center',
     paddingTop: getSpacing(Spacing.lg),
     paddingBottom: getSpacing(Spacing.md),
   },
@@ -874,6 +880,9 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: getSpacing(Spacing.lg),
+  },
+  inputPlaceholderSmall: {
+    fontSize: scaleFont(12),
   },
   forgotPassword: {
     alignSelf: 'flex-end',

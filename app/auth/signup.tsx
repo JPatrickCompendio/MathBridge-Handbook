@@ -331,13 +331,14 @@ export default function SignupScreen() {
                 <>
                   <Input
                     label="Recovery PIN"
-                    placeholder="4–6 digits (for password reset offline)"
+                    placeholder="4-6 digits for password reset"
                     value={formData.recoveryPin}
                     onChangeText={(text) => handleFieldChange('recoveryPin', text)}
                     keyboardType="number-pad"
                     maxLength={6}
                     error={errors.recoveryPin}
                     containerStyle={styles.input}
+                    style={styles.inputPlaceholderSmall}
                   />
                   <Input
                     label="Confirm Recovery PIN"
@@ -348,6 +349,7 @@ export default function SignupScreen() {
                     maxLength={6}
                     error={errors.confirmRecoveryPin}
                     containerStyle={styles.input}
+                    style={styles.inputPlaceholderSmall}
                   />
                 </>
               ) : null}
@@ -491,6 +493,9 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: getSpacing(Spacing.lg),
+  },
+  inputPlaceholderSmall: {
+    fontSize: scaleFont(12),
   },
   signupErrorText: {
     fontSize: scaleFont(authResponsiveValues.smallTextFont),

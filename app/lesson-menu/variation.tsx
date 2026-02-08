@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AccordionRevealBody from '../../components/AccordionRevealBody';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_5_VARIATION_SECTIONS } from '../../data/lessons/module5_variation';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
@@ -54,22 +55,6 @@ function AccordionHeader({ title, isOpen, onPress, icon }: { title: string; isOp
   );
 }
 
-function AnimatedAccordionBody({ children }: { children: React.ReactNode }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(isWeb() ? 12 : 8)).current;
-  useEffect(() => {
-    const duration = isWeb() ? 400 : 280;
-    Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-  }, []);
-  return (
-    <Animated.View style={[styles.accordionBody, isWeb() && styles.accordionBodyWeb, { opacity, transform: [{ translateY }] }]}>
-      {children}
-    </Animated.View>
-  );
-}
 
 function SectionFadeIn({ index, children }: { index: number; children: React.ReactNode }) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -170,7 +155,7 @@ export default function VariationLessonScreen() {
             icon={isWeb() ? '📖' : undefined}
           />
           {expandedSection === 'II' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <Text style={styles.paragraph}>{(whatIs as { intro?: string }).intro || ''}</Text>
               {variationTypes.map((t: { name?: string; description?: string; formula?: string; where?: string; or_more?: string; example?: string }, idx: number) => (
                 <View key={idx} style={styles.variationTypeCard}>
@@ -185,7 +170,7 @@ export default function VariationLessonScreen() {
                   {t.example ? <Text style={styles.paragraph}>Example: {t.example}</Text> : null}
                 </View>
               ))}
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -193,7 +178,7 @@ export default function VariationLessonScreen() {
         <SectionFadeIn index={2}>
           <AccordionHeader title="III. Key Words and Concepts" isOpen={expandedSection === 'III'} onPress={() => toggle('III')} icon={isWeb() ? '📝' : undefined} />
           {expandedSection === 'III' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <View style={styles.keyWordsList}>
                 {keyWords.map((item: { term?: string; definition?: string }, idx: number) => (
                   <View key={idx} style={[styles.keyWordItem, idx === keyWords.length - 1 && styles.keyWordItemLast]}>
@@ -205,7 +190,7 @@ export default function VariationLessonScreen() {
                   </View>
                 ))}
               </View>
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -218,7 +203,7 @@ export default function VariationLessonScreen() {
             icon={isWeb() ? '📐' : undefined}
           />
           {expandedSection === 'IV' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               {procedureIntro ? (
                 <View style={styles.procedureIntroBox}>
                   <Text style={styles.procedureIntroText}>{procedureIntro}</Text>
@@ -234,7 +219,7 @@ export default function VariationLessonScreen() {
                   </View>
                 ))}
               </View>
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -247,7 +232,7 @@ export default function VariationLessonScreen() {
             icon={isWeb() ? '💡' : undefined}
           />
           {expandedSection === 'V' && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               {workedExamples.map((ex: { title?: string; problem?: string; solution?: string[] }, idx: number) => (
                 <View key={idx} style={styles.exampleBlock}>
                   <Text style={styles.exampleTitle}>{ex.title || `Example ${idx + 1}`}</Text>
@@ -260,7 +245,7 @@ export default function VariationLessonScreen() {
                   </View>
                 </View>
               ))}
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
         </View>

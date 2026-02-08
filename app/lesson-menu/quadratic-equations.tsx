@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AccordionRevealBody from '../../components/AccordionRevealBody';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_1_SECTIONS } from '../../data/lessons/module1_quadratic';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
@@ -90,22 +91,6 @@ function SubAccordionHeader({
   );
 }
 
-function AnimatedAccordionBody({ children }: { children: React.ReactNode }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(isWeb() ? 12 : 8)).current;
-  useEffect(() => {
-    const duration = isWeb() ? 400 : 280;
-    Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-  }, []);
-  return (
-    <Animated.View style={[styles.accordionBody, isWeb() && styles.accordionBodyWeb, { opacity, transform: [{ translateY }] }]}>
-      {children}
-    </Animated.View>
-  );
-}
 
 function ContentCard({ label, children }: { label?: string; children: React.ReactNode }) {
   return (
@@ -824,10 +809,10 @@ export default function LessonMenuScreen() {
             title="II. What Is a Quadratic Equation"
             isOpen={expandedSection === 'II'}
             onPress={() => toggle('II')}
-            icon={isWeb() ? '📐' : undefined}
+            icon={isWeb() ? '🧮' : undefined}
           />
           {expandedSection === 'II' && Array.isArray(secII) && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <ContentCard label="Definition, form & parts">
                 {secII.map((paragraph, idx) => (
                   <SectionIIBlock key={idx} text={paragraph} first={idx === 0} />
@@ -844,7 +829,7 @@ export default function LessonMenuScreen() {
                   <StandardFormExample key={idx} data={exampleData} index={idx} />
                 ))}
               </View>
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -857,7 +842,7 @@ export default function LessonMenuScreen() {
             icon={isWeb() ? '📝' : undefined}
           />
           {expandedSection === 'III' && secIII && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <View style={[styles.conceptsGridWrap, { maxWidth: windowWidth }]}>
                 <View style={styles.conceptsGrid}>
                   {secIII
@@ -875,7 +860,7 @@ export default function LessonMenuScreen() {
                     ))}
                 </View>
               </View>
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -888,11 +873,11 @@ export default function LessonMenuScreen() {
             icon={isWeb() ? '📋' : undefined}
           />
           {expandedSection === 'IV' && Array.isArray(secIV) && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <Text style={styles.procedureIntro}>{secIV[0]}</Text>
               {secIV[1] ? <StepByStepBlock text={secIV[1]} /> : null}
               {secIV[2] ? <Text style={[styles.accordionParagraph, styles.procedureOutro]}>{secIV[2]}</Text> : null}
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
 
@@ -905,7 +890,7 @@ export default function LessonMenuScreen() {
             icon={isWeb() ? '💡' : undefined}
           />
           {expandedSection === 'V' && secV && (
-            <AnimatedAccordionBody>
+            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <ContentCard>
                 {(secV.intro_paragraphs || []).map((p, idx) => (
                   <BlockParagraph key={idx} text={p} first={idx === 0} />
@@ -933,7 +918,7 @@ export default function LessonMenuScreen() {
                   </View>
                 );
               })}
-            </AnimatedAccordionBody>
+            </AccordionRevealBody>
           )}
         </SectionFadeIn>
         </View>
