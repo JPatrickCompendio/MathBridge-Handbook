@@ -1,7 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -458,7 +457,7 @@ function AnimatedLogoutButton({
   );
 }
 
-// Animated Progress Item Component
+// Animated Progress Item Component (uses pixel width for Android compatibility; avoid % in animated values)
 function AnimatedProgressItem({ 
   topic, 
   index,
@@ -472,6 +471,8 @@ function AnimatedProgressItem({
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const pressScale = useRef(new Animated.Value(1)).current;
+  const [barWidth, setBarWidth] = useState(0);
+  const progress = typeof topic.progress === 'number' ? Math.max(0, Math.min(100, topic.progress)) : 0;
 
   useEffect(() => {
     Animated.parallel([
@@ -490,14 +491,14 @@ function AnimatedProgressItem({
         useNativeDriver: true,
       }),
       Animated.timing(progressAnim, {
-        toValue: topic.progress,
+        toValue: progress,
         delay: index * 80 + 200,
         duration: 1000,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: false,
       }),
     ]).start();
-  }, [index, topic.progress]);
+  }, [index, progress]);
 
   const handlePressIn = () => {
     Animated.spring(pressScale, {
@@ -517,8 +518,13 @@ function AnimatedProgressItem({
     }).start();
   };
 
-  const progressColor = getProgressColor(topic.progress);
-  const clampedProgress = Math.max(0, Math.min(100, topic.progress));
+  const progressColor = getProgressColor(progress);
+  const fillWidth = barWidth > 0
+    ? progressAnim.interpolate({
+        inputRange: [0, 100],
+        outputRange: [0, barWidth],
+      })
+    : 0;
 
   return (
     <Animated.View
@@ -543,23 +549,28 @@ function AnimatedProgressItem({
             <Text style={styles.topicName}>{topic.name}</Text>
           </View>
           <Text style={[styles.progressPercentage, { color: progressColor }]}>
-            {Math.round(clampedProgress)}%
+            {Math.round(progress)}%
           </Text>
         </View>
         <View style={styles.progressBarContainer}>
-          <View style={styles.progressBarBackground}>
-            <Animated.View
-              style={[
-                styles.progressBarFill,
-                {
-                  width: progressAnim.interpolate({
-                    inputRange: [0, 100],
-                    outputRange: ['0%', '100%'],
-                  }),
-                  backgroundColor: progressColor,
-                },
-              ]}
-            />
+          <View
+            style={styles.progressBarBackground}
+            onLayout={(e) => {
+              const w = e.nativeEvent.layout.width;
+              if (typeof w === 'number' && w > 0) setBarWidth(w);
+            }}
+          >
+            {barWidth > 0 && (
+              <Animated.View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    width: fillWidth,
+                    backgroundColor: progressColor,
+                  },
+                ]}
+              />
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -633,29 +644,32 @@ export default function ProfileScreen() {
 
   const handlePickImage = async () => {
     try {
+      // Load picker only when user taps (avoids native module load on profile open; can crash on some Android 14 devices)
+      const ImagePicker = await import('expo-image-picker');
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         if (isWeb()) return;
         Alert.alert('Permission needed', 'Allow access to your photos to set a profile picture.');
         return;
       }
+      // On native, avoid base64 to prevent large data URIs that can crash or OOM on Android
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaTypeOptions?.Images ?? ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
-        base64: true,
+        base64: isWeb(),
       });
-      if (!result.canceled && result.assets[0]) {
+      if (!result.canceled && result.assets?.[0]) {
         const asset = result.assets[0];
-        const uri = asset.base64
+        const uri = isWeb() && asset.base64
           ? `data:image/jpeg;base64,${asset.base64}`
           : asset.uri;
-        setEditPhotoUri(uri);
+        if (uri) setEditPhotoUri(uri);
       }
     } catch (e) {
       console.warn('Image picker error:', e);
-      if (!isWeb()) Alert.alert('Error', 'Could not open image picker.');
+      if (!isWeb()) Alert.alert('Error', 'Could not open image picker. Try again or use a different photo.');
     }
   };
 
@@ -800,8 +814,14 @@ export default function ProfileScreen() {
   }, []);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (!dateString || typeof dateString !== 'string' || !dateString.trim()) return '—';
+    try {
+      const date = new Date(dateString.trim());
+      if (Number.isNaN(date.getTime())) return '—';
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch {
+      return '—';
+    }
   };
 
   const avatarGlowOpacity = avatarGlow.interpolate({
@@ -866,7 +886,7 @@ export default function ProfileScreen() {
                   ],
                 }}
               >
-                {profilePhotoUri ? (
+                {profilePhotoUri && (profilePhotoUri.startsWith('http') || profilePhotoUri.startsWith('data:') || profilePhotoUri.startsWith('file:')) ? (
                   <Image source={{ uri: profilePhotoUri }} style={styles.avatarImage} />
                 ) : (
                   <>
@@ -1052,7 +1072,7 @@ export default function ProfileScreen() {
             />
             <View style={styles.editModalPhotoRow}>
               <View style={styles.editModalPhotoPreview}>
-                {editPhotoUri ? (
+                {editPhotoUri && (editPhotoUri.startsWith('http') || editPhotoUri.startsWith('data:') || editPhotoUri.startsWith('file:')) ? (
                   <Image source={{ uri: editPhotoUri }} style={styles.editModalPhotoImage} />
                 ) : (
                   <Text style={styles.editModalPhotoPlaceholder}>{userData.avatar || '?'}</Text>
