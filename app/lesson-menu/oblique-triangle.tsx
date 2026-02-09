@@ -22,6 +22,7 @@ import { MODULE_3B_OBLIQUE_TRIANGLE_SECTIONS } from '../../data/lessons/module3b
 import { saveTopicContentProgress } from '../../utils/progressStorage';
 import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+import { getVideoSource } from '../../utils/videoCatalog';
 
 const OBLIQUE_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
 
@@ -438,7 +439,7 @@ export default function ObliqueTriangleLessonScreen() {
             <View style={styles.topicVideoContainer}>
               <View style={styles.topicVideoInner}>
                 <Video
-                  source={require('../../assets/images/videos/M3BOblique Triangles.mp4')}
+                  source={getVideoSource('M3BObliqueTriangles')}
                   style={styles.topicVideo}
                   useNativeControls
                   resizeMode={ResizeMode.COVER}

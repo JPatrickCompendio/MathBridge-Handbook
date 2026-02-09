@@ -20,6 +20,7 @@ import { MODULE_2_SECTIONS } from '../../data/lessons/module2_triangle_triples';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
 import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+import { getVideoSource } from '../../utils/videoCatalog';
 
 const PYTHAGOREAN_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
 
@@ -382,7 +383,7 @@ export default function PythagoreanTriplesLessonScreen() {
             <View style={styles.topicVideoContainer}>
               <View style={styles.topicVideoInner}>
                 <Video
-                  source={require('../../assets/images/videos/M2TriangleTriples.mp4')}
+                  source={getVideoSource('M2TriangleTriples')}
                   style={styles.topicVideo}
                   useNativeControls
                   resizeMode={ResizeMode.COVER}

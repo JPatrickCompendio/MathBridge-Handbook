@@ -23,6 +23,7 @@ import { MODULE_1_SECTIONS } from '../../data/lessons/module1_quadratic';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
 import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+import { getVideoSource, type VideoId } from '../../utils/videoCatalog';
 
 const QUADRATIC_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
 
@@ -461,14 +462,14 @@ function MethodStepsContent({ content }: { content: string[] }) {
 }
 
 /** Reusable video block shown at the end of a method accordion */
-function MethodVideoBlock({ label, source }: { label: string; source: number }) {
+function MethodVideoBlock({ label, videoId }: { label: string; videoId: VideoId }) {
   return (
     <View style={styles.factoringVideoWrap}>
       <Text style={styles.factoringVideoLabel}>Video: {label}</Text>
       <View style={styles.factoringVideoContainer}>
         <View style={styles.factoringVideoInner}>
           <Video
-            source={source}
+            source={getVideoSource(videoId)}
             style={styles.factoringVideo}
             useNativeControls
             resizeMode={ResizeMode.COVER}
@@ -491,10 +492,10 @@ function MethodContentBlock({ methodTitle, content }: { methodTitle: string; con
   const rest = content.slice(1);
 
   const renderMethodVideo = () => {
-    if (isFactoring) return <MethodVideoBlock label="Solving by Factoring" source={require('../../assets/images/videos/M1Factoring.mp4')} />;
-    if (isExtractingSquareRoots) return <MethodVideoBlock label="Solving by Extracting Square Roots" source={require('../../assets/images/videos/M1BExtracting Square Roots.mp4')} />;
-    if (isCompletingTheSquare) return <MethodVideoBlock label="Completing the Square" source={require('../../assets/images/videos/M1Completing The Square.mp4')} />;
-    if (isQuadraticFormula) return <MethodVideoBlock label="Solving Using the Quadratic Formula" source={require('../../assets/images/videos/M1Quadratic Formula.mp4')} />;
+    if (isFactoring) return <MethodVideoBlock label="Solving by Factoring" videoId="M1Factoring" />;
+    if (isExtractingSquareRoots) return <MethodVideoBlock label="Solving by Extracting Square Roots" videoId="M1BExtractingSquareRoots" />;
+    if (isCompletingTheSquare) return <MethodVideoBlock label="Completing the Square" videoId="M1CompletingTheSquare" />;
+    if (isQuadraticFormula) return <MethodVideoBlock label="Solving Using the Quadratic Formula" videoId="M1QuadraticFormula" />;
     return null;
   };
 
@@ -972,7 +973,7 @@ export default function LessonMenuScreen() {
             <View style={styles.factoringVideoContainer}>
               <View style={styles.factoringVideoInner}>
                 <Video
-                  source={require('../../assets/images/videos/M1INTRO.mp4')}
+                  source={getVideoSource('M1INTRO')}
                   style={styles.factoringVideo}
                   useNativeControls
                   resizeMode={ResizeMode.COVER}

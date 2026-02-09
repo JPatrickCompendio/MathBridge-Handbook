@@ -21,6 +21,7 @@ import { MODULE_4_AREA_OF_TRIANGLE_SECTIONS } from '../../data/lessons/module4_a
 import { saveTopicContentProgress } from '../../utils/progressStorage';
 import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+import { getVideoSource } from '../../utils/videoCatalog';
 
 const AREA_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
 
@@ -299,7 +300,7 @@ export default function AreaOfTriangleLessonScreen() {
             <View style={styles.topicVideoContainer}>
               <View style={styles.topicVideoInner}>
                 <Video
-                  source={require('../../assets/images/videos/M4arjay.mp4')}
+                  source={getVideoSource('M4AreaOfTriangle')}
                   style={styles.topicVideo}
                   useNativeControls
                   resizeMode={ResizeMode.COVER}

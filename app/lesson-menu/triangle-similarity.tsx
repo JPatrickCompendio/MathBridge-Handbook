@@ -22,6 +22,7 @@ import { MODULE_3_TRIANGLE_SIMILARITY_SECTIONS } from '../../data/lessons/module
 import { saveTopicContentProgress } from '../../utils/progressStorage';
 import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+import { getVideoSource } from '../../utils/videoCatalog';
 
 const TRIANGLE_SIMILARITY_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
 
@@ -394,7 +395,7 @@ export default function TriangleSimilarityLessonScreen() {
             <View style={styles.topicVideoContainer}>
               <View style={styles.topicVideoInner}>
                 <Video
-                  source={require('../../assets/images/videos/M3ATriangle Similarities.mp4')}
+                  source={getVideoSource('M3ATriangleSimilarities')}
                   style={styles.topicVideo}
                   useNativeControls
                   resizeMode={ResizeMode.COVER}
