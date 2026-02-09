@@ -1,4 +1,4 @@
-import { Video } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -135,7 +135,7 @@ export default function VariationLessonScreen() {
                 <Text style={styles.purposeBlockHeading}>Learning Objectives</Text>
                 <Text style={styles.bodyTextCentered}>At the end of this lesson, learners should be able to:</Text>
                 <View style={styles.objectiveList}>
-                  {objectives.map((item, idx) => (
+                  {objectives.map((item: string, idx: number) => (
                     <View key={idx} style={styles.objectiveRow}>
                       <View style={styles.objectiveBullet} />
                       <Text style={styles.objectiveItem}>{item}</Text>
@@ -255,14 +255,16 @@ export default function VariationLessonScreen() {
           <View style={styles.topicVideoWrap}>
             <Text style={styles.topicVideoLabel}>Video: Variation</Text>
             <View style={styles.topicVideoContainer}>
-              <Video
-                source={require('../../assets/images/videos/M5arjay.mp4')}
-                style={styles.topicVideo}
-                useNativeControls
-                resizeMode={Video.RESIZE_MODE_CONTAIN}
-                shouldPlay={false}
-                isLooping={false}
-              />
+              <View style={styles.topicVideoInner}>
+                <Video
+                  source={require('../../assets/images/videos/M5arjay.mp4')}
+                  style={styles.topicVideo}
+                  useNativeControls
+                  resizeMode={ResizeMode.COVER}
+                  shouldPlay={false}
+                  isLooping={false}
+                />
+              </View>
             </View>
           </View>
         </SectionFadeIn>
@@ -297,6 +299,7 @@ const styles = StyleSheet.create({
     marginTop: getSpacing(Spacing.lg),
     marginBottom: getSpacing(Spacing.sm),
     paddingHorizontal: getSpacing(Spacing.md),
+    alignItems: 'center',
   },
   topicVideoLabel: {
     fontSize: scaleFont(16),
@@ -306,14 +309,26 @@ const styles = StyleSheet.create({
   },
   topicVideoContainer: {
     width: '100%',
+    maxWidth: 720,
+    aspectRatio: 16 / 9,
+    minHeight: scaleSize(200),
     borderRadius: scaleSize(BorderRadius.lg),
     overflow: 'hidden',
     backgroundColor: Theme.muted,
+    position: 'relative',
+  },
+  topicVideoInner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   topicVideo: {
     width: '100%',
-    aspectRatio: 16 / 9,
-    minHeight: scaleSize(200),
+    height: '100%',
   },
   section: { paddingHorizontal: getSpacing(Spacing.md), paddingVertical: getSpacing(Spacing.sm) },
   purposeSectionWrap: { alignSelf: 'stretch', alignItems: 'center' },

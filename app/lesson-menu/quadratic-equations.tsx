@@ -1,4 +1,4 @@
-import { Video } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -9,9 +9,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextStyle,
   TouchableOpacity,
   UIManager,
   View,
+  ViewStyle,
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -464,14 +466,16 @@ function MethodVideoBlock({ label, source }: { label: string; source: number }) 
     <View style={styles.factoringVideoWrap}>
       <Text style={styles.factoringVideoLabel}>Video: {label}</Text>
       <View style={styles.factoringVideoContainer}>
-        <Video
-          source={source}
-          style={styles.factoringVideo}
-          useNativeControls
-          resizeMode={Video.RESIZE_MODE_CONTAIN}
-          shouldPlay={false}
-          isLooping={false}
-        />
+        <View style={styles.factoringVideoInner}>
+          <Video
+            source={source}
+            style={styles.factoringVideo}
+            useNativeControls
+            resizeMode={ResizeMode.COVER}
+            shouldPlay={false}
+            isLooping={false}
+          />
+        </View>
       </View>
     </View>
   );
@@ -960,6 +964,25 @@ export default function LessonMenuScreen() {
             </AccordionRevealBody>
           )}
         </SectionFadeIn>
+
+        {/* Video: Introduction */}
+        <SectionFadeIn index={5}>
+          <View style={styles.factoringVideoWrap}>
+            <Text style={styles.factoringVideoLabel}>Video: Introduction</Text>
+            <View style={styles.factoringVideoContainer}>
+              <View style={styles.factoringVideoInner}>
+                <Video
+                  source={require('../../assets/images/videos/M1INTRO.mp4')}
+                  style={styles.factoringVideo}
+                  useNativeControls
+                  resizeMode={ResizeMode.COVER}
+                  shouldPlay={false}
+                  isLooping={false}
+                />
+              </View>
+            </View>
+          </View>
+        </SectionFadeIn>
         </View>
         </ScrollView>
         <ReadingProgressIndicator />
@@ -968,6 +991,7 @@ export default function LessonMenuScreen() {
   );
 }
 
+// Cast to satisfy StyleProp<ViewStyle> | StyleProp<TextStyle> at usage (RN style types are compatible at runtime)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1285,9 +1309,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   conceptChipTextWeb: {
-    wordBreak: 'break-word' as const,
     overflowWrap: 'break-word' as const,
-  },
+    ...(Platform.OS === 'web' ? { wordBreak: 'break-word' as const } : {}),
+  } as TextStyle,
   methodsSubtitle: {
     fontSize: scaleFont(13),
     fontWeight: '600',
@@ -1305,6 +1329,7 @@ const styles = StyleSheet.create({
   factoringVideoWrap: {
     marginTop: getSpacing(Spacing.lg),
     marginBottom: getSpacing(Spacing.sm),
+    alignItems: 'center',
   },
   factoringVideoLabel: {
     fontSize: scaleFont(16),
@@ -1314,14 +1339,26 @@ const styles = StyleSheet.create({
   },
   factoringVideoContainer: {
     width: '100%',
+    maxWidth: 720,
+    aspectRatio: 16 / 9,
+    minHeight: scaleSize(200),
     borderRadius: scaleSize(BorderRadius.lg),
     overflow: 'hidden',
     backgroundColor: Theme.muted,
+    position: 'relative',
+  },
+  factoringVideoInner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   factoringVideo: {
     width: '100%',
-    aspectRatio: 16 / 9,
-    minHeight: scaleSize(200),
+    height: '100%',
   },
   methodIntroText: {
     fontSize: scaleFont(14),
@@ -1698,4 +1735,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Theme.text,
   },
-});
+}) as Record<string, ViewStyle & TextStyle>;

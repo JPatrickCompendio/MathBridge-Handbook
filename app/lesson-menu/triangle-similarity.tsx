@@ -1,10 +1,11 @@
-import { Video } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
   Image,
+  ImageSourcePropType,
   LayoutAnimation,
   Platform,
   ScrollView,
@@ -43,7 +44,7 @@ const Theme = {
   muted: '#E8E4E0',
 };
 
-const SECTION_V_IMAGES: Record<string, ReturnType<typeof require>> = {
+const SECTION_V_IMAGES: Record<string, ImageSourcePropType> = {
   'sas-ex1': require('../../assets/images/sas-ex1.png'),
   'sas-ex2': require('../../assets/images/sas-ex2.png'),
   'asa-ex1': require('../../assets/images/asa-ex1.png'),
@@ -173,7 +174,7 @@ export default function TriangleSimilarityLessonScreen() {
                   At the end of this lesson, the learners should be able to:
                 </Text>
                 <View style={styles.objectiveList}>
-                  {objectives.map((item, idx) => (
+                  {objectives.map((item: string, idx: number) => (
                     <View key={idx} style={styles.objectiveRow}>
                       <View style={styles.objectiveBullet} />
                       <Text style={styles.objectiveItem}>{item}</Text>
@@ -391,14 +392,16 @@ export default function TriangleSimilarityLessonScreen() {
           <View style={styles.topicVideoWrap}>
             <Text style={styles.topicVideoLabel}>Video: Triangle Similarities</Text>
             <View style={styles.topicVideoContainer}>
-              <Video
-                source={require('../../assets/images/videos/M3ATriangle Similarities.mp4')}
-                style={styles.topicVideo}
-                useNativeControls
-                resizeMode={Video.RESIZE_MODE_CONTAIN}
-                shouldPlay={false}
-                isLooping={false}
-              />
+              <View style={styles.topicVideoInner}>
+                <Video
+                  source={require('../../assets/images/videos/M3ATriangle Similarities.mp4')}
+                  style={styles.topicVideo}
+                  useNativeControls
+                  resizeMode={ResizeMode.COVER}
+                  shouldPlay={false}
+                  isLooping={false}
+                />
+              </View>
             </View>
           </View>
         </SectionFadeIn>
@@ -451,6 +454,7 @@ const styles = StyleSheet.create({
     marginTop: getSpacing(Spacing.lg),
     marginBottom: getSpacing(Spacing.sm),
     paddingHorizontal: getSpacing(Spacing.md),
+    alignItems: 'center',
   },
   topicVideoLabel: {
     fontSize: scaleFont(16),
@@ -460,14 +464,26 @@ const styles = StyleSheet.create({
   },
   topicVideoContainer: {
     width: '100%',
+    maxWidth: 720,
+    aspectRatio: 16 / 9,
+    minHeight: scaleSize(200),
     borderRadius: scaleSize(BorderRadius.lg),
     overflow: 'hidden',
     backgroundColor: Theme.muted,
+    position: 'relative',
+  },
+  topicVideoInner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   topicVideo: {
     width: '100%',
-    aspectRatio: 16 / 9,
-    minHeight: scaleSize(200),
+    height: '100%',
   },
   section: {
     paddingHorizontal: getSpacing(Spacing.md),

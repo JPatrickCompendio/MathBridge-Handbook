@@ -1,4 +1,4 @@
-import { Video } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -163,7 +163,7 @@ export default function PythagoreanTriplesLessonScreen() {
                   At the end of this lesson, the learners should be able to:
                 </Text>
                 <View style={styles.objectiveList}>
-                  {objectives.map((item, idx) => (
+                  {objectives.map((item: string, idx: number) => (
                     <View key={idx} style={styles.objectiveRow}>
                       <View style={styles.objectiveBullet} />
                       <Text style={styles.objectiveItem}>{item}</Text>
@@ -207,7 +207,7 @@ export default function PythagoreanTriplesLessonScreen() {
                 </View>
                 <Text style={styles.sectionIIWhereIntro}>{sectionII.where_intro}</Text>
                 <View style={styles.whereBulletList}>
-                  {(sectionII.where_bullets || []).map((bullet, idx) => (
+                  {(sectionII.where_bullets || []).map((bullet: string, idx: number) => (
                     <View key={idx} style={styles.whereBulletRow}>
                       <Text style={styles.whereBulletDot}>•</Text>
                       <Text style={styles.whereBulletText}>{bullet}</Text>
@@ -294,7 +294,7 @@ export default function PythagoreanTriplesLessonScreen() {
                       ))}
                     </View>
                   ))
-                  : steps.map((step, idx) => (
+                  : steps.map((step: string, idx: number) => (
                     <View key={idx} style={styles.stepByStepRow}>
                       <View style={styles.stepByStepNum}>
                         <Text style={styles.stepByStepNumText}>{idx + 1}</Text>
@@ -380,14 +380,16 @@ export default function PythagoreanTriplesLessonScreen() {
           <View style={styles.topicVideoWrap}>
             <Text style={styles.topicVideoLabel}>Video: Triangle Triples</Text>
             <View style={styles.topicVideoContainer}>
-              <Video
-                source={require('../../assets/images/videos/M2TriangleTriples.mp4')}
-                style={styles.topicVideo}
-                useNativeControls
-                resizeMode={Video.RESIZE_MODE_CONTAIN}
-                shouldPlay={false}
-                isLooping={false}
-              />
+              <View style={styles.topicVideoInner}>
+                <Video
+                  source={require('../../assets/images/videos/M2TriangleTriples.mp4')}
+                  style={styles.topicVideo}
+                  useNativeControls
+                  resizeMode={ResizeMode.COVER}
+                  shouldPlay={false}
+                  isLooping={false}
+                />
+              </View>
             </View>
           </View>
         </SectionFadeIn>
@@ -447,6 +449,7 @@ const styles = StyleSheet.create({
     marginTop: getSpacing(Spacing.lg),
     marginBottom: getSpacing(Spacing.sm),
     paddingHorizontal: getSpacing(Spacing.md),
+    alignItems: 'center',
   },
   topicVideoLabel: {
     fontSize: scaleFont(16),
@@ -456,14 +459,26 @@ const styles = StyleSheet.create({
   },
   topicVideoContainer: {
     width: '100%',
+    maxWidth: 720,
+    aspectRatio: 16 / 9,
+    minHeight: scaleSize(200),
     borderRadius: scaleSize(BorderRadius.lg),
     overflow: 'hidden',
     backgroundColor: Theme.muted,
+    position: 'relative',
+  },
+  topicVideoInner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   topicVideo: {
     width: '100%',
-    aspectRatio: 16 / 9,
-    minHeight: scaleSize(200),
+    height: '100%',
   },
   section: {
     paddingHorizontal: getSpacing(Spacing.md),

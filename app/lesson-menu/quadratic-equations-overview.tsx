@@ -11,9 +11,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BorderRadius, Spacing } from '../../constants/colors';
-import { QUADRATIC_EQUATIONS_DATA } from '../../data/lessons/module1_quadratic';
-import { getSpacing, scaleFont, scaleSize } from '../../utils/responsive';
+import { BorderRadius, Spacing } from '@/constants/colors';
+import { QUADRATIC_EQUATIONS_DATA } from '@/data/lessons/module1_quadratic';
+import { getSpacing, scaleFont, scaleSize } from '@/utils/responsive';
 
 const Theme = {
   primary: '#FF6600',
