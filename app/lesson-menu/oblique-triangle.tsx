@@ -1,4 +1,3 @@
-import { ResizeMode, Video } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -23,8 +22,7 @@ import { MODULE_3B_OBLIQUE_TRIANGLE_SECTIONS } from '../../data/lessons/module3b
 import { saveTopicContentProgress } from '../../utils/progressStorage';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
 import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
-import { useVideoFullscreenOrientationHandler } from '../../utils/videoFullscreenOrientation';
-import { getVideoSource } from '../../utils/videoCatalog';
+import { LessonVideo } from '../../components/LessonVideo';
 
 const OBLIQUE_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
 
@@ -106,7 +104,6 @@ const OBLIQUE_IMAGES: Record<string, ImageSourcePropType> = {
 
 export default function ObliqueTriangleLessonScreen() {
   const router = useRouter();
-  const onFullscreenUpdate = useVideoFullscreenOrientationHandler();
   const [expandedSection, setExpandedSection] = useState<string | null>('II');
   const [openedSections, setOpenedSections] = useState<Set<string>>(() => new Set(['I', 'II'])); // I visible, II starts expanded
   const { ReadingProgressIndicator } = useAccordionReadingProgress(
@@ -478,15 +475,10 @@ export default function ObliqueTriangleLessonScreen() {
             <Text style={styles.topicVideoLabel}>Video: Oblique Triangle</Text>
             <View style={styles.topicVideoContainer}>
               <View style={styles.topicVideoInner}>
-                <Video
-                  source={getVideoSource('M3BObliqueTriangles')}
+                <LessonVideo
+                  videoId="M3BObliqueTriangles"
                   style={[styles.topicVideo, Platform.OS === 'web' && styles.topicVideoWeb]}
-                  videoStyle={Platform.OS === 'web' ? styles.videoStyleWebContain : undefined}
-                  useNativeControls
-                  resizeMode={Platform.OS === 'web' ? ResizeMode.CONTAIN : ResizeMode.COVER}
-                  shouldPlay={false}
-                  isLooping={false}
-                  onFullscreenUpdate={onFullscreenUpdate}
+                  contentFit={Platform.OS === 'web' ? 'contain' : 'cover'}
                 />
               </View>
             </View>

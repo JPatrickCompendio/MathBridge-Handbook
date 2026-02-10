@@ -1,4 +1,3 @@
-import { ResizeMode, Video } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -20,13 +19,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AccordionRevealBody from '../../components/AccordionRevealBody';
 import { FractionText } from '../../components/FractionText';
+import { LessonVideo } from '../../components/LessonVideo';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_1_SECTIONS } from '../../data/lessons/module1_quadratic';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
 import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
-import { useVideoFullscreenOrientationHandler } from '../../utils/videoFullscreenOrientation';
-import { getVideoSource, type VideoId } from '../../utils/videoCatalog';
+import type { VideoId } from '../../utils/videoCatalog';
 
 const QUADRATIC_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
 
@@ -717,21 +716,15 @@ function MethodStepsContent({ content }: { content: string[] }) {
 
 /** Reusable video block shown at the end of a method accordion */
 function MethodVideoBlock({ label, videoId }: { label: string; videoId: VideoId }) {
-  const onFullscreenUpdate = useVideoFullscreenOrientationHandler();
   return (
     <View style={styles.factoringVideoWrap}>
       <Text style={styles.factoringVideoLabel}>Video: {label}</Text>
       <View style={styles.factoringVideoContainer}>
         <View style={styles.factoringVideoInner}>
-          <Video
-            source={getVideoSource(videoId)}
+          <LessonVideo
+            videoId={videoId}
             style={[styles.factoringVideo, Platform.OS === 'web' && styles.factoringVideoWeb]}
-            videoStyle={Platform.OS === 'web' ? styles.videoStyleWebContain : undefined}
-            useNativeControls
-            resizeMode={Platform.OS === 'web' ? ResizeMode.CONTAIN : ResizeMode.COVER}
-            shouldPlay={false}
-            isLooping={false}
-            onFullscreenUpdate={onFullscreenUpdate}
+            contentFit={Platform.OS === 'web' ? 'contain' : 'cover'}
           />
         </View>
       </View>
@@ -1023,7 +1016,6 @@ export default function LessonMenuScreen({
   initialMode?: 'overview' | 'learn' | 'methodsMenu' | 'methodDetail';
 } = {}) {
   const router = useRouter();
-  const onFullscreenUpdate = useVideoFullscreenOrientationHandler();
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [expandedMethod, setExpandedMethod] = useState<string | null>(null);
   const [openedSections, setOpenedSections] = useState<Set<string>>(() => new Set(['I'])); // I is always visible
@@ -1064,7 +1056,13 @@ export default function LessonMenuScreen({
       return;
     }
 
-    // From any other Quadratic Equations view, go back to the main Topics home
+    // From Learn or Methods page, go back to the overview (two buttons)
+    if (viewMode === 'learn' || viewMode === 'methodsMenu') {
+      router.back();
+      return;
+    }
+
+    // From overview, go back to the main Topics home
     router.push('/tabs' as any);
   };
   const { ReadingProgressIndicator } = useAccordionReadingProgress(
@@ -1270,15 +1268,10 @@ export default function LessonMenuScreen({
                 <Text style={styles.factoringVideoLabel}>Video: Introduction</Text>
                 <View style={styles.factoringVideoContainer}>
                   <View style={styles.factoringVideoInner}>
-                    <Video
-                      source={getVideoSource('M1INTRO')}
+                    <LessonVideo
+                      videoId="M1INTRO"
                       style={[styles.factoringVideo, Platform.OS === 'web' && styles.factoringVideoWeb]}
-                      videoStyle={Platform.OS === 'web' ? styles.videoStyleWebContain : undefined}
-                      useNativeControls
-                      resizeMode={Platform.OS === 'web' ? ResizeMode.CONTAIN : ResizeMode.COVER}
-                      shouldPlay={false}
-                      isLooping={false}
-                      onFullscreenUpdate={onFullscreenUpdate}
+                      contentFit={Platform.OS === 'web' ? 'contain' : 'cover'}
                     />
                   </View>
                 </View>

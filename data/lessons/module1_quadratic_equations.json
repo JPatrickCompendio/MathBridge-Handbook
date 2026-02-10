@@ -37,7 +37,7 @@
       "This is a quadratic equation because:\n• The highest power of x is 2\n• It follows the form ax² + bx + c = 0\n• a = 1, b = -7, and c = 10",
       "This equation can be solved by factoring or by using the quadratic formula."
     ],
-    "III_Key_Words_and_Concepts": "• Quadratic Equation – an equation of degree 2\n• Standard Form: ax² + bx + c = 0\n• Roots / Solutions – values of x that satisfy the equation\n• Factoring – expressing a quadratic as a product of two binomials\n• Extracting Square Roots – solving equations of the form x² = k\n• Completing the Square – transforming a quadratic into a perfect square\n• Quadratic Formula: x = (-b ± √(b² - 4ac)) / 2a",
+    "III_Key_Words_and_Concepts": "• Quadratic Equation – an equation of degree 2\n• Standard Form: ax² + bx + c = 0\n• Roots / Solutions – values of x that satisfy the equation\n• Factoring – expressing a quadratic as a product of two binomials\n• Extracting Square Roots – solving equations of the form x² = k\n• Completing the Square – transforming a quadratic into a perfect square\n• Quadratic Formula: x = (-b ± √(b² - 4ac)) / (2a)",
     "IV_General_Procedure": [
       "Before choosing a method, follow these general steps:",
       "Step 1: Write the equation in standard form: ax² + bx + c = 0. \nStep 2: Identify the values of a, b, and c if needed.\nStep 3: Choose the most appropriate method based on the form of the equation.\nStep 4: Apply the steps of the chosen method carefully.\nStep 5: Check the solutions by substitution.",
@@ -113,7 +113,7 @@
         ],
         "D. Solving Using the Quadratic Formula": [
           "This method can be used to solve any quadratic equation.",
-          "Formula:\nx = (-b ± √(b² - 4ac)) / 2a\n\n🔹 Example 1\nSolve: 2x² + 3x - 2 = 0",
+          "Formula:\nx = (-b ± √(b² - 4ac)) / (2a)\n\n🔹 Example 1\nSolve: 2x² + 3x - 2 = 0",
           "Step 1: Identify the values of a, b, and c.",
           "a = 2, b = 3, c = -2",
           "Step 2: Substitute into the quadratic formula.",
@@ -424,11 +424,11 @@
     "x² - 6x + 5 = 0\n(5)² - 6(5) + 5 = ?\n25 - 30 + 5 = 0 ✔",
     "D. Solving Using the Quadratic Formula",
     "This method can be used to solve any quadratic equation.",
-    "Formula:\nx = (-b ± √(b² - 4ac)) / 2a\n\n🔹 Example 1\nSolve: 2x² + 3x - 2 = 0",
+    "Formula:\nx = (-b ± √(b² - 4ac)) / (2a)\n\n🔹 Example 1\nSolve: 2x² + 3x - 2 = 0",
     "Step 1: Identify the values of a, b, and c.",
     "a = 2, b = 3, c = -2",
     "Step 2: Substitute into the quadratic formula.",
-    "x = (-b ± √(b² - 4ac)) / 2a\nx = (-3 ± √(3² - 4(2)(-2))) / (2(2))",
+    "x = (-b ± √(b² - 4ac)) / (2a)\nx = (-3 ± √(3² - 4(2)(-2))) / (2(2))",
     "Step 3: Simplify the expression inside the square root.",
     "x = (-3 ± √(9 + 16)) / 4",
     "x = (-3 ± √25) / 4",

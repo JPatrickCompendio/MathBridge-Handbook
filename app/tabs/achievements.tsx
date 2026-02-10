@@ -1235,6 +1235,7 @@ export default function AchievementsScreen() {
       <TabsAnimatedBackground />
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <FlatList
+        key={`achievement-grid-${numColumns}`}
         data={filteredAchievements}
         renderItem={({ item, index }) => (
           <AchievementCard

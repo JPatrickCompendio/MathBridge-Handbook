@@ -1,4 +1,3 @@
-import { ResizeMode, Video } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -23,8 +22,7 @@ import { MODULE_3_TRIANGLE_SIMILARITY_SECTIONS } from '../../data/lessons/module
 import { saveTopicContentProgress } from '../../utils/progressStorage';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
 import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
-import { useVideoFullscreenOrientationHandler } from '../../utils/videoFullscreenOrientation';
-import { getVideoSource } from '../../utils/videoCatalog';
+import { LessonVideo } from '../../components/LessonVideo';
 
 const TRIANGLE_SIMILARITY_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
 
@@ -115,7 +113,6 @@ function SectionFadeIn({ index, children }: { index: number; children: React.Rea
 
 export default function TriangleSimilarityLessonScreen() {
   const router = useRouter();
-  const onFullscreenUpdate = useVideoFullscreenOrientationHandler();
   const [expandedSection, setExpandedSection] = useState<string | null>('I');
   const [expandedMethod, setExpandedMethod] = useState<string | null>(null);
   const [openedSections, setOpenedSections] = useState<Set<string>>(() => new Set(['I']));
@@ -405,15 +402,10 @@ export default function TriangleSimilarityLessonScreen() {
             <Text style={styles.topicVideoLabel}>Video: Triangle Similarities</Text>
             <View style={styles.topicVideoContainer}>
               <View style={styles.topicVideoInner}>
-                <Video
-                  source={getVideoSource('M3ATriangleSimilarities')}
+                <LessonVideo
+                  videoId="M3ATriangleSimilarities"
                   style={[styles.topicVideo, Platform.OS === 'web' && styles.topicVideoWeb]}
-                  videoStyle={Platform.OS === 'web' ? styles.videoStyleWebContain : undefined}
-                  useNativeControls
-                  resizeMode={Platform.OS === 'web' ? ResizeMode.CONTAIN : ResizeMode.COVER}
-                  shouldPlay={false}
-                  isLooping={false}
-                  onFullscreenUpdate={onFullscreenUpdate}
+                  contentFit={Platform.OS === 'web' ? 'contain' : 'cover'}
                 />
               </View>
             </View>
