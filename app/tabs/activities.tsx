@@ -3,15 +3,16 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    Easing,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  Dimensions,
+  Easing,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TabsAnimatedBackground from '../../components/TabsAnimatedBackground';
@@ -300,6 +301,8 @@ export default function ActivitiesScreen() {
   const router = useRouter();
   const [expandedTopics, setExpandedTopics] = useState<number[]>([]);
   const [topics, setTopics] = useState(EXAMPLE_TOPICS);
+  const [triangleModalVisible, setTriangleModalVisible] = useState(false);
+  const [triangleModalDifficulty, setTriangleModalDifficulty] = useState<DifficultyKey | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -389,15 +392,35 @@ export default function ActivitiesScreen() {
 
     // Triangle Measures requires choosing which subtopic to practice
     if (topicId === 3) {
-      Alert.alert(
-        'Triangle Measures',
-        'Choose a topic:',
-        [
-          { text: 'Triangle Similarities', onPress: () => start({ subtopic: 'triangle-similarity', topicNameOverride: 'Triangle Similarities' }) },
-          { text: 'Oblique Triangle', onPress: () => start({ subtopic: 'oblique-triangle', topicNameOverride: 'Oblique Triangle' }) },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
+      // On web, multi-button Alert callbacks are unreliable, so show a custom modal instead
+      if (Platform.OS === 'web') {
+        setTriangleModalDifficulty(difficulty as DifficultyKey);
+        setTriangleModalVisible(true);
+      } else {
+        Alert.alert(
+          'Triangle Measures',
+          'Choose a topic:',
+          [
+            {
+              text: 'Triangle Similarities',
+              onPress: () =>
+                start({
+                  subtopic: 'triangle-similarity',
+                  topicNameOverride: 'Triangle Similarities',
+                }),
+            },
+            {
+              text: 'Oblique Triangle',
+              onPress: () =>
+                start({
+                  subtopic: 'oblique-triangle',
+                  topicNameOverride: 'Oblique Triangle',
+                }),
+            },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+      }
       return;
     }
 
@@ -558,6 +581,74 @@ export default function ActivitiesScreen() {
           })}
         </View>
       </ScrollView>
+
+      {/* Triangle Measures subtopic chooser (web-friendly) */}
+      {triangleModalVisible && triangleModalDifficulty && (
+        <View style={styles.triangleModalOverlay}>
+          <View style={styles.triangleModalContent}>
+            <Text style={styles.triangleModalTitle}>Triangle Measures</Text>
+            <Text style={styles.triangleModalSubtitle}>
+              Choose a topic to practice:
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.triangleModalButton, styles.triangleModalPrimary]}
+              onPress={() => {
+                const subtopic: 'triangle-similarity' = 'triangle-similarity';
+                const count = getDefaultQuestionTotal(3, triangleModalDifficulty, subtopic);
+                router.push({
+                  pathname: '/quiz',
+                  params: {
+                    mode: 'topic-quiz',
+                    topicId: '3',
+                    difficulty: triangleModalDifficulty,
+                    topicName: 'Triangle Similarities',
+                    questionCount: String(count),
+                    subtopic,
+                  },
+                } as any);
+                setTriangleModalVisible(false);
+                setTriangleModalDifficulty(null);
+              }}
+            >
+              <Text style={styles.triangleModalButtonText}>Triangle Similarities</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.triangleModalButton, styles.triangleModalPrimary]}
+              onPress={() => {
+                const subtopic: 'oblique-triangle' = 'oblique-triangle';
+                const count = getDefaultQuestionTotal(3, triangleModalDifficulty, subtopic);
+                router.push({
+                  pathname: '/quiz',
+                  params: {
+                    mode: 'topic-quiz',
+                    topicId: '3',
+                    difficulty: triangleModalDifficulty,
+                    topicName: 'Oblique Triangle',
+                    questionCount: String(count),
+                    subtopic,
+                  },
+                } as any);
+                setTriangleModalVisible(false);
+                setTriangleModalDifficulty(null);
+              }}
+            >
+              <Text style={styles.triangleModalButtonText}>Oblique Triangle</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.triangleModalCancel}
+              onPress={() => {
+                setTriangleModalVisible(false);
+                setTriangleModalDifficulty(null);
+              }}
+            >
+              <Text style={styles.triangleModalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
       </SafeAreaView>
     </View>
   );
@@ -747,5 +838,66 @@ const styles = StyleSheet.create({
     color: ProfessionalColors.white,
     fontSize: scaleFont(responsiveValues.difficultyButtonFont),
     fontWeight: '600',
+  },
+  // Triangle Measures modal (web-friendly)
+  triangleModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  triangleModalContent: {
+    backgroundColor: ProfessionalColors.white,
+    padding: getSpacing(Spacing.lg),
+    borderRadius: scaleSize(BorderRadius.lg),
+    width: '85%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scaleSize(6) },
+    shadowOpacity: 0.2,
+    shadowRadius: scaleSize(12),
+    elevation: 8,
+    alignItems: 'stretch',
+  },
+  triangleModalTitle: {
+    fontSize: scaleFont(responsiveValues.sectionTitleFont),
+    fontWeight: 'bold',
+    color: ProfessionalColors.text,
+    marginBottom: getSpacing(Spacing.xs),
+    textAlign: 'center',
+  },
+  triangleModalSubtitle: {
+    fontSize: scaleFont(responsiveValues.headerSubtitleFont),
+    color: ProfessionalColors.textSecondary,
+    marginBottom: getSpacing(Spacing.md),
+    textAlign: 'center',
+  },
+  triangleModalButton: {
+    paddingVertical: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(Spacing.md),
+    borderRadius: scaleSize(BorderRadius.md),
+    marginBottom: getSpacing(Spacing.sm),
+    alignItems: 'center',
+  },
+  triangleModalPrimary: {
+    backgroundColor: ProfessionalColors.primary,
+  },
+  triangleModalButtonText: {
+    color: ProfessionalColors.white,
+    fontSize: scaleFont(responsiveValues.difficultyButtonFont),
+    fontWeight: '600',
+  },
+  triangleModalCancel: {
+    marginTop: getSpacing(Spacing.sm),
+    alignItems: 'center',
+  },
+  triangleModalCancelText: {
+    color: ProfessionalColors.textSecondary,
+    fontSize: scaleFont(responsiveValues.difficultyScoreFont),
   },
 });

@@ -963,11 +963,9 @@ export default function AchievementsScreen() {
   const [achievements, setAchievements] = useState<Achievement[]>(() => buildAchievements({}));
   const [userStats, setUserStats] = useState<UserStats>(DEFAULT_USER_STATS);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
-  const searchInputRef = useRef<TextInput | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -1066,19 +1064,11 @@ export default function AchievementsScreen() {
   const getFilteredAchievements = () => {
     let filtered = achievements;
 
-    // Filter by category
+    // Filter by category only
     if (selectedCategory === 'locked') {
       filtered = filtered.filter((a) => !a.earned);
     } else if (selectedCategory !== 'all') {
       filtered = filtered.filter((a) => a.category === selectedCategory);
-    }
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      filtered = filtered.filter((a) =>
-        a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
     }
 
     return filtered;
@@ -1218,55 +1208,6 @@ export default function AchievementsScreen() {
           </View>
         </View>
       </View>
-
-      {/* Search Bar - Animated */}
-      <Animated.View 
-        style={[
-          styles.searchContainer,
-          {
-            opacity: fadeAnim,
-            transform: [
-              {
-                translateX: slideAnim.interpolate({
-                  inputRange: [0, 50],
-                  outputRange: [0, -20],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <TextInput
-          ref={searchInputRef}
-          style={styles.searchInput}
-          placeholder="Search achievements..."
-          placeholderTextColor={ProfessionalColors.textSecondary}
-          value={searchQuery}
-          onChangeText={(text) => {
-            setSearchQuery(text);
-            // Ensure the search input keeps focus while typing
-            setTimeout(() => {
-              searchInputRef.current?.focus();
-            }, 0);
-          }}
-        />
-        <Animated.View
-          style={{
-            transform: [
-              {
-                rotate: searchQuery.length > 0 
-                  ? slideAnim.interpolate({
-                      inputRange: [0, 50],
-                      outputRange: ['0deg', '360deg'],
-                    })
-                  : '0deg',
-              },
-            ],
-          }}
-        >
-        <Text style={styles.searchIcon}>🔍</Text>
-        </Animated.View>
-      </Animated.View>
 
       {/* Category Filter Tabs - Animated */}
       <ScrollView
