@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { FractionText } from '../../components/FractionText';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
 import { getSafeAreaTopPadding, getSpacing } from '../../utils/responsive';
@@ -648,9 +649,14 @@ export default function TopicScreen() {
 
                   return (
                     <View key={question.id} style={styles.questionCard}>
-                      <Text style={styles.questionText}>
-                        {qIndex + 1}. {question.question}
-                      </Text>
+                      <View style={styles.questionTextWrap}>
+                        <Text style={styles.questionText}>{qIndex + 1}. </Text>
+                        {(/ over /.test(question.question) || / \/ /.test(question.question)) ? (
+                          <FractionText text={question.question} style={styles.questionText} containerStyle={{ flex: 1 }} />
+                        ) : (
+                          <Text style={styles.questionText}>{question.question}</Text>
+                        )}
+                      </View>
                       {question.options.map((option, optionIndex) => {
                         const isSelected = selectedAnswer === optionIndex;
                         const isCorrectOption = optionIndex === question.correctAnswer;
@@ -668,15 +674,27 @@ export default function TopicScreen() {
                             disabled={quizSubmitted}
                             activeOpacity={0.7}
                           >
-                            <Text
-                              style={[
-                                styles.optionText,
-                                isSelected && styles.optionTextSelected,
-                                showResult && isCorrectOption && styles.optionTextCorrect,
-                              ]}
-                            >
-                              {option}
-                            </Text>
+                            {(/ over /.test(option) || / \/ /.test(option)) ? (
+                              <FractionText
+                                text={option}
+                                style={[
+                                  styles.optionText,
+                                  isSelected && styles.optionTextSelected,
+                                  showResult && isCorrectOption && styles.optionTextCorrect,
+                                ].filter(Boolean)}
+                                containerStyle={{ flex: 1 }}
+                              />
+                            ) : (
+                              <Text
+                                style={[
+                                  styles.optionText,
+                                  isSelected && styles.optionTextSelected,
+                                  showResult && isCorrectOption && styles.optionTextCorrect,
+                                ]}
+                              >
+                                {option}
+                              </Text>
+                            )}
                             {showResult && isCorrectOption && (
                               <Text style={styles.correctIcon}>✓</Text>
                             )}
@@ -687,7 +705,11 @@ export default function TopicScreen() {
                         );
                       })}
                       {showResult && (
-                        <Text style={styles.explanationText}>{question.explanation}</Text>
+                        (/ over /.test(question.explanation || '') || / \/ /.test(question.explanation || '')) ? (
+                          <FractionText text={question.explanation || ''} style={styles.explanationText} />
+                        ) : (
+                          <Text style={styles.explanationText}>{question.explanation}</Text>
+                        )
                       )}
                     </View>
                   );
@@ -1131,6 +1153,12 @@ const styles = StyleSheet.create({
   },
   questionCard: {
     marginBottom: Spacing.lg,
+  },
+  questionTextWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   questionText: {
     fontSize: 18,

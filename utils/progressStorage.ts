@@ -68,7 +68,9 @@ export const saveTopicActivitiesProgress = async (topicId: number, progress: num
   try {
     const detail = await database.getProgressDetail(topicId);
     const content = detail && 'content' in detail ? detail.content : 0;
-    await database.saveProgress(topicId, content, p);
+    const prevActivities = detail && 'activities' in detail ? detail.activities : 0;
+    const activities = Math.max(prevActivities, p);
+    await database.saveProgress(topicId, content, activities);
   } catch (e) {
     console.warn('saveTopicActivitiesProgress failed:', e);
   }

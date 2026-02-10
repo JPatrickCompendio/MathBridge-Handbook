@@ -1,27 +1,29 @@
-import { Video, ResizeMode } from 'expo-av';
+import { ResizeMode, Video } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Easing,
-  Image,
-  ImageSourcePropType,
-  LayoutAnimation,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  UIManager,
-  View,
+    Animated,
+    Easing,
+    Image,
+    ImageSourcePropType,
+    LayoutAnimation,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    UIManager,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AccordionRevealBody from '../../components/AccordionRevealBody';
+import { FractionText } from '../../components/FractionText';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_3_TRIANGLE_SIMILARITY_SECTIONS } from '../../data/lessons/module3_triangle_similarity';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
-import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
+import { useVideoFullscreenOrientationHandler } from '../../utils/videoFullscreenOrientation';
 import { getVideoSource } from '../../utils/videoCatalog';
 
 const TRIANGLE_SIMILARITY_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
@@ -113,6 +115,7 @@ function SectionFadeIn({ index, children }: { index: number; children: React.Rea
 
 export default function TriangleSimilarityLessonScreen() {
   const router = useRouter();
+  const onFullscreenUpdate = useVideoFullscreenOrientationHandler();
   const [expandedSection, setExpandedSection] = useState<string | null>('I');
   const [expandedMethod, setExpandedMethod] = useState<string | null>(null);
   const [openedSections, setOpenedSections] = useState<Set<string>>(() => new Set(['I']));
@@ -353,17 +356,25 @@ export default function TriangleSimilarityLessonScreen() {
                               {(ex.given || []).length > 0 && (
                                 <>
                                   <Text style={styles.similarityLabel}>Given:</Text>
-                                  {(ex.given || []).map((line: string, i: number) => (
-                                    <Text key={i} style={styles.similarityGivenLine}>{line}</Text>
-                                  ))}
+                                  {(ex.given || []).map((line: string, i: number) =>
+                                    / over /.test(line) ? (
+                                      <FractionText key={i} text={line} style={styles.similarityGivenLine} />
+                                    ) : (
+                                      <Text key={i} style={styles.similarityGivenLine}>{line}</Text>
+                                    )
+                                  )}
                                 </>
                               )}
                               {(ex.solution || []).length > 0 && (
                                 <>
                                   <Text style={[styles.similarityLabel, styles.similarityLabelSolution]}>Solution:</Text>
-                                  {(ex.solution || []).map((line: string, i: number) => (
-                                    <Text key={i} style={styles.similaritySolutionLine}>{line}</Text>
-                                  ))}
+                                  {(ex.solution || []).map((line: string, i: number) =>
+                                    / over /.test(line) ? (
+                                      <FractionText key={i} text={line} style={styles.similaritySolutionLine} />
+                                    ) : (
+                                      <Text key={i} style={styles.similaritySolutionLine}>{line}</Text>
+                                    )
+                                  )}
                                 </>
                               )}
                               {ex.conclusion ? (
@@ -396,11 +407,13 @@ export default function TriangleSimilarityLessonScreen() {
               <View style={styles.topicVideoInner}>
                 <Video
                   source={getVideoSource('M3ATriangleSimilarities')}
-                  style={styles.topicVideo}
+                  style={[styles.topicVideo, Platform.OS === 'web' && styles.topicVideoWeb]}
+                  videoStyle={Platform.OS === 'web' ? styles.videoStyleWebContain : undefined}
                   useNativeControls
-                  resizeMode={ResizeMode.COVER}
+                  resizeMode={Platform.OS === 'web' ? ResizeMode.CONTAIN : ResizeMode.COVER}
                   shouldPlay={false}
                   isLooping={false}
+                  onFullscreenUpdate={onFullscreenUpdate}
                 />
               </View>
             </View>
@@ -483,6 +496,15 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   topicVideo: {
+    width: '100%',
+    height: '100%',
+  },
+  topicVideoWeb: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+  },
+  videoStyleWebContain: {
+    objectFit: 'contain' as const,
     width: '100%',
     height: '100%',
   },

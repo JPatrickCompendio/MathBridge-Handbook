@@ -8,6 +8,7 @@ import {
     Image,
     ImageBackground,
     Modal,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -17,18 +18,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TopicModal from '../../components/TopicModal';
-import PracticeActivitiesModal from '../../components/PracticeActivitiesModal';
 import WelcomeModal from '../../components/WelcomeModal';
 import TabsAnimatedBackground from '../../components/TabsAnimatedBackground';
 import { BorderRadius, Spacing } from '../../constants/colors';
-import { TRIANGLE_SIMILARITY_DATA } from '../../data/lessons/module3_triangle_similarity';
-import { OBLIQUE_TRIANGLE_PRACTICE } from '../../data/lessons/module3b_oblique_triangle';
-import { PYTHAGOREAN_TRIPLES_DATA } from '../../data/lessons/module2_triangle_triples';
-import { QUADRATIC_EQUATIONS_DATA } from '../../data/lessons/module1_quadratic';
-import { AREA_OF_TRIANGLE_DATA } from '../../data/lessons/module4_area_of_triangle';
-import { VARIATION_DATA } from '../../data/lessons/module5_variation';
 import { database } from '../../services/database';
-import { getProfileOverlay } from '../../utils/profileStorage';
+import { getProfileOverlay, PROFILE_OVERLAY_UPDATED, setProfileOverlay } from '../../utils/profileStorage';
 import { getTopicProgress } from '../../utils/progressStorage';
 import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize, useResponsive, wp } from '../../utils/responsive';
 
@@ -97,7 +91,7 @@ function AnimatedSearchBar({
 }) {
   const searchFocusAnim = useRef(new Animated.Value(0)).current;
   const searchScaleAnim = useRef(new Animated.Value(1)).current;
-  
+
   const handleSearchFocus = () => {
     Animated.parallel([
       Animated.timing(searchFocusAnim, {
@@ -108,7 +102,7 @@ function AnimatedSearchBar({
       }),
       Animated.spring(searchScaleAnim, {
         toValue: 1.02,
-        useNativeDriver: true,
+        useNativeDriver: false,
         tension: 300,
         friction: 8,
       }),
@@ -125,7 +119,7 @@ function AnimatedSearchBar({
       }),
       Animated.spring(searchScaleAnim, {
         toValue: 1,
-        useNativeDriver: true,
+        useNativeDriver: false,
         tension: 300,
         friction: 8,
       }),
@@ -722,6 +716,7 @@ function AnimatedTopicCard({
   const rotateY = useRef(new Animated.Value(0)).current;
   const floatAnim = useRef(new Animated.Value(0)).current;
   const clampedProgress = Math.max(0, Math.min(100, topic.progress));
+  const showActivitiesHint = clampedProgress >= 70 && clampedProgress < 100;
   
   useEffect(() => {
     // Subtle 3D tilt animation
@@ -911,6 +906,11 @@ function AnimatedTopicCard({
                   <Text style={styles.topicProgressLabel}>Progress</Text>
                   <Text style={styles.topicProgressValue}>{Math.round(clampedProgress)}%</Text>
                 </View>
+                {showActivitiesHint && (
+                  <Text style={styles.topicActivitiesHint}>
+                    Play Activities to complete this topic and earn an achievement.
+                  </Text>
+                )}
                 <AnimatedProgressBar 
                   progress={clampedProgress} 
                   style={styles.topicProgressBarBackground}
@@ -932,9 +932,6 @@ export default function HomeScreen() {
   const [topics, setTopics] = useState(EXAMPLE_TOPICS);
   const [selectedTopic, setSelectedTopic] = useState<typeof EXAMPLE_TOPICS[0] | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
-  const [triangleMeasuresChoiceVisible, setTriangleMeasuresChoiceVisible] = useState(false);
-  const [triangleMeasuresModule, setTriangleMeasuresModule] = useState<'3A' | '3B' | null>(null);
   const [displayName, setDisplayName] = useState(DEFAULT_DISPLAY_NAME);
   const [profilePhotoUri, setProfilePhotoUri] = useState<string | undefined>(undefined);
   const [streak, setStreak] = useState(0);
@@ -948,6 +945,20 @@ export default function HomeScreen() {
   const averageProgress = topics.length ? Math.round(topics.reduce((s, t) => s + t.progress, 0) / topics.length) : 0;
   const completedTopics = topics.filter((t) => t.progress >= 100).length;
   const level = 1 + Math.min(9, Math.floor(averageProgress / 10));
+
+  // When profile is saved (e.g. from Profile tab), refresh header so photo/name update immediately (web only)
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+    const onProfileOverlayUpdated = (e: Event) => {
+      const detail = (e as CustomEvent<{ displayName?: string; photoUri?: string }>).detail;
+      if (detail) {
+        if (detail.displayName !== undefined) setDisplayName(detail.displayName?.trim() || DEFAULT_DISPLAY_NAME);
+        if (detail.photoUri !== undefined) setProfilePhotoUri(detail.photoUri || undefined);
+      }
+    };
+    window.addEventListener(PROFILE_OVERLAY_UPDATED, onProfileOverlayUpdated);
+    return () => window.removeEventListener(PROFILE_OVERLAY_UPDATED, onProfileOverlayUpdated);
+  }, []);
 
   useEffect(() => {
     // Entrance animations
@@ -1013,12 +1024,13 @@ export default function HomeScreen() {
           }
           const [overlay, user] = await Promise.all([getProfileOverlay(), database.getUserData()]);
           setDisplayName((overlay.displayName?.trim() || user?.username || user?.displayName) ?? DEFAULT_DISPLAY_NAME);
-          // Web: use either overlay (just saved) or Firebase photoUrl so header shows set image
-          if (isWeb()) {
-            const photoUri = overlay.photoUri?.startsWith('http')
-              ? overlay.photoUri
-              : (user?.photoUrl || overlay.photoUri);
+          // Web: prefer overlay then Firebase photoUrl; hydrate overlay from Firebase after login so photo persists
+          if (Platform.OS === 'web') {
+            const photoUri = overlay.photoUri || user?.photoUrl;
             setProfilePhotoUri(photoUri || undefined);
+            if (user?.photoUrl && !overlay.photoUri) {
+              setProfileOverlay({ photoUri: user.photoUrl, displayName: overlay.displayName || user?.displayName });
+            }
           } else {
             setProfilePhotoUri(overlay.photoUri);
           }
@@ -1072,25 +1084,6 @@ export default function HomeScreen() {
   const handleCloseModal = () => {
     setModalVisible(false);
     setSelectedTopic(null);
-  };
-
-  const handleTakeActivities = () => {
-    if (!selectedTopic) return;
-    if (selectedTopic.name === 'Triangle Measures') {
-      setModalVisible(false);
-      setTimeout(() => setTriangleMeasuresChoiceVisible(true), 200);
-      return;
-    }
-    if (selectedTopic.name === 'Quadratic Equations' || selectedTopic.name === 'Triangle Triples' || selectedTopic.name === 'Pythagorean Triples' || selectedTopic.name === 'Area of Triangles' || selectedTopic.name === 'Variation' || selectedTopic.id === 2) {
-      setModalVisible(false);
-      setTimeout(() => setActivitiesModalVisible(true), 200);
-    }
-  };
-
-  const handleTriangleMeasuresModuleChoice = (module: '3A' | '3B') => {
-    setTriangleMeasuresModule(module);
-    setTriangleMeasuresChoiceVisible(false);
-    setTimeout(() => setActivitiesModalVisible(true), 150);
   };
 
   // Filter topics based on search query
@@ -1163,7 +1156,11 @@ export default function HomeScreen() {
                   ]}
                 >
                   {profilePhotoUri ? (
-                    <Image source={{ uri: profilePhotoUri }} style={styles.avatarImage as any} />
+                    <Image
+                      key={profilePhotoUri}
+                      source={{ uri: profilePhotoUri }}
+                      style={styles.avatarImage as any}
+                    />
                   ) : (
                     <Text style={styles.avatarText}>
                       {(displayName || 'L').charAt(0).toUpperCase()}
@@ -1330,97 +1327,8 @@ export default function HomeScreen() {
         topic={selectedTopic}
         onClose={handleCloseModal}
         onEnter={handleEnterTopic}
-        onTakeActivities={
-          selectedTopic?.name === 'Quadratic Equations' || selectedTopic?.name === 'Triangle Triples' || selectedTopic?.name === 'Pythagorean Triples' || selectedTopic?.name === 'Triangle Measures' || selectedTopic?.name === 'Area of Triangles' || selectedTopic?.name === 'Variation' || selectedTopic?.id === 2
-            ? handleTakeActivities
-            : undefined
-        }
         getTopicImage={getTopicImage}
       />
-
-      {/* Practice Activities Modal */}
-      {selectedTopic?.name === 'Quadratic Equations' && (
-        <PracticeActivitiesModal
-          visible={activitiesModalVisible}
-          onClose={() => setActivitiesModalVisible(false)}
-          practiceData={QUADRATIC_EQUATIONS_DATA.practiceActivities}
-          topicId={selectedTopic?.id}
-        />
-      )}
-      {(selectedTopic?.name === 'Triangle Triples' || selectedTopic?.name === 'Pythagorean Triples' || selectedTopic?.id === 2) && (
-        <PracticeActivitiesModal
-          visible={activitiesModalVisible}
-          onClose={() => setActivitiesModalVisible(false)}
-          practiceData={PYTHAGOREAN_TRIPLES_DATA.practiceActivities}
-          topicId={selectedTopic?.id}
-        />
-      )}
-      {selectedTopic?.name === 'Triangle Measures' && (
-        <PracticeActivitiesModal
-          visible={activitiesModalVisible}
-          onClose={() => {
-            setActivitiesModalVisible(false);
-            setTriangleMeasuresModule(null);
-          }}
-          practiceData={triangleMeasuresModule === '3B' ? OBLIQUE_TRIANGLE_PRACTICE : TRIANGLE_SIMILARITY_DATA.practiceActivities}
-          topicId={selectedTopic?.id}
-        />
-      )}
-      {selectedTopic?.name === 'Area of Triangles' && (
-        <PracticeActivitiesModal
-          visible={activitiesModalVisible}
-          onClose={() => setActivitiesModalVisible(false)}
-          practiceData={AREA_OF_TRIANGLE_DATA.practiceActivities}
-          topicId={selectedTopic?.id}
-        />
-      )}
-      {selectedTopic?.name === 'Variation' && (
-        <PracticeActivitiesModal
-          visible={activitiesModalVisible}
-          onClose={() => setActivitiesModalVisible(false)}
-          practiceData={VARIATION_DATA.practiceActivities}
-          topicId={selectedTopic?.id}
-        />
-      )}
-
-      {/* Triangle Measures: choose MODULE 3A or 3B before opening practice */}
-      <Modal
-        visible={triangleMeasuresChoiceVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setTriangleMeasuresChoiceVisible(false)}
-      >
-        <View style={styles.triangleChoiceOverlay}>
-          <View style={styles.triangleChoiceCard}>
-            <Text style={styles.triangleChoiceTitle}>Practice Activities</Text>
-            <Text style={styles.triangleChoiceSubtitle}>Choose a module</Text>
-            <TouchableOpacity
-              style={styles.triangleChoiceOption}
-              onPress={() => handleTriangleMeasuresModuleChoice('3A')}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.triangleChoiceOptionLabel}>MODULE 3A</Text>
-              <Text style={styles.triangleChoiceOptionTitle}>Triangle Similarity</Text>
-              <Text style={styles.triangleChoiceOptionDesc}>Similar triangles, SAS, ASA, SSS</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.triangleChoiceOption}
-              onPress={() => handleTriangleMeasuresModuleChoice('3B')}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.triangleChoiceOptionLabel}>MODULE 3B</Text>
-              <Text style={styles.triangleChoiceOptionTitle}>Oblique Triangle</Text>
-              <Text style={styles.triangleChoiceOptionDesc}>Law of Sines & Cosines</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.triangleChoiceCancel}
-              onPress={() => setTriangleMeasuresChoiceVisible(false)}
-            >
-              <Text style={styles.triangleChoiceCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       <WelcomeModal
         visible={welcomeModalVisible}
@@ -1979,6 +1887,12 @@ const styles = StyleSheet.create({
     color: ProfessionalColors.white,
     fontWeight: '700',
   },
+  topicActivitiesHint: {
+    marginTop: getSpacing(Spacing.xs),
+    fontSize: scaleFont(responsiveValues.topicSubtitleFont - 2),
+    color: 'rgba(255, 255, 255, 0.95)',
+    fontWeight: '500',
+  },
   topicProgressBarBackground: {
     height: scaleSize(responsiveValues.topicProgressBarHeight),
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
@@ -2039,67 +1953,5 @@ const styles = StyleSheet.create({
     color: ProfessionalColors.textSecondary,
     fontWeight: '600',
     textAlign: 'center',
-  },
-  triangleChoiceOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: getSpacing(Spacing.lg),
-  },
-  triangleChoiceCard: {
-    backgroundColor: ProfessionalColors.white,
-    borderRadius: scaleSize(16),
-    padding: getSpacing(Spacing.lg),
-    width: '100%',
-    maxWidth: 360,
-  },
-  triangleChoiceTitle: {
-    fontSize: scaleFont(20),
-    fontWeight: '700',
-    color: ProfessionalColors.text,
-    marginBottom: getSpacing(Spacing.xs),
-    textAlign: 'center',
-  },
-  triangleChoiceSubtitle: {
-    fontSize: scaleFont(14),
-    color: ProfessionalColors.textSecondary,
-    marginBottom: getSpacing(Spacing.md),
-    textAlign: 'center',
-  },
-  triangleChoiceOption: {
-    backgroundColor: ProfessionalColors.background,
-    borderRadius: scaleSize(12),
-    padding: getSpacing(Spacing.md),
-    marginBottom: getSpacing(Spacing.sm),
-    borderLeftWidth: scaleSize(4),
-    borderLeftColor: ProfessionalColors.primary,
-  },
-  triangleChoiceOptionLabel: {
-    fontSize: scaleFont(12),
-    fontWeight: '700',
-    color: ProfessionalColors.primary,
-    letterSpacing: 0.5,
-    marginBottom: getSpacing(Spacing.xs),
-  },
-  triangleChoiceOptionTitle: {
-    fontSize: scaleFont(16),
-    fontWeight: '700',
-    color: ProfessionalColors.text,
-    marginBottom: getSpacing(Spacing.xs),
-  },
-  triangleChoiceOptionDesc: {
-    fontSize: scaleFont(13),
-    color: ProfessionalColors.textSecondary,
-  },
-  triangleChoiceCancel: {
-    marginTop: getSpacing(Spacing.sm),
-    paddingVertical: getSpacing(Spacing.sm),
-    alignItems: 'center',
-  },
-  triangleChoiceCancelText: {
-    fontSize: scaleFont(15),
-    color: ProfessionalColors.textSecondary,
-    fontWeight: '600',
   },
 });

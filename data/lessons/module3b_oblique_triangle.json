@@ -42,7 +42,7 @@
         "two angles and one side are given, or",
         "two sides and a non-included angle are given."
       ],
-      "formula": "a / sin A = b / sin B = c / sin C",
+      "formula": "a over (sin A) = b over (sin B) = c over (sin C)",
       "formula_note": "Each side must be paired with its opposite angle.",
       "steps_title": "A. Using the Law of Sines",
       "steps": [
@@ -57,20 +57,23 @@
           "title": "Example 1",
           "given": ["Angle A = 30°", "Angle B = 70°", "Side a = 12 cm", "Find side b."],
           "solution": [
-            "Use the Law of Sines: a / sin A = b / sin B",
-            "Substitute: 12 / sin 30° = b / sin 70°",
-            "Cross multiplication: b = (12 sin 70°) / sin 30°",
-            "b = 12(0.94) / 0.5",
-            "b = 11.28 / 0.5",
+            "Use the Law of Sines:",
+            "a over (sin A) = b over (sin B)",
+            "Substitute the given values:",
+            "12 over (sin 30°) = b over (sin 70°), cross multiplication.",
+            "Step 1: b = (12 × sin 70°) over (sin 30°) →",
+            "Step 2: b = 12(0.94) over 0.5 →",
+            "Step 3: b = 11.28 over 0.5",
             "b = 22.56 cm"
           ],
           "solution_display": {
             "formula_intro": "Use the Law of Sines:",
-            "formula": "a / sin A = b / sin B",
+            "formula": "a over (sin A) = b over (sin B)",
             "substitute_label": "Substitute the given values:",
-            "substitute_equation": "12 / sin 30° = b / sin 70°",
-            "cross_note": "cross multiplication.",
-            "steps": ["b = (12 sin 70°) / sin 30°", "b = 12(0.94) / 0.5", "b = 11.28 / 0.5"]
+            "substitute_equation": "12 over (sin 30°) = b over (sin 70°)",
+            "cross_note": ", cross multiplication.",
+            "steps": ["Step 1: b = (12 × sin 70°) over (sin 30°) →", "Step 2: b = 12(0.94) over 0.5 →", "Step 3: b = 11.28 over 0.5"],
+            "show_divider": false
           },
           "answer": "b = 22.56 cm",
           "image": "law-sines-ex1"
@@ -79,18 +82,18 @@
           "title": "Example 2",
           "given": ["Angle C = 50°", "Angle A = 60°", "Side c = 15 cm", "Find side a."],
           "solution": [
-            "a / sin A = c / sin C",
-            "a / sin 60° = 15 / sin 50°",
-            "Cross multiplication: a = (15 sin 60°) / sin 50°",
-            "a = (15 × 0.87) / 0.77",
-            "a = 13.05 / 0.77",
+            "a over (sin A) = c over (sin C)",
+            "a over (sin 60°) = 15 over (sin 50°), cross multiplication.",
+            "Step 1: a = (15 sin 60°) over (sin 50°) →",
+            "Step 2: a = 15(0.87) over 0.77 →",
+            "Step 3: a = 13.05 over 0.77",
             "a = 16.95 cm"
           ],
           "solution_display": {
-            "formula": "a / sin A = c / sin C",
-            "substitute_equation": "a / sin 60° = 15 / sin 50°",
-            "cross_note": "cross multiplication.",
-            "steps": ["a = (15 sin 60°) / sin 50°", "a = 15(0.87) / 0.77", "a = 13.05 / 0.77"],
+            "formula": "a over (sin A) = c over (sin C)",
+            "substitute_equation": "a over (sin 60°) = 15 over (sin 50°)",
+            "cross_note": ", cross multiplication.",
+            "steps": ["Step 1: a = (15 sin 60°) over (sin 50°) →", "Step 2: a = 15(0.87) over 0.77 →", "Step 3: a = 13.05 over 0.77"],
             "show_divider": true
           },
           "answer": "a = 16.95 cm",
@@ -100,19 +103,18 @@
           "title": "Example 3",
           "given": ["Angle A = 45°", "Angle B = 65°", "Side a = 10 cm", "Find side b."],
           "solution": [
-            "a / sin A = b / sin B",
-            "10 / sin 45° = b / sin 65°",
-            "Cross multiplication: b = (10 sin 65°) / sin 45°",
-            "b = (10 × 0.91) / 0.71",
-            "b = 9.1 / 0.71",
+            "a over (sin A) = b over (sin B)",
+            "10 over (sin 45°) = b over (sin 65°), cross multiplication.",
+            "Step 1: b = (10 sin 65°) over (sin 45°) →",
+            "Step 2: b = 10(0.91) over 0.71 →",
+            "Step 3: b = 9.1 over 0.71",
             "b = 12.82 cm"
           ],
           "solution_display": {
-            "formula": "a / sin A = b / sin B",
-            "substitute_label": "Substitute the given values:",
-            "substitute_equation": "10 / sin 45° = b / sin 65°",
-            "cross_note": "cross multiplication.",
-            "steps": ["b = (10 sin 65°) / sin 45°", "b = 10(0.91) / 0.71", "b = 9.1 / 0.71"]
+            "formula": "a over (sin A) = b over (sin B)",
+            "substitute_equation": "10 over (sin 45°) = b over (sin 65°)",
+            "cross_note": ", cross multiplication.",
+            "steps": ["Step 1: b = (10 sin 65°) over (sin 45°) →", "Step 2: b = 10(0.91) over 0.71 →", "Step 3: b = 9.1 over 0.71"]
           },
           "answer": "b = 12.82 cm",
           "image": "law-sines-ex3"

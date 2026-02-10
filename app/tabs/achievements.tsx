@@ -3,7 +3,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Animated,
-    Dimensions,
     Easing,
     FlatList,
     Modal,
@@ -968,6 +967,7 @@ export default function AchievementsScreen() {
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const searchInputRef = useRef<TextInput | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -1237,11 +1237,18 @@ export default function AchievementsScreen() {
         ]}
       >
         <TextInput
+          ref={searchInputRef}
           style={styles.searchInput}
           placeholder="Search achievements..."
           placeholderTextColor={ProfessionalColors.textSecondary}
           value={searchQuery}
-          onChangeText={setSearchQuery}
+          onChangeText={(text) => {
+            setSearchQuery(text);
+            // Ensure the search input keeps focus while typing
+            setTimeout(() => {
+              searchInputRef.current?.focus();
+            }, 0);
+          }}
         />
         <Animated.View
           style={{

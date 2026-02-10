@@ -1,4 +1,4 @@
-import { Video, ResizeMode } from 'expo-av';
+import { ResizeMode, Video } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -16,11 +16,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AccordionRevealBody from '../../components/AccordionRevealBody';
+import { FractionText } from '../../components/FractionText';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_4_AREA_OF_TRIANGLE_SECTIONS } from '../../data/lessons/module4_area_of_triangle';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
-import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
+import { useVideoFullscreenOrientationHandler } from '../../utils/videoFullscreenOrientation';
 import { getVideoSource } from '../../utils/videoCatalog';
 
 const AREA_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
@@ -70,9 +72,16 @@ function SolutionStepLine({ line, stepBadgeStyle, stepBadgeTextStyle, lineStyle,
         <View style={stepBadgeStyle}>
           <Text style={stepBadgeTextStyle}>{stepLabel}</Text>
         </View>
-        <Text style={lineStyle}>{rest}</Text>
+        {/ over /.test(rest) ? (
+          <FractionText text={rest} style={lineStyle} containerStyle={styles.solutionLineContent} />
+        ) : (
+          <Text style={lineStyle}>{rest}</Text>
+        )}
       </View>
     );
+  }
+  if (/ over /.test(line)) {
+    return <FractionText text={line} style={[lineStyle, { marginBottom: getSpacing(Spacing.xs) }]} />;
   }
   return <Text style={[lineStyle, { marginBottom: getSpacing(Spacing.xs), flex: undefined }]}>{line}</Text>;
 }
@@ -114,6 +123,7 @@ function SectionFadeIn({ index, children }: { index: number; children: React.Rea
 
 export default function AreaOfTriangleLessonScreen() {
   const router = useRouter();
+  const onFullscreenUpdate = useVideoFullscreenOrientationHandler();
   const [expandedSection, setExpandedSection] = useState<string | null>('I');
   const [openedSections, setOpenedSections] = useState<Set<string>>(() => new Set(['I']));
   const { ReadingProgressIndicator } = useAccordionReadingProgress(
@@ -194,7 +204,11 @@ export default function AreaOfTriangleLessonScreen() {
               <Text style={styles.paragraph}>{(whatIs as { definition?: string }).definition || ''}</Text>
               <Text style={styles.paragraph}>{(whatIs as { formula_intro?: string }).formula_intro || ''}</Text>
               <View style={styles.formulaBox}>
-                <Text style={styles.formulaText}>{(whatIs as { formula?: string }).formula || 'A = ½ b h'}</Text>
+                {/ over /.test((whatIs as { formula?: string }).formula || '') ? (
+                  <FractionText text={(whatIs as { formula?: string }).formula || 'A = 1 over 2 b h'} style={styles.formulaText} />
+                ) : (
+                  <Text style={styles.formulaText}>{(whatIs as { formula?: string }).formula || 'A = 1 over 2 b h'}</Text>
+                )}
               </View>
               <Text style={styles.paragraph}>{(whatIs as { where?: string }).where || 'where:'}</Text>
               <View style={styles.bulletList}>
@@ -244,7 +258,11 @@ export default function AreaOfTriangleLessonScreen() {
               <View style={styles.stepList}>
                 {procedureSteps.map((step: string, idx: number) => (
                   <View key={idx} style={styles.stepRow}>
-                    <Text style={styles.stepText}>{step}</Text>
+                    {/ over /.test(step) ? (
+                      <FractionText text={step} style={styles.stepText} />
+                    ) : (
+                      <Text style={styles.stepText}>{step}</Text>
+                    )}
                   </View>
                 ))}
               </View>
@@ -301,11 +319,13 @@ export default function AreaOfTriangleLessonScreen() {
               <View style={styles.topicVideoInner}>
                 <Video
                   source={getVideoSource('M4AreaOfTriangle')}
-                  style={styles.topicVideo}
+                  style={[styles.topicVideo, Platform.OS === 'web' && styles.topicVideoWeb]}
+                  videoStyle={Platform.OS === 'web' ? styles.videoStyleWebContain : undefined}
                   useNativeControls
-                  resizeMode={ResizeMode.COVER}
+                  resizeMode={Platform.OS === 'web' ? ResizeMode.CONTAIN : ResizeMode.COVER}
                   shouldPlay={false}
                   isLooping={false}
+                  onFullscreenUpdate={onFullscreenUpdate}
                 />
               </View>
             </View>
@@ -370,6 +390,15 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   topicVideo: {
+    width: '100%',
+    height: '100%',
+  },
+  topicVideoWeb: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+  },
+  videoStyleWebContain: {
+    objectFit: 'contain' as const,
     width: '100%',
     height: '100%',
   },
@@ -474,8 +503,13 @@ const styles = StyleSheet.create({
   solutionStepRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: getSpacing(Spacing.xs),
+    marginBottom: getSpacing(Spacing.sm),
     gap: getSpacing(Spacing.sm),
+    minWidth: 0,
+  },
+  solutionLineContent: {
+    flex: 1,
+    minWidth: 0,
   },
   solutionStepBadge: {
     backgroundColor: Theme.primary,

@@ -61,7 +61,7 @@ const VIDEO_CATALOG_WEB: Record<VideoId, WebEntry> = {
   },
   M5Variation: {
     id: 'M5Variation',
-    webUrl: '',
+    webUrl: 'https://res.cloudinary.com/dfiiso9ad/video/upload/v1770729424/M5_Variations_f9mrmr.mp4',
   },
 };
 

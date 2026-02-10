@@ -1,25 +1,27 @@
-import { Video, ResizeMode } from 'expo-av';
+import { ResizeMode, Video } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Easing,
-  LayoutAnimation,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  UIManager,
-  View,
+    Animated,
+    Easing,
+    LayoutAnimation,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    UIManager,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AccordionRevealBody from '../../components/AccordionRevealBody';
+import { FractionText } from '../../components/FractionText';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_5_VARIATION_SECTIONS } from '../../data/lessons/module5_variation';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
-import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
+import { useVideoFullscreenOrientationHandler } from '../../utils/videoFullscreenOrientation';
 import { getVideoSource } from '../../utils/videoCatalog';
 
 const VARIATION_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
@@ -79,6 +81,7 @@ function SectionFadeIn({ index, children }: { index: number; children: React.Rea
 
 export default function VariationLessonScreen() {
   const router = useRouter();
+  const onFullscreenUpdate = useVideoFullscreenOrientationHandler();
   const [expandedSection, setExpandedSection] = useState<string | null>('I');
   const [openedSections, setOpenedSections] = useState<Set<string>>(() => new Set(['I']));
   const { ReadingProgressIndicator } = useAccordionReadingProgress(
@@ -165,7 +168,11 @@ export default function VariationLessonScreen() {
                   <Text style={styles.paragraph}>{t.description}</Text>
                   <Text style={styles.paragraph}>General form:</Text>
                   <View style={styles.formulaBox}>
-                    <Text style={styles.formulaText}>{t.formula}</Text>
+                    {t.formula && / over /.test(t.formula) ? (
+                      <FractionText text={t.formula} style={styles.formulaText} />
+                    ) : (
+                      <Text style={styles.formulaText}>{t.formula}</Text>
+                    )}
                   </View>
                   {t.where ? <Text style={styles.paragraph}>{t.where}</Text> : null}
                   {t.or_more ? <Text style={styles.paragraph}>{t.or_more}</Text> : null}
@@ -241,9 +248,31 @@ export default function VariationLessonScreen() {
                   <Text style={styles.exampleProblem}>{ex.problem}</Text>
                   <View style={styles.solutionWrap}>
                     <Text style={styles.solutionLabel}>Solution:</Text>
-                    {(ex.solution || []).map((line: string, i: number) => (
-                      <Text key={i} style={styles.solutionLine}>{line}</Text>
-                    ))}
+                    {(ex.solution || []).map((line: string, i: number) => {
+                      const isStepHeader = /^Step \d+($|:)/.test(line.trim());
+                      const isFinalAnswer = /^Final Answer:/.test(line);
+                      const isBoxedAnswer = /^[a-zA-Z] = -?\d+$/.test(line.trim());
+                      if (isStepHeader) {
+                        return (
+                          <View key={i} style={styles.solutionStepHeaderWrap}>
+                            <Text style={styles.solutionStepHeader}>{line}</Text>
+                          </View>
+                        );
+                      }
+                      const useAnswerStyle = isFinalAnswer || isBoxedAnswer;
+                      const lineContent = / over /.test(line) ? (
+                        <FractionText key={i} text={line} style={useAnswerStyle ? styles.solutionLineFinalAnswer : styles.solutionLine} />
+                      ) : (
+                        <Text key={i} style={useAnswerStyle ? styles.solutionLineFinalAnswer : styles.solutionLine}>{line}</Text>
+                      );
+                      return isFinalAnswer || isBoxedAnswer ? (
+                        <View key={i} style={styles.finalAnswerBox}>
+                          {lineContent}
+                        </View>
+                      ) : (
+                        lineContent
+                      );
+                    })}
                   </View>
                 </View>
               ))}
@@ -259,11 +288,13 @@ export default function VariationLessonScreen() {
               <View style={styles.topicVideoInner}>
                 <Video
                   source={getVideoSource('M5Variation')}
-                  style={styles.topicVideo}
+                  style={[styles.topicVideo, Platform.OS === 'web' && styles.topicVideoWeb]}
+                  videoStyle={Platform.OS === 'web' ? styles.videoStyleWebContain : undefined}
                   useNativeControls
-                  resizeMode={ResizeMode.COVER}
+                  resizeMode={Platform.OS === 'web' ? ResizeMode.CONTAIN : ResizeMode.COVER}
                   shouldPlay={false}
                   isLooping={false}
+                  onFullscreenUpdate={onFullscreenUpdate}
                 />
               </View>
             </View>
@@ -328,6 +359,15 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   topicVideo: {
+    width: '100%',
+    height: '100%',
+  },
+  topicVideoWeb: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+  },
+  videoStyleWebContain: {
+    objectFit: 'contain' as const,
     width: '100%',
     height: '100%',
   },
@@ -473,4 +513,8 @@ const styles = StyleSheet.create({
   solutionWrap: { marginLeft: getSpacing(Spacing.sm), marginTop: getSpacing(Spacing.xs) },
   solutionLabel: { fontSize: scaleFont(isWeb() ? 17 : 14), fontWeight: '600', color: Theme.text, marginBottom: getSpacing(Spacing.xs) },
   solutionLine: { fontSize: scaleFont(isWeb() ? 16 : 13), color: Theme.textSecondary, lineHeight: scaleFont(isWeb() ? 25 : 20), marginBottom: getSpacing(Spacing.xs) },
+  solutionStepHeaderWrap: { marginTop: getSpacing(Spacing.sm), marginBottom: getSpacing(Spacing.xs) },
+  solutionStepHeader: { fontSize: scaleFont(isWeb() ? 17 : 14), fontWeight: '700', color: Theme.primary },
+  finalAnswerBox: { backgroundColor: '#e8f5e9', padding: getSpacing(Spacing.sm), borderRadius: scaleSize(BorderRadius.sm), marginTop: getSpacing(Spacing.xs), marginBottom: getSpacing(Spacing.xs) },
+  solutionLineFinalAnswer: { fontSize: scaleFont(isWeb() ? 16 : 13), color: Theme.text, fontWeight: '600', lineHeight: scaleFont(isWeb() ? 25 : 20) },
 });

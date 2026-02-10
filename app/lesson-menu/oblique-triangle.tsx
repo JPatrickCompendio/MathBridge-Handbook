@@ -1,4 +1,4 @@
-import { Video, ResizeMode } from 'expo-av';
+import { ResizeMode, Video } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -17,11 +17,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AccordionRevealBody from '../../components/AccordionRevealBody';
+import { FractionText } from '../../components/FractionText';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_3B_OBLIQUE_TRIANGLE_SECTIONS } from '../../data/lessons/module3b_oblique_triangle';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
-import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
+import { useVideoFullscreenOrientationHandler } from '../../utils/videoFullscreenOrientation';
 import { getVideoSource } from '../../utils/videoCatalog';
 
 const OBLIQUE_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
@@ -104,6 +106,7 @@ const OBLIQUE_IMAGES: Record<string, ImageSourcePropType> = {
 
 export default function ObliqueTriangleLessonScreen() {
   const router = useRouter();
+  const onFullscreenUpdate = useVideoFullscreenOrientationHandler();
   const [expandedSection, setExpandedSection] = useState<string | null>('II');
   const [openedSections, setOpenedSections] = useState<Set<string>>(() => new Set(['I', 'II'])); // I visible, II starts expanded
   const { ReadingProgressIndicator } = useAccordionReadingProgress(
@@ -285,7 +288,14 @@ export default function ObliqueTriangleLessonScreen() {
               </View>
               <Text style={styles.formulaLabel}>Formula:</Text>
               <View style={styles.formulaBox}>
-                <Text style={styles.formulaText}>{(lawOfSines as { formula?: string }).formula || 'a / sin A = b / sin B = c / sin C'}</Text>
+                {(() => {
+                  const formula = (lawOfSines as { formula?: string }).formula || 'a over sin A = b over sin B = c over sin C';
+                  return / over /.test(formula) ? (
+                    <FractionText text={formula} style={styles.formulaText} />
+                  ) : (
+                    <Text style={styles.formulaText}>{formula}</Text>
+                  );
+                })()}
               </View>
               <Text style={styles.formulaNote}>{(lawOfSines as { formula_note?: string }).formula_note || 'Each side must be paired with its opposite angle.'}</Text>
               <Text style={styles.stepsTitle}>{(lawOfSines as { steps_title?: string }).steps_title || 'A. Using the Law of Sines'}</Text>
@@ -321,28 +331,46 @@ export default function ObliqueTriangleLessonScreen() {
                               {sd.formula_intro ? <Text style={styles.solutionFormulaIntro}>{sd.formula_intro}</Text> : null}
                               {sd.formula ? (
                                 <View style={styles.solutionFormulaBox}>
-                                  <Text style={styles.solutionFormulaText}>{sd.formula}</Text>
+                                  {/ over /.test(sd.formula) ? (
+                                    <FractionText text={sd.formula} style={styles.solutionFormulaText} />
+                                  ) : (
+                                    <Text style={styles.solutionFormulaText}>{sd.formula}</Text>
+                                  )}
                                 </View>
                               ) : null}
                               {sd.show_divider ? <View style={styles.solutionDivider} /> : null}
                               {sd.substitute_label ? <Text style={styles.solutionSubstituteLabel}>{sd.substitute_label}</Text> : null}
                               {sd.substitute_equation ? (
                                 <View style={styles.solutionEquationRow}>
-                                  <Text style={styles.solutionEquationText}>{sd.substitute_equation}</Text>
+                                  {/ over /.test(sd.substitute_equation) ? (
+                                    <FractionText text={sd.substitute_equation} style={styles.solutionEquationText} />
+                                  ) : (
+                                    <Text style={styles.solutionEquationText}>{sd.substitute_equation}</Text>
+                                  )}
                                   {sd.cross_note ? <Text style={styles.solutionCrossNote}>{sd.cross_note}</Text> : null}
                                 </View>
                               ) : null}
                               {!sd.substitute_equation && sd.cross_note ? <Text style={styles.solutionCrossNote}>{sd.cross_note}</Text> : null}
                               {(sd.steps || []).length > 0 ? (
                                 <View style={styles.solutionStepsWrap}>
-                                  <Text style={styles.solutionStepsText}>{(sd.steps || []).join('  →  ')}</Text>
+                                  {(sd.steps || []).map((step: string, i: number) => (
+                                    / over /.test(step) ? (
+                                      <FractionText key={i} text={step} style={styles.solutionStepsText} />
+                                    ) : (
+                                      <Text key={i} style={styles.solutionStepsText}>{step}</Text>
+                                    )
+                                  ))}
                                 </View>
                               ) : null}
                             </>
                           );
                         }
                         return (ex.solution || []).map((line: string, i: number) => (
-                          <Text key={i} style={styles.exampleSolutionLine}>{line}</Text>
+                          / over /.test(line) ? (
+                            <FractionText key={i} text={line} style={styles.exampleSolutionLine} />
+                          ) : (
+                            <Text key={i} style={styles.exampleSolutionLine}>{line}</Text>
+                          )
                         ));
                       })()}
                   {ex.answer ? (
@@ -407,13 +435,25 @@ export default function ObliqueTriangleLessonScreen() {
                         return (
                           <>
                             {sd.formula ? (
-                              <Text style={styles.solutionStepLine}>{sd.formula}</Text>
+                              / over /.test(sd.formula) ? (
+                                <FractionText text={sd.formula} style={styles.solutionStepLine} />
+                              ) : (
+                                <Text style={styles.solutionStepLine}>{sd.formula}</Text>
+                              )
                             ) : null}
                             {sd.substitute_equation ? (
-                              <Text style={styles.solutionStepLine}>{sd.substitute_equation}</Text>
+                              / over /.test(sd.substitute_equation) ? (
+                                <FractionText text={sd.substitute_equation} style={styles.solutionStepLine} />
+                              ) : (
+                                <Text style={styles.solutionStepLine}>{sd.substitute_equation}</Text>
+                              )
                             ) : null}
                             {(sd.steps || []).map((step: string, i: number) => (
-                              <Text key={i} style={styles.solutionStepLine}>{step}</Text>
+                              / over /.test(step) ? (
+                                <FractionText key={i} text={step} style={styles.solutionStepLine} />
+                              ) : (
+                                <Text key={i} style={styles.solutionStepLine}>{step}</Text>
+                              )
                             ))}
                           </>
                         );
@@ -440,11 +480,13 @@ export default function ObliqueTriangleLessonScreen() {
               <View style={styles.topicVideoInner}>
                 <Video
                   source={getVideoSource('M3BObliqueTriangles')}
-                  style={styles.topicVideo}
+                  style={[styles.topicVideo, Platform.OS === 'web' && styles.topicVideoWeb]}
+                  videoStyle={Platform.OS === 'web' ? styles.videoStyleWebContain : undefined}
                   useNativeControls
-                  resizeMode={ResizeMode.COVER}
+                  resizeMode={Platform.OS === 'web' ? ResizeMode.CONTAIN : ResizeMode.COVER}
                   shouldPlay={false}
                   isLooping={false}
+                  onFullscreenUpdate={onFullscreenUpdate}
                 />
               </View>
             </View>
@@ -509,6 +551,15 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   topicVideo: {
+    width: '100%',
+    height: '100%',
+  },
+  topicVideoWeb: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+  },
+  videoStyleWebContain: {
+    objectFit: 'contain' as const,
     width: '100%',
     height: '100%',
   },
@@ -644,7 +695,7 @@ const styles = StyleSheet.create({
   solutionEquationText: { fontSize: scaleFont(isWeb() ? 17 : 14), color: Theme.text, flex: 1 },
   solutionCrossNote: { fontSize: scaleFont(isWeb() ? 14 : 12), color: Theme.accent, fontStyle: 'italic' },
   solutionStepsWrap: { marginTop: getSpacing(Spacing.sm) },
-  solutionStepsText: { fontSize: scaleFont(isWeb() ? 16 : 13), color: Theme.textSecondary, lineHeight: scaleFont(isWeb() ? 26 : 22) },
+  solutionStepsText: { fontSize: scaleFont(isWeb() ? 16 : 13), color: Theme.textSecondary, lineHeight: scaleFont(isWeb() ? 26 : 22), marginBottom: getSpacing(Spacing.sm) },
   solutionStepLine: { fontSize: scaleFont(isWeb() ? 17 : 14), color: Theme.text, lineHeight: scaleFont(isWeb() ? 26 : 22), marginBottom: getSpacing(Spacing.xs) },
   solutionFinalAnswerLabel: { fontSize: scaleFont(isWeb() ? 17 : 14), fontWeight: '700', color: Theme.text, marginTop: getSpacing(Spacing.sm), marginBottom: getSpacing(Spacing.xs) },
   solutionAnswerWrap: { marginTop: getSpacing(Spacing.sm) },

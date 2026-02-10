@@ -349,6 +349,14 @@ const firebaseService: DatabaseService = {
     const database = getDb();
     const progressRef = doc(database, 'progress', userId);
     await setDoc(progressRef, {});
+    // Also clear all saved scores so Activities "Best" labels reset
+    const scoresColl = collection(database, 'scores', userId, 'items');
+    const snap = await getDocs(scoresColl);
+    const batch = writeBatch(database);
+    snap.docs.forEach((d) => {
+      batch.delete(d.ref);
+    });
+    await batch.commit();
   },
 
   async signOut(): Promise<void> {

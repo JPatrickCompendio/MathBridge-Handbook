@@ -13,7 +13,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BorderRadius, Spacing } from '../constants/colors';
+import type { PracticeLevel, PracticeQuestion } from '../data/lessons/module1_quadratic';
+import { QUADRATIC_EQUATIONS_DATA } from '../data/lessons/module1_quadratic';
+import { PYTHAGOREAN_TRIPLES_DATA } from '../data/lessons/module2_triangle_triples';
+import { TRIANGLE_SIMILARITY_DATA } from '../data/lessons/module3_triangle_similarity';
+import { OBLIQUE_TRIANGLE_PRACTICE } from '../data/lessons/module3b_oblique_triangle';
+import { AREA_OF_TRIANGLE_DATA } from '../data/lessons/module4_area_of_triangle';
+import { VARIATION_DATA } from '../data/lessons/module5_variation';
 import { database } from '../services/database';
+import { FractionText } from '../components/FractionText';
 import { saveTopicActivitiesProgress } from '../utils/progressStorage';
 import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize } from '../utils/responsive';
 
@@ -146,27 +154,67 @@ const QUESTION_BANK: Question[] = [
   
 ];
 
-// Map activity topicId (1–5) to question bank topic names
-const TOPIC_ID_TO_BANK: { [key: string]: string } = {
-  '1': 'Algebra',       // Quadratic Equations → Algebra
-  '2': 'Geometry',     // Pythagorean Triples → Geometry
-  '3': 'Geometry',     // Triangle Measures → Geometry
-  '4': 'Trigonometry', // Area of Triangles → Trigonometry
-  '5': 'Variation',
-};
+type TopicQuizDifficulty = 'easy' | 'medium' | 'hard';
+type TriangleMeasuresSubtopic = 'triangle-similarity' | 'oblique-triangle';
+
+function toQuizQuestions(
+  topicId: number,
+  difficulty: TopicQuizDifficulty,
+  items: PracticeQuestion[]
+): Question[] {
+  const correctIndex = (k: PracticeQuestion['correctChoice']) => (k === 'A' ? 0 : k === 'B' ? 1 : k === 'C' ? 2 : 3);
+  return items.map((q, idx) => ({
+    id: topicId * 10000 + (difficulty === 'easy' ? 1000 : difficulty === 'medium' ? 2000 : 3000) + idx + 1,
+    question: q.question,
+    options: [q.choices.A, q.choices.B, q.choices.C, q.choices.D],
+    correctAnswer: correctIndex(q.correctChoice),
+    explanation: q.explanation ?? '',
+    topic: String(topicId),
+    difficulty,
+  }));
+}
+
+function getPracticeLevelForTopic(topicId: number, subtopic?: TriangleMeasuresSubtopic): PracticeLevel | null {
+  switch (topicId) {
+    case 1:
+      return QUADRATIC_EQUATIONS_DATA.practiceActivities;
+    case 2:
+      return PYTHAGOREAN_TRIPLES_DATA.practiceActivities;
+    case 3:
+      return subtopic === 'oblique-triangle' ? OBLIQUE_TRIANGLE_PRACTICE : TRIANGLE_SIMILARITY_DATA.practiceActivities;
+    case 4:
+      return AREA_OF_TRIANGLE_DATA.practiceActivities;
+    case 5:
+      return VARIATION_DATA.practiceActivities;
+    default:
+      return null;
+  }
+}
 
 // Get questions based on topic + difficulty (used by Activities topic practice)
 const getQuestions = (
+  mode?: string,
   topicId?: string,
   difficulty?: string,
-  count: number = 10
+  count: number = 10,
+  subtopic?: string
 ): Question[] => {
-  let filtered = QUESTION_BANK;
+  const isTopicQuiz = mode === 'topic-quiz';
+  const tid = topicId ? parseInt(topicId, 10) : NaN;
+  const d = difficulty as TopicQuizDifficulty;
+  const sub = (subtopic as TriangleMeasuresSubtopic | undefined) ?? undefined;
 
-  if (topicId && TOPIC_ID_TO_BANK[topicId]) {
-    const topicName = TOPIC_ID_TO_BANK[topicId];
-    filtered = filtered.filter((q) => q.topic === topicName);
+  if (isTopicQuiz && !Number.isNaN(tid) && (d === 'easy' || d === 'medium' || d === 'hard')) {
+    const level = getPracticeLevelForTopic(tid, sub);
+    const items = level ? level[d] : [];
+    if (items && items.length) {
+      const shuffled = [...items].sort(() => Math.random() - 0.5);
+      return toQuizQuestions(tid, d, shuffled.slice(0, Math.min(count, shuffled.length)));
+    }
   }
+
+  // Fallback to built-in bank for other quiz modes
+  let filtered = QUESTION_BANK;
 
   if (difficulty && difficulty !== 'mixed') {
     filtered = filtered.filter((q) => q.difficulty === difficulty);
@@ -182,6 +230,17 @@ const getQuestions = (
   const shuffled = [...filtered].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(count, shuffled.length));
 };
+
+/** Default number of questions for a given topic + difficulty (up to 10). Used for Activities labels. */
+export function getDefaultQuestionTotal(
+  topicId: number,
+  difficulty: TopicQuizDifficulty,
+  subtopic?: TriangleMeasuresSubtopic
+): number {
+  const level = getPracticeLevelForTopic(topicId, subtopic);
+  const items = level ? level[difficulty] : [];
+  return items.length > 0 ? items.length : 10;
+}
 
 export default function QuizScreen() {
   const router = useRouter();
@@ -199,6 +258,7 @@ export default function QuizScreen() {
     topicId?: string;
     topicName?: string;
     timeLimit?: string;
+    subtopic?: string;
   }>();
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -221,6 +281,7 @@ export default function QuizScreen() {
   const mode = params.mode || '';
   const topicId = params.topicId || '';
   const difficulty = params.difficulty || '';
+  const subtopic = params.subtopic || '';
   const questionCountStr = params.questionCount || '10';
   const timeLimitStr = params.timeLimit || '300';
   
@@ -234,9 +295,11 @@ export default function QuizScreen() {
   useEffect(() => {
     // Load all available questions
     const loadedQuestions = getQuestions(
+      mode,
       topicId,
       difficulty,
-      questionCount === Infinity ? 200 : questionCount
+      questionCount === Infinity ? 200 : questionCount,
+      subtopic
     );
     setAllAvailableQuestions(loadedQuestions);
     
@@ -447,22 +510,25 @@ export default function QuizScreen() {
 
     setScore(calculatedScore);
     setShowResults(true);
-    // Record activities progress for this topic (50% of topic progress; other 50% from reading content)
-    if (topicId) {
-      const id = parseInt(topicId, 10);
-      if (!Number.isNaN(id)) saveTopicActivitiesProgress(id, 100);
-    }
     // Save score for Topics Practice so best score shows on Activities tab
     const tid = topicId ? parseInt(topicId, 10) : NaN;
     const difficulty = params.difficulty as 'easy' | 'medium' | 'hard' | undefined;
     if (!Number.isNaN(tid) && difficulty && params.mode === 'topic-quiz') {
+      const passed = calculatedScore >= Math.ceil(questions.length * 0.6);
       database.saveScore({
         topicId: tid,
+        quizId: subtopic || undefined,
         difficulty,
         score: calculatedScore,
         total: questions.length,
-        passed: calculatedScore >= Math.ceil(questions.length * 0.6),
+        passed,
       }).catch((e) => console.warn('Save score failed:', e));
+
+      // Map easy/medium/hard to 33/66/100% activities; update only on pass, DB keeps max so progress never drops
+      if (passed) {
+        const activitiesPercent = difficulty === 'easy' ? 33 : difficulty === 'medium' ? 66 : 100;
+        saveTopicActivitiesProgress(tid, activitiesPercent);
+      }
     }
   };
 
@@ -481,9 +547,11 @@ export default function QuizScreen() {
     
     // Reload questions
     const loadedQuestions = getQuestions(
+      mode,
       topicId,
       difficulty,
-      questionCount === Infinity ? 200 : questionCount
+      questionCount === Infinity ? 200 : questionCount,
+      subtopic
     );
     setAllAvailableQuestions(loadedQuestions);
     
@@ -727,7 +795,7 @@ export default function QuizScreen() {
               <Text style={styles.topicBadge}>{currentQuestion.topic}</Text>
             </View>
 
-            <Text style={styles.questionText}>{currentQuestion.question}</Text>
+            <FractionText text={currentQuestion.question} style={styles.questionText} />
 
             {isBlindMode ? (
               <View style={styles.blindInputContainer}>
@@ -776,15 +844,14 @@ export default function QuizScreen() {
                       disabled={showAnswer}
                       activeOpacity={0.7}
                     >
-                      <Text
+                      <FractionText
+                        text={option}
                         style={[
                           styles.optionText,
                           isSelected && styles.optionTextSelected,
                           showCorrect && styles.optionTextCorrect,
                         ]}
-                      >
-                        {option}
-                      </Text>
+                      />
                       {showCorrect && <Text style={styles.correctIcon}>✓</Text>}
                       {showIncorrect && <Text style={styles.incorrectIcon}>✕</Text>}
                     </TouchableOpacity>

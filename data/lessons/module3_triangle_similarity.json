@@ -62,8 +62,8 @@
               ],
               "solution": [
                 "Step 1: Compare the sides.",
-                "AB / DE = 4 / 8 = 1 / 2",
-                "AC / DF = 6 / 12 = 1 / 2",
+                "AB over DE = 4 over 8 = 1 over 2",
+                "AC over DF = 6 over 12 = 1 over 2",
                 "Step 2: Check the included angle.",
                 "∠A ≅ ∠D (given)",
                 "Step 3: Decide.",
@@ -84,8 +84,8 @@
               ],
               "solution": [
                 "Step 1: Compare the sides.",
-                "PQ / XY = 7 / 14 = 1 / 2",
-                "QR / YZ = 13 / 26 = 1 / 2",
+                "PQ over XY = 7 over 14 = 1 over 2",
+                "QR over YZ = 13 over 26 = 1 over 2",
                 "Step 2: Check the included angle.",
                 "∠Q ≅ ∠Y (given)",
                 "Step 3: Decide.",
@@ -125,7 +125,7 @@
                 "△ELA and △JON",
                 "∠E ≅ ∠J",
                 "∠L ≅ ∠O",
-                "EL / JO = 6 / 12 = 1 / 2",
+                "EL over JO = 6 over 12 = 1 over 2",
                 "Side EL corresponds to JO"
               ],
               "solution": [
@@ -146,31 +146,31 @@
             {
               "title": "Example 1:",
               "given": [
-                "△GHI: GI = 4 cm, HI = 8 cm, GH = 16 cm",
-                "△RST: RT = 6 cm, ST = 12 cm, RS = 24 cm"
+                "Triangle GHI (ΔGHI): GI = 4 cm, HI = 8 cm, GH = 16 cm",
+                "Triangle RST (ΔRST): RT = 6 cm, ST = 12 cm, RS = 24 cm"
               ],
               "solution": [
-                "GI / RT = 4 / 6 = 2 / 3",
-                "HI / ST = 8 / 12 = 2 / 3",
-                "GH / RS = 16 / 24 = 2 / 3",
+                "The ratio of side GI to side RT: GI over RT = 4 over 6 = 2 over 3",
+                "The ratio of side HI to side ST: HI over ST = 8 over 12 = 2 over 3",
+                "The ratio of side GH to side RS: GH over RS = 16 over 24 = 2 over 3",
                 "All side ratios are equal."
               ],
-              "conclusion": "△GHI is similar to △RST by SSS Similarity.",
+              "conclusion": "ΔGHI is similar to ΔRST by SSS Similarity.",
               "image": "sss-ex1"
             },
             {
               "title": "Example 2:",
               "given": [
-                "△LMN: LN = 4 cm, MN = 6 cm, LM = 8 cm",
-                "△PQR: PR = 8 cm, QR = 12 cm, PQ = 16 cm"
+                "Triangle LMN (ΔLMN): LN = 4 cm, MN = 6 cm, LM = 8 cm",
+                "Triangle PQR (ΔPQR): PR = 8 cm, QR = 12 cm, PQ = 16 cm"
               ],
               "solution": [
-                "LN / PR = 4 / 8 = 1 / 2",
-                "MN / QR = 6 / 12 = 1 / 2",
-                "LM / PQ = 8 / 16 = 1 / 2",
+                "The ratio of side LN to side PR: LN over PR = 4 over 8 = 1 over 2",
+                "The ratio of side MN to side QR: MN over QR = 6 over 12 = 1 over 2",
+                "The ratio of side LM to side PQ: LM over PQ = 8 over 16 = 1 over 2",
                 "All sides are proportional."
               ],
-              "conclusion": "△LMN is similar to △PQR by SSS Similarity.",
+              "conclusion": "ΔLMN is similar to ΔPQR by SSS Similarity.",
               "image": "sss-ex2"
             }
           ]
@@ -190,7 +190,7 @@
       { "question": "Which condition proves triangles similar by ASA?", "choices": { "A": "Two sides and one angle", "B": "Three sides", "C": "Two angles and the included side", "D": "One angle only" }, "correct": "C" },
       { "question": "If △ABC △DEF, which side corresponds to ?", "choices": { "A": "Side AB", "B": "Side BC", "C": "Side AC", "D": "Side DF" }, "correct": "C" },
       { "question": "△JAK △BOD. If = 6 cm, = 9 cm, and = 12 cm, find .", "choices": { "A": "12 cm", "B": "15 cm", "C": "18 cm", "D": "20 cm" }, "correct": "C" },
-      { "question": "Which ratio proves triangle similarity?", "choices": { "A": "3/4 = 6/7", "B": "4/6 = 6/9", "C": "5/7 = 10/12", "D": "6/8 = 9/10" }, "correct": "B" },
+      { "question": "Which ratio proves triangle similarity?", "choices": { "A": "3 over 4 = 6 over 7", "B": "4 over 6 = 6 over 9", "C": "5 over 7 = 10 over 12", "D": "6 over 8 = 9 over 10" }, "correct": "B" },
       { "question": "If △ABC △PQR and = 7 cm, = 14 cm, and = 10 cm, find .", "choices": { "A": "15 cm", "B": "18 cm", "C": "20 cm", "D": "24 cm" }, "correct": "C" }
     ],
     "hard": [

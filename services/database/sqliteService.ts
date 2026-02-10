@@ -330,6 +330,7 @@ const sqliteService: DatabaseService = {
     const db = await getDb();
     await ensureTables(db);
     await db.runAsync('DELETE FROM progress');
+    await db.runAsync('DELETE FROM scores');
   },
 
   async signOut(): Promise<void> {

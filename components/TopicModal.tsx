@@ -33,7 +33,6 @@ interface TopicModalProps {
   } | null;
   onClose: () => void;
   onEnter: () => void;
-  onTakeActivities?: () => void;
   getTopicImage: (name: string) => any;
 }
 
@@ -46,7 +45,7 @@ function AnimatedButton({
 }: {
   onPress: () => void;
   title: string;
-  variant: 'cancel' | 'enter' | 'activities';
+  variant: 'cancel' | 'enter';
   delay: number;
 }) {
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -82,16 +81,8 @@ function AnimatedButton({
     }).start();
   };
 
-  const buttonStyle = variant === 'enter' 
-    ? styles.enterButton 
-    : variant === 'activities'
-    ? styles.activitiesButton
-    : styles.cancelButton;
-  const textStyle = variant === 'enter' 
-    ? styles.enterButtonText 
-    : variant === 'activities'
-    ? styles.activitiesButtonText
-    : styles.cancelButtonText;
+  const buttonStyle = variant === 'enter' ? styles.enterButton : styles.cancelButton;
+  const textStyle = variant === 'enter' ? styles.enterButtonText : styles.cancelButtonText;
   const combinedScale = Animated.multiply(scaleAnim, buttonScale);
 
   return (
@@ -129,7 +120,6 @@ export default function TopicModal({
   topic,
   onClose,
   onEnter,
-  onTakeActivities,
   getTopicImage,
 }: TopicModalProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -227,25 +217,6 @@ export default function TopicModal({
     ]).start(() => {
       onEnter();
     });
-  };
-
-  const handleTakeActivities = () => {
-    if (onTakeActivities) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1.1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        onTakeActivities();
-      });
-    }
   };
 
   if (!topic) return null;
@@ -349,29 +320,12 @@ export default function TopicModal({
 
                 {/* Action Buttons */}
                 <View style={styles.actionsContainer}>
-                  {onTakeActivities ? (
-                    <>
-                      <AnimatedButton
-                        onPress={handleTakeActivities}
-                        title="Take Activities"
-                        variant="activities"
-                        delay={400}
-                      />
-                      <AnimatedButton
-                        onPress={handleEnter}
-                        title="Enter →"
-                        variant="enter"
-                        delay={450}
-                      />
-                    </>
-                  ) : (
-                    <AnimatedButton
-                      onPress={handleEnter}
-                      title="Enter →"
-                      variant="enter"
-                      delay={400}
-                    />
-                  )}
+                  <AnimatedButton
+                    onPress={handleEnter}
+                    title="Enter →"
+                    variant="enter"
+                    delay={400}
+                  />
                 </View>
               </View>
             </ImageBackground>
@@ -541,25 +495,6 @@ const styles = StyleSheet.create({
   enterButtonText: {
     fontSize: scaleFont(16),
     fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  activitiesButton: {
-    flex: 1,
-    minHeight: scaleSize(48),
-    paddingVertical: getSpacing(Spacing.md),
-    paddingHorizontal: getSpacing(Spacing.lg),
-    borderRadius: scaleSize(BorderRadius.md),
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    overflow: 'visible',
-  },
-  activitiesButtonText: {
-    fontSize: scaleFont(14),
-    fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
   },

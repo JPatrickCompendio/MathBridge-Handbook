@@ -1,9 +1,10 @@
-import { Video, ResizeMode } from 'expo-av';
+import { ResizeMode, Video } from 'expo-av';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  Image,
   LayoutAnimation,
   Platform,
   ScrollView,
@@ -18,11 +19,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AccordionRevealBody from '../../components/AccordionRevealBody';
+import { FractionText } from '../../components/FractionText';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { MODULE_1_SECTIONS } from '../../data/lessons/module1_quadratic';
 import { saveTopicContentProgress } from '../../utils/progressStorage';
-import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
 import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
+import { useVideoFullscreenOrientationHandler } from '../../utils/videoFullscreenOrientation';
 import { getVideoSource, type VideoId } from '../../utils/videoCatalog';
 
 const QUADRATIC_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
@@ -108,6 +111,210 @@ function ContentCard({ label, children }: { label?: string; children: React.Reac
 function BlockParagraph({ text, first }: { text: string; first?: boolean }) {
   return (
     <Text style={[styles.accordionParagraph, first && styles.accordionParagraphFirst]}>{text}</Text>
+  );
+}
+
+/** Renders equation text with "num over den" or "num / den" as a fraction (numerator, bar, denominator) */
+const OVER_FRAC_BOTH_PAREN = /\(([^)]+)\)\s+over\s+\(([^)]+)\)/g;
+const OVER_FRAC_SIMPLE = /(\S+)\s+over\s+(\S+)/g;
+const SLASH_FRAC_SIMPLE = /(\S+)\s+\/\s+(\S+)/g;
+
+const FRAC_DELIM_OVER = ' over ';
+const FRAC_DELIM_SLASH = ' / ';
+function indexOfFracDelim(line: string, from: number): { idx: number; len: number } {
+  const o = line.indexOf(FRAC_DELIM_OVER, from);
+  const s = line.indexOf(FRAC_DELIM_SLASH, from);
+  if (o === -1 && s === -1) return { idx: -1, len: 0 };
+  if (o === -1) return { idx: s, len: FRAC_DELIM_SLASH.length };
+  if (s === -1) return { idx: o, len: FRAC_DELIM_OVER.length };
+  return o < s ? { idx: o, len: FRAC_DELIM_OVER.length } : { idx: s, len: FRAC_DELIM_SLASH.length };
+}
+
+/** Find numerator and denominator for "num over den" or "num / den" when num or den may have nested parentheses */
+function findNestedOverFrac(line: string): Array<{ index: number; end: number; num: string; den: string }> {
+  const results: Array<{ index: number; end: number; num: string; den: string }> = [];
+  let searchStart = 0;
+  while (true) {
+    const { idx: overIdx, len: delimLen } = indexOfFracDelim(line, searchStart);
+    if (overIdx === -1) break;
+    const afterOver = line.slice(overIdx + delimLen);
+    if (overIdx > 0 && line[overIdx - 1] !== ')') {
+      searchStart = overIdx + 1;
+      continue;
+    }
+    const closeNumIdx = overIdx - 1;
+    let depth = 1;
+    let openNumIdx = -1;
+    for (let i = closeNumIdx - 1; i >= 0; i--) {
+      if (line[i] === ')') depth++;
+      else if (line[i] === '(') {
+        depth--;
+        if (depth === 0) {
+          openNumIdx = i;
+          break;
+        }
+      }
+    }
+    if (openNumIdx === -1) {
+      searchStart = overIdx + 1;
+      continue;
+    }
+    const num = line.slice(openNumIdx + 1, closeNumIdx).trim();
+    const openDenIdx = afterOver.indexOf('(');
+    if (openDenIdx === -1) {
+      const simpleDen = afterOver.match(/\s*(\S+)/);
+      if (simpleDen) {
+        const den = simpleDen[1];
+        const end = overIdx + delimLen + simpleDen[0].length;
+        results.push({ index: openNumIdx, end, num, den });
+        searchStart = end;
+        continue;
+      }
+      searchStart = overIdx + 1;
+      continue;
+    }
+    depth = 1;
+    let closeDenIdx = -1;
+    for (let i = openDenIdx + 1; i < afterOver.length; i++) {
+      if (afterOver[i] === '(') depth++;
+      else if (afterOver[i] === ')') {
+        depth--;
+        if (depth === 0) {
+          closeDenIdx = i;
+          break;
+        }
+      }
+    }
+    if (closeDenIdx === -1) {
+      searchStart = overIdx + 1;
+      continue;
+    }
+    const den = afterOver.slice(openDenIdx + 1, closeDenIdx).trim();
+    const start = openNumIdx;
+    const end = overIdx + delimLen + closeDenIdx + 1;
+    results.push({ index: start, end, num, den });
+    searchStart = end;
+  }
+  return results;
+}
+
+function findOverFracMatches(line: string): Array<{ index: number; end: number; num: string; den: string }> {
+  const nested = findNestedOverFrac(line);
+  function findSimpleFracInSlice(
+    text: string,
+    offset: number
+  ): Array<{ index: number; end: number; num: string; den: string }> {
+    const results: Array<{ index: number; end: number; num: string; den: string }> = [];
+    let mm: RegExpExecArray | null;
+    OVER_FRAC_BOTH_PAREN.lastIndex = 0;
+    while ((mm = OVER_FRAC_BOTH_PAREN.exec(text)) !== null) {
+      results.push({ index: offset + mm.index, end: offset + mm.index + mm[0].length, num: mm[1].trim(), den: mm[2].trim() });
+    }
+    OVER_FRAC_SIMPLE.lastIndex = 0;
+    while ((mm = OVER_FRAC_SIMPLE.exec(text)) !== null) {
+      const start = offset + mm.index;
+      const end = offset + mm.index + mm[0].length;
+      if (!results.some((r) => start < r.end && end > r.index)) {
+        results.push({ index: start, end, num: mm[1], den: mm[2] });
+      }
+    }
+    SLASH_FRAC_SIMPLE.lastIndex = 0;
+    while ((mm = SLASH_FRAC_SIMPLE.exec(text)) !== null) {
+      const start = offset + mm.index;
+      const end = offset + mm.index + mm[0].length;
+      if (!results.some((r) => start < r.end && end > r.index)) {
+        results.push({ index: start, end, num: mm[1], den: mm[2] });
+      }
+    }
+    return results;
+  }
+  if (nested.length > 0) {
+    const results: Array<{ index: number; end: number; num: string; den: string }> = [];
+    let lastEnd = 0;
+    for (const m of nested) {
+      if (m.index > lastEnd) {
+        results.push(...findSimpleFracInSlice(line.slice(lastEnd, m.index), lastEnd));
+      }
+      results.push(m);
+      lastEnd = m.end;
+    }
+    if (lastEnd < line.length) {
+      results.push(...findSimpleFracInSlice(line.slice(lastEnd), lastEnd));
+    }
+    results.sort((a, b) => a.index - b.index);
+    return results;
+  }
+  const results: Array<{ index: number; end: number; num: string; den: string }> = [];
+  let m: RegExpExecArray | null;
+  OVER_FRAC_BOTH_PAREN.lastIndex = 0;
+  while ((m = OVER_FRAC_BOTH_PAREN.exec(line)) !== null) {
+    results.push({ index: m.index, end: m.index + m[0].length, num: m[1].trim(), den: m[2].trim() });
+  }
+  OVER_FRAC_SIMPLE.lastIndex = 0;
+  while ((m = OVER_FRAC_SIMPLE.exec(line)) !== null) {
+    const start = m.index;
+    const end = m.index + m[0].length;
+    if (!results.some((r) => start < r.end && end > r.index)) {
+      results.push({ index: start, end, num: m[1], den: m[2] });
+    }
+  }
+  SLASH_FRAC_SIMPLE.lastIndex = 0;
+  while ((m = SLASH_FRAC_SIMPLE.exec(line)) !== null) {
+    const start = m.index;
+    const end = m.index + m[0].length;
+    if (!results.some((r) => start < r.end && end > r.index)) {
+      results.push({ index: start, end, num: m[1], den: m[2] });
+    }
+  }
+  results.sort((a, b) => a.index - b.index);
+  return results;
+}
+
+function EquationLineWithOver({ line, style }: { line: string; style?: object }) {
+  const segments: Array<{ type: 'text'; value: string } | { type: 'frac'; num: string; den: string }> = [];
+  const matches = findOverFracMatches(line);
+  let lastEnd = 0;
+  for (const match of matches) {
+    if (match.index > lastEnd) segments.push({ type: 'text', value: line.slice(lastEnd, match.index) });
+    segments.push({ type: 'frac', num: match.num, den: match.den });
+    lastEnd = match.end;
+  }
+  if (lastEnd < line.length) segments.push({ type: 'text', value: line.slice(lastEnd) });
+  if (segments.length === 0) segments.push({ type: 'text', value: line });
+
+  const baseStyle = [styles.methodStepEquationText, style];
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
+      {segments.map((seg, idx) =>
+        seg.type === 'text' ? (
+          <Text key={idx} style={baseStyle}>{seg.value}</Text>
+        ) : (
+          <View key={idx} style={styles.equationOverFraction}>
+            <Text style={[styles.methodStepEquationText, styles.equationOverNum]}>{seg.num}</Text>
+            <View style={styles.equationOverBar} />
+            <Text style={[styles.methodStepEquationText, styles.equationOverDen]}>{seg.den}</Text>
+          </View>
+        )
+      )}
+    </View>
+  );
+}
+
+/** Renders multi-line equation block; lines with " over " get fraction bar display */
+function MethodStepEquationBlock({ text }: { text: string }) {
+  const lines = text.split(/\n/);
+  return (
+    <View style={styles.methodStepEquationBlock}>
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <View key={idx} style={{ height: scaleFont(8) }} />;
+        return (/ over /.test(trimmed) || / \/ /.test(trimmed)) ? (
+          <EquationLineWithOver key={idx} line={trimmed} />
+        ) : (
+          <Text key={idx} style={styles.methodStepEquationText}>{trimmed}</Text>
+        );
+      })}
+    </View>
   );
 }
 
@@ -239,11 +446,13 @@ function SectionIIBlock({ text, first }: { text: string; first?: boolean }) {
       if (m) items.push({ num: m[1], body: m[2].trim() });
     });
     if (items.length > 0) {
+      const allShort = items.every((item) => item.body.trim().length < 70);
+      const twoCol = items.length === 4 && allShort;
       return (
         <View style={[styles.sectionIIBlock, first && styles.sectionIIBlockFirst]}>
-          <View style={styles.sectionIINumberedList}>
+          <View style={[styles.sectionIINumberedList, twoCol && styles.sectionIINumberedListTwoCol]}>
             {items.map((item, idx) => (
-              <View key={idx} style={styles.sectionIINumberedItem}>
+              <View key={idx} style={[styles.sectionIINumberedItem, twoCol && styles.sectionIINumberedItemTwoCol]}>
                 <View style={styles.sectionIINumberedNum}>
                   <Text style={styles.sectionIINumberedNumText}>{item.num}</Text>
                 </View>
@@ -274,16 +483,41 @@ function SectionIIBlock({ text, first }: { text: string; first?: boolean }) {
   );
 }
 
-/** Parses "equation    step description" lines and returns rows for two-column layout */
+/** Pattern for a line that has "left    right" (3+ spaces between) */
+const ROW_LEFT_RIGHT = /^(.+?)\s{3,}(.+)$/;
+
+/** Parses "equation    step description" lines and returns rows for two-column layout. Right side can span multiple lines until the next left-right line. */
 function parseExampleStepsLines(text: string): Array<{ left: string; right: string }> {
   const rows: Array<{ left: string; right: string }> = [];
-  const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
-  for (const line of lines) {
-    const match = line.match(/^(.+?)\s{3,}(.+)$/);
-    if (match) {
-      rows.push({ left: match[1].trim(), right: match[2].trim() });
+  const lines = text.split(/\n/);
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (!trimmed) {
+      i++;
+      continue;
+    }
+    const m = trimmed.match(ROW_LEFT_RIGHT);
+    if (m) {
+      let left = m[1].trim();
+      let right = m[2].trim();
+      i++;
+      while (i < lines.length) {
+        const nextTrimmed = lines[i].trim();
+        if (!nextTrimmed) {
+          right += '\n';
+          i++;
+          continue;
+        }
+        if (nextTrimmed.match(ROW_LEFT_RIGHT)) break;
+        right += (right ? '\n' : '') + lines[i];
+        i++;
+      }
+      rows.push({ left, right });
     } else {
-      rows.push({ left: line, right: '' });
+      rows.push({ left: trimmed, right: '' });
+      i++;
     }
   }
   return rows;
@@ -380,8 +614,16 @@ function MethodStepsContent({ content }: { content: string[] }) {
     </View>
   );
 
-  rest.forEach((paragraph, idx) => {
-    const key = `p-${idx}`;
+  const isContinuation = (t: string) =>
+    t.length > 0 &&
+    !/^🔹\s*Example\s*\d+/i.test(t) &&
+    !/^Step\s*\d+:\s*/i.test(t) &&
+    !/^formula:\s*/i.test(t);
+
+  let i = 0;
+  while (i < rest.length) {
+    const paragraph = rest[i];
+    const key = `p-${i}`;
     const trimmed = paragraph.trim();
 
     // 🔹 Example N \n Solve: ...
@@ -402,10 +644,11 @@ function MethodStepsContent({ content }: { content: string[] }) {
           ) : null}
         </View>
       );
-      return;
+      i++;
+      continue;
     }
 
-    // Step N: description \n optional equation lines
+    // Step N: description \n optional equation lines — include following continuation paragraphs in this step's container
     const stepMatch = trimmed.match(/^Step\s*(\d+):\s*([\s\S]*)/i);
     if (stepMatch) {
       const stepNum = stepMatch[1];
@@ -413,6 +656,15 @@ function MethodStepsContent({ content }: { content: string[] }) {
       const firstNewline = body.indexOf('\n');
       const firstLine = firstNewline === -1 ? body : body.slice(0, firstNewline);
       const restBody = firstNewline === -1 ? '' : body.slice(firstNewline + 1).trim();
+
+      const continuationParagraphs: string[] = [];
+      let j = i + 1;
+      while (j < rest.length && isContinuation(rest[j].trim())) {
+        continuationParagraphs.push(rest[j]);
+        j++;
+      }
+      const allEquationLines = [restBody, ...continuationParagraphs].filter(Boolean).join('\n\n');
+
       elements.push(
         <View key={key} style={styles.methodStepCard}>
           <View style={styles.methodStepCardRow}>
@@ -427,27 +679,28 @@ function MethodStepsContent({ content }: { content: string[] }) {
                 boldPhrases={METHOD_BOLD_PHRASES}
                 style={styles.methodStepBodyText}
               />
-              {restBody ? (
-                <View style={styles.methodStepEquationBlock}>
-                  <Text style={styles.methodStepEquationText}>{restBody}</Text>
-                </View>
+              {allEquationLines ? (
+                <MethodStepEquationBlock text={allEquationLines} />
               ) : null}
             </View>
           </View>
         </View>
       );
-      return;
+      i = j;
+      continue;
     }
 
     // Formula: ... (e.g. quadratic formula)
     if (trimmed.toLowerCase().startsWith('formula:')) {
+      const formulaText = trimmed.replace(/^formula:\s*/i, '').trim();
       elements.push(
         <View key={key} style={styles.methodFormulaBlock}>
           <Text style={styles.methodFormulaLabel}>Formula:</Text>
-          <Text style={styles.methodStepEquationText}>{trimmed.replace(/^formula:\s*/i, '').trim()}</Text>
+          <FractionText text={formulaText} style={styles.methodStepEquationText} />
         </View>
       );
-      return;
+      i++;
+      continue;
     }
 
     // Plain paragraph (equations or mixed) – render with bold terms
@@ -456,13 +709,15 @@ function MethodStepsContent({ content }: { content: string[] }) {
         <RichParagraph text={paragraph} first={false} boldPhrases={METHOD_BOLD_PHRASES} />
       </View>
     );
-  });
+    i++;
+  }
 
   return <>{elements}</>;
 }
 
 /** Reusable video block shown at the end of a method accordion */
 function MethodVideoBlock({ label, videoId }: { label: string; videoId: VideoId }) {
+  const onFullscreenUpdate = useVideoFullscreenOrientationHandler();
   return (
     <View style={styles.factoringVideoWrap}>
       <Text style={styles.factoringVideoLabel}>Video: {label}</Text>
@@ -470,11 +725,13 @@ function MethodVideoBlock({ label, videoId }: { label: string; videoId: VideoId 
         <View style={styles.factoringVideoInner}>
           <Video
             source={getVideoSource(videoId)}
-            style={styles.factoringVideo}
+            style={[styles.factoringVideo, Platform.OS === 'web' && styles.factoringVideoWeb]}
+            videoStyle={Platform.OS === 'web' ? styles.videoStyleWebContain : undefined}
             useNativeControls
-            resizeMode={ResizeMode.COVER}
+            resizeMode={Platform.OS === 'web' ? ResizeMode.CONTAIN : ResizeMode.COVER}
             shouldPlay={false}
             isLooping={false}
+            onFullscreenUpdate={onFullscreenUpdate}
           />
         </View>
       </View>
@@ -760,11 +1017,18 @@ function StandardFormExample({ data, index }: { data: (typeof STANDARD_FORM_EXAM
   );
 }
 
-export default function LessonMenuScreen() {
+export default function LessonMenuScreen({
+  initialMode = 'overview',
+}: {
+  initialMode?: 'overview' | 'learn' | 'methodsMenu' | 'methodDetail';
+} = {}) {
   const router = useRouter();
+  const onFullscreenUpdate = useVideoFullscreenOrientationHandler();
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [expandedMethod, setExpandedMethod] = useState<string | null>(null);
   const [openedSections, setOpenedSections] = useState<Set<string>>(() => new Set(['I'])); // I is always visible
+  const [viewMode, setViewMode] = useState<'overview' | 'learn' | 'methodsMenu' | 'methodDetail'>(initialMode);
+  const [selectedMethodTitle, setSelectedMethodTitle] = useState<string | null>(null);
 
   const toggle = (key: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -790,6 +1054,19 @@ export default function LessonMenuScreen() {
 
   const methodKeys = secV?.methods ? Object.keys(secV.methods) : [];
   const { width: windowWidth } = useWindowDimensions();
+
+  const handleHeaderBack = () => {
+    // When viewing a specific method, first go back to the methods list
+    if (viewMode === 'methodDetail') {
+      setViewMode('methodsMenu');
+      setSelectedMethodTitle(null);
+      setExpandedMethod(null);
+      return;
+    }
+
+    // From any other Quadratic Equations view, go back to the main Topics home
+    router.push('/tabs' as any);
+  };
   const { ReadingProgressIndicator } = useAccordionReadingProgress(
     QUADRATIC_TOPIC_ID,
     QUADRATIC_SECTION_KEYS.length,
@@ -800,7 +1077,7 @@ export default function LessonMenuScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
+        <TouchableOpacity onPress={handleHeaderBack} style={styles.backButton} hitSlop={12}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={2}>Quadratic Equations</Text>
@@ -816,174 +1093,254 @@ export default function LessonMenuScreen() {
           showsVerticalScrollIndicator={false}
         >
         <View style={[styles.scrollInner, isWeb() && styles.scrollInnerWeb, isWeb() && { maxWidth: windowWidth }]}>
-        {/* I. Purpose and Learning Objectives — always visible, no accordion */}
-        <SectionFadeIn index={0}>
-          <View style={styles.purposeSectionWrap}>
-            <Text style={styles.staticSectionTitle}>I. Purpose and Learning Objectives</Text>
-            {secI && (
-              <View style={styles.staticSectionContent}>
-                <View style={styles.purposeCard}>
-                  <Text style={[styles.purposeBlockHeading, styles.blockHeadingFirst]}>Purpose</Text>
-                  <Text style={styles.bodyTextCentered}>
-                    {secI.purpose_block.replace(/^Purpose of the Module\n/i, '').trim()}
-                  </Text>
-                </View>
-                <View style={styles.purposeCard}>
-                  <Text style={styles.purposeBlockHeading}>Learning objectives</Text>
-                  <Text style={styles.bodyTextCentered}>
-                    {secI.learning_objectives_intro.replace(/^Learning Objectives\n/i, '').trim()}
-                  </Text>
-                  <View style={styles.objectiveList}>
-                    {(secI.learning_objectives_list || []).map((item, idx) => (
-                      <View key={idx} style={styles.objectiveRow}>
-                        <View style={styles.objectiveBullet} />
-                        <Text style={styles.objectiveItem}>{item}</Text>
-                      </View>
-                    ))}
+        {/* I. Purpose and Learning Objectives — show only on main overview screen */}
+        {viewMode === 'overview' && (
+          <SectionFadeIn index={0}>
+            <View style={styles.purposeSectionWrap}>
+              <Text style={styles.staticSectionTitle}>I. Purpose and Learning Objectives</Text>
+              {secI && (
+                <View style={styles.staticSectionContent}>
+                  <View style={styles.purposeCard}>
+                    <Text style={[styles.purposeBlockHeading, styles.blockHeadingFirst]}>Purpose</Text>
+                    <Text style={styles.bodyTextCentered}>
+                      {secI.purpose_block.replace(/^Purpose of the Module\n/i, '').trim()}
+                    </Text>
+                  </View>
+                  <View style={styles.purposeCard}>
+                    <Text style={styles.purposeBlockHeading}>Learning objectives</Text>
+                    <Text style={styles.bodyTextCentered}>
+                      {secI.learning_objectives_intro.replace(/^Learning Objectives\n/i, '').trim()}
+                    </Text>
+                    <View style={styles.objectiveList}>
+                      {(secI.learning_objectives_list || []).map((item, idx) => (
+                        <View key={idx} style={styles.objectiveRow}>
+                          <View style={styles.objectiveBullet} />
+                          <Text style={styles.objectiveItem}>{item}</Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 </View>
-              </View>
-            )}
-          </View>
-        </SectionFadeIn>
-
-        {/* II. What Is a Quadratic Equation */}
-        <SectionFadeIn index={1}>
-          <AccordionHeader
-            title="II. What Is a Quadratic Equation"
-            isOpen={expandedSection === 'II'}
-            onPress={() => toggle('II')}
-            icon={isWeb() ? '🧮' : undefined}
-          />
-          {expandedSection === 'II' && Array.isArray(secII) && (
-            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
-              <ContentCard label="Definition, form & parts">
-                {secII.map((paragraph, idx) => (
-                  <SectionIIBlock key={idx} text={paragraph} first={idx === 0} />
-                ))}
-              </ContentCard>
-              <View style={styles.subsectionBlock}>
-                <Text style={styles.tableSectionHeading}>
-                  Writing Quadratic Equations in Standard Form and Identifying the Values of a, b, and c
-                </Text>
-                <Text style={styles.tableSectionInstruction}>
-                  Write the following in standard form ax² + bx + c = 0. Identify the quadratic, linear and the constant term of each equation. Then, identify the value of a, b and c.
-                </Text>
-                {STANDARD_FORM_EXAMPLES.map((exampleData, idx) => (
-                  <StandardFormExample key={idx} data={exampleData} index={idx} />
-                ))}
-              </View>
-            </AccordionRevealBody>
-          )}
-        </SectionFadeIn>
-
-        {/* III. Key Words and Concepts */}
-        <SectionFadeIn index={2}>
-          <AccordionHeader
-            title="III. Key Words and Concepts"
-            isOpen={expandedSection === 'III'}
-            onPress={() => toggle('III')}
-            icon={isWeb() ? '📝' : undefined}
-          />
-          {expandedSection === 'III' && secIII && (
-            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
-              <View style={[styles.conceptsGridWrap, { maxWidth: windowWidth }]}>
-                <View style={styles.conceptsGrid}>
-                  {secIII
-                    .split(/\n/)
-                    .map((line) => line.replace(/^[•·]\s*/, '').trim())
-                    .filter(Boolean)
-                    .map((item, idx) => (
-                      <FadeInBlock key={idx} delay={idx * 50}>
-                        <View style={styles.conceptChipWrapper}>
-                          <View style={styles.conceptChip}>
-                            <Text style={[styles.conceptChipText, isWeb() && styles.conceptChipTextWeb]}>{item}</Text>
-                          </View>
-                        </View>
-                      </FadeInBlock>
-                    ))}
-                </View>
-              </View>
-            </AccordionRevealBody>
-          )}
-        </SectionFadeIn>
-
-        {/* IV. General Procedure in Solving Quadratic Equations */}
-        <SectionFadeIn index={3}>
-          <AccordionHeader
-            title="IV. General Procedure in Solving Quadratic Equations"
-            isOpen={expandedSection === 'IV'}
-            onPress={() => toggle('IV')}
-            icon={isWeb() ? '📋' : undefined}
-          />
-          {expandedSection === 'IV' && Array.isArray(secIV) && (
-            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
-              <Text style={styles.procedureIntro}>{secIV[0]}</Text>
-              {secIV[1] ? <StepByStepBlock text={secIV[1]} /> : null}
-              {secIV[2] ? <Text style={[styles.accordionParagraph, styles.procedureOutro]}>{secIV[2]}</Text> : null}
-            </AccordionRevealBody>
-          )}
-        </SectionFadeIn>
-
-        {/* V. Methods of Solving Quadratic Equations — A, B, C, D */}
-        <SectionFadeIn index={4}>
-          <AccordionHeader
-            title="V. Methods of Solving Quadratic Equations"
-            isOpen={expandedSection === 'V'}
-            onPress={() => toggle('V')}
-            icon={isWeb() ? '💡' : undefined}
-          />
-          {expandedSection === 'V' && secV && (
-            <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
-              <ContentCard>
-                {(secV.intro_paragraphs || []).map((p, idx) => (
-                  <BlockParagraph key={idx} text={p} first={idx === 0} />
-                ))}
-              </ContentCard>
-              <Text style={styles.methodsSubtitle}>Choose a method to expand:</Text>
-              {methodKeys.map((methodTitle) => {
-                const isMethodOpen = expandedMethod === methodTitle;
-                const content = secV.methods[methodTitle];
-                const isArray = Array.isArray(content);
-                return (
-                  <View key={methodTitle} style={styles.subAccordion}>
-                    <SubAccordionHeader
-                      title={methodTitle}
-                      isOpen={isMethodOpen}
-                      onPress={() => toggleMethod(methodTitle)}
-                    />
-                    {isMethodOpen && isArray && (
-                      <FadeInBlock delay={0}>
-                        <View style={styles.subAccordionBody}>
-                          <MethodContentBlock methodTitle={methodTitle} content={content} />
-                        </View>
-                      </FadeInBlock>
-                    )}
-                  </View>
-                );
-              })}
-            </AccordionRevealBody>
-          )}
-        </SectionFadeIn>
-
-        {/* Video: Introduction */}
-        <SectionFadeIn index={5}>
-          <View style={styles.factoringVideoWrap}>
-            <Text style={styles.factoringVideoLabel}>Video: Introduction</Text>
-            <View style={styles.factoringVideoContainer}>
-              <View style={styles.factoringVideoInner}>
-                <Video
-                  source={getVideoSource('M1INTRO')}
-                  style={styles.factoringVideo}
-                  useNativeControls
-                  resizeMode={ResizeMode.COVER}
-                  shouldPlay={false}
-                  isLooping={false}
-                />
-              </View>
+              )}
             </View>
-          </View>
-        </SectionFadeIn>
+          </SectionFadeIn>
+        )}
+
+        {/* Landing buttons: Learn vs Methods */}
+        {viewMode === 'overview' && (
+          <SectionFadeIn index={1}>
+            <View style={styles.overviewCardsWrap}>
+              <TouchableOpacity
+                style={styles.overviewCard}
+                onPress={() => router.push('/lesson-menu/quadratic-equations-learn' as any)}
+                activeOpacity={0.78}
+              >
+                <View style={styles.overviewCardLeftBar} />
+                <View style={styles.overviewCardInner}>
+                  <View style={styles.overviewCardBadge}>
+                    <Text style={styles.overviewCardBadgeText}>A</Text>
+                  </View>
+                  <View style={styles.overviewCardContent}>
+                    <Text style={styles.overviewCardTitle}>Learn Quadratic Equation</Text>
+                    <Text style={styles.overviewCardDesc}>
+                      Introduction video, definition, key words, and general procedure.
+                    </Text>
+                  </View>
+                  <View style={styles.overviewCardArrowWrap}>
+                    <Text style={styles.overviewCardArrow}>→</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.overviewCard}
+                onPress={() => router.push('/lesson-menu/quadratic-equations-methods' as any)}
+                activeOpacity={0.78}
+              >
+                <View style={styles.overviewCardLeftBar} />
+                <View style={styles.overviewCardInner}>
+                  <View style={styles.overviewCardBadge}>
+                    <Text style={styles.overviewCardBadgeText}>B</Text>
+                  </View>
+                  <View style={styles.overviewCardContent}>
+                    <Text style={styles.overviewCardTitle}>Methods of Quadratic Equation</Text>
+                    <Text style={styles.overviewCardDesc}>
+                      Factoring, extracting roots, completing the square, and quadratic formula.
+                    </Text>
+                  </View>
+                  <View style={styles.overviewCardArrowWrap}>
+                    <Text style={styles.overviewCardArrow}>→</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </SectionFadeIn>
+        )}
+
+        {/* Learn Quadratic Equation view */}
+        {viewMode === 'learn' && (
+          <>
+            {/* II. What Is a Quadratic Equation */}
+            <SectionFadeIn index={2}>
+              <AccordionHeader
+                title="II. What Is a Quadratic Equation"
+                isOpen={expandedSection === 'II'}
+                onPress={() => toggle('II')}
+                icon={isWeb() ? '🧮' : undefined}
+              />
+              {expandedSection === 'II' && Array.isArray(secII) && (
+                <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
+                  <ContentCard label="Definition, form & parts">
+                    {secII.map((paragraph, idx) => (
+                      <SectionIIBlock key={idx} text={paragraph} first={idx === 0} />
+                    ))}
+                  </ContentCard>
+                  <View style={styles.subsectionBlock}>
+                    <Text style={styles.tableSectionHeading}>
+                      Writing Quadratic Equations in Standard Form and Identifying the Values of a, b, and c
+                    </Text>
+                    <Text style={styles.tableSectionInstruction}>
+                      Write the following in standard form ax² + bx + c = 0. Identify the quadratic, linear and the
+                      constant term of each equation. Then, identify the value of a, b and c.
+                    </Text>
+                    {STANDARD_FORM_EXAMPLES.map((exampleData, idx) => (
+                      <StandardFormExample key={idx} data={exampleData} index={idx} />
+                    ))}
+                  </View>
+                </AccordionRevealBody>
+              )}
+            </SectionFadeIn>
+
+            {/* III. Key Words and Concepts */}
+            <SectionFadeIn index={3}>
+              <AccordionHeader
+                title="III. Key Words and Concepts"
+                isOpen={expandedSection === 'III'}
+                onPress={() => toggle('III')}
+                icon={isWeb() ? '📝' : undefined}
+              />
+              {expandedSection === 'III' && secIII && (
+                <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
+                  <View style={[styles.conceptsGridWrap, { maxWidth: windowWidth }]}>
+                    <View style={styles.conceptsGrid}>
+                      {secIII
+                        .split(/\n/)
+                        .map((line) => line.replace(/^[•·]\s*/, '').trim())
+                        .filter(Boolean)
+                        .map((item, idx) => (
+                          <FadeInBlock key={idx} delay={idx * 50}>
+                            <View style={styles.conceptChipWrapper}>
+                              <View style={styles.conceptChip}>
+                                <FractionText
+                                  text={item}
+                                  style={[styles.conceptChipText, isWeb() && styles.conceptChipTextWeb]}
+                                />
+                              </View>
+                            </View>
+                          </FadeInBlock>
+                        ))}
+                    </View>
+                  </View>
+                </AccordionRevealBody>
+              )}
+            </SectionFadeIn>
+
+            {/* IV. General Procedure in Solving Quadratic Equations */}
+            <SectionFadeIn index={4}>
+              <AccordionHeader
+                title="IV. General Procedure in Solving Quadratic Equations"
+                isOpen={expandedSection === 'IV'}
+                onPress={() => toggle('IV')}
+                icon={isWeb() ? '📋' : undefined}
+              />
+              {expandedSection === 'IV' && Array.isArray(secIV) && (
+                <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
+                  <Text style={styles.procedureIntro}>{secIV[0]}</Text>
+                  {secIV[1] ? <StepByStepBlock text={secIV[1]} /> : null}
+                  {secIV[2] ? (
+                    <Text style={[styles.accordionParagraph, styles.procedureOutro]}>{secIV[2]}</Text>
+                  ) : null}
+                </AccordionRevealBody>
+              )}
+            </SectionFadeIn>
+
+            {/* Introduction Video (moved below accordions) */}
+            <SectionFadeIn index={5}>
+              <View style={styles.factoringVideoWrap}>
+                <Text style={styles.factoringVideoLabel}>Video: Introduction</Text>
+                <View style={styles.factoringVideoContainer}>
+                  <View style={styles.factoringVideoInner}>
+                    <Video
+                      source={getVideoSource('M1INTRO')}
+                      style={[styles.factoringVideo, Platform.OS === 'web' && styles.factoringVideoWeb]}
+                      videoStyle={Platform.OS === 'web' ? styles.videoStyleWebContain : undefined}
+                      useNativeControls
+                      resizeMode={Platform.OS === 'web' ? ResizeMode.CONTAIN : ResizeMode.COVER}
+                      shouldPlay={false}
+                      isLooping={false}
+                      onFullscreenUpdate={onFullscreenUpdate}
+                    />
+                  </View>
+                </View>
+              </View>
+            </SectionFadeIn>
+          </>
+        )}
+
+        {/* Methods views */}
+        {(viewMode === 'methodsMenu' || viewMode === 'methodDetail') && (
+          <>
+            {viewMode === 'methodsMenu' && (
+              <SectionFadeIn index={2}>
+                <View style={styles.methodsMenuWrap}>
+                  <Text style={styles.methodsMenuIntro}>Choose a method to study:</Text>
+                  {methodKeys.map((methodTitle, idx) => (
+                    <TouchableOpacity
+                      key={methodTitle}
+                      style={styles.methodMenuButton}
+                      onPress={() => {
+                        setSelectedMethodTitle(methodTitle);
+                        setViewMode('methodDetail');
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <View style={styles.methodMenuButtonInner}>
+                        <View style={styles.methodMenuBadge}>
+                          <Text style={styles.methodMenuBadgeText}>
+                            {String.fromCharCode('A'.charCodeAt(0) + idx)}
+                          </Text>
+                        </View>
+                        <Text style={styles.methodMenuButtonText}>{methodTitle}</Text>
+                        <View style={styles.methodMenuArrowWrap}>
+                          <Text style={styles.methodMenuArrow}>→</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </SectionFadeIn>
+            )}
+
+            {viewMode === 'methodDetail' && selectedMethodTitle && secV && (
+              <SectionFadeIn index={2}>
+                <View style={styles.methodsDetailWrap}>
+                  <Text style={styles.methodsDetailTitle}>{selectedMethodTitle}</Text>
+                  <ContentCard>
+                    {(secV.intro_paragraphs || []).map((p, idx) => (
+                      <BlockParagraph key={idx} text={p} first={idx === 0} />
+                    ))}
+                  </ContentCard>
+                  <View style={styles.subAccordionBody}>
+                    <MethodContentBlock
+                      methodTitle={selectedMethodTitle}
+                      content={Array.isArray(secV.methods[selectedMethodTitle]) ? secV.methods[selectedMethodTitle] : []}
+                    />
+                  </View>
+                </View>
+              </SectionFadeIn>
+            )}
+          </>
+        )}
         </View>
         </ScrollView>
         <ReadingProgressIndicator />
@@ -1052,6 +1409,13 @@ const styles = StyleSheet.create({
     maxWidth: scaleSize(isWeb() ? 1100 : 520),
     alignItems: 'center',
   },
+  overviewCardsWrap: {
+    marginTop: getSpacing(Spacing.md),
+    width: '100%',
+    maxWidth: scaleSize(isWeb() ? 1100 : 520),
+    alignSelf: 'center',
+    gap: getSpacing(Spacing.sm),
+  },
   purposeCard: {
     width: '100%',
     backgroundColor: Theme.white,
@@ -1074,6 +1438,18 @@ const styles = StyleSheet.create({
     lineHeight: scaleFont(isWeb() ? 28 : 24),
     marginBottom: getSpacing(Spacing.sm),
     textAlign: 'center',
+  },
+  subPageHeaderRow: {
+    width: '100%',
+    maxWidth: scaleSize(isWeb() ? 1100 : 520),
+    alignSelf: 'center',
+    marginTop: getSpacing(Spacing.sm),
+    marginBottom: getSpacing(Spacing.xs),
+  },
+  subPageBackText: {
+    fontSize: scaleFont(13),
+    color: Theme.primary,
+    fontWeight: '600',
   },
   accordionHeader: {
     flexDirection: 'row',
@@ -1218,10 +1594,19 @@ const styles = StyleSheet.create({
     marginTop: getSpacing(Spacing.xs),
     marginBottom: getSpacing(Spacing.sm),
   },
+  sectionIINumberedListTwoCol: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
   sectionIINumberedItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: getSpacing(Spacing.md),
+  },
+  sectionIINumberedItemTwoCol: {
+    width: '48%',
+    marginBottom: getSpacing(Spacing.sm),
   },
   sectionIINumberedNum: {
     width: scaleSize(26),
@@ -1278,6 +1663,79 @@ const styles = StyleSheet.create({
   subsectionBlock: {
     marginTop: getSpacing(Spacing.sm),
   },
+  overviewCard: {
+    width: '100%',
+    backgroundColor: Theme.card,
+    borderRadius: scaleSize(BorderRadius.lg),
+    marginBottom: getSpacing(Spacing.sm),
+    borderWidth: 1,
+    borderColor: Theme.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: scaleSize(10),
+    elevation: 4,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  overviewCardLeftBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: scaleSize(5),
+    backgroundColor: Theme.primary,
+  },
+  overviewCardInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: getSpacing(Spacing.md),
+    paddingHorizontal: getSpacing(Spacing.md),
+    paddingLeft: getSpacing(Spacing.md) + scaleSize(5),
+  },
+  overviewCardBadge: {
+    width: scaleSize(36),
+    height: scaleSize(36),
+    borderRadius: scaleSize(18),
+    backgroundColor: Theme.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: getSpacing(Spacing.md),
+  },
+  overviewCardBadgeText: {
+    fontSize: scaleFont(16),
+    fontWeight: '800',
+    color: Theme.white,
+  },
+  overviewCardContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  overviewCardTitle: {
+    fontSize: scaleFont(17),
+    fontWeight: '700',
+    color: Theme.text,
+    marginBottom: getSpacing(Spacing.xs),
+  },
+  overviewCardDesc: {
+    fontSize: scaleFont(13),
+    color: Theme.textSecondary,
+    lineHeight: scaleFont(20),
+  },
+  overviewCardArrowWrap: {
+    width: scaleSize(40),
+    height: scaleSize(40),
+    borderRadius: scaleSize(20),
+    backgroundColor: Theme.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: getSpacing(Spacing.sm),
+  },
+  overviewCardArrow: {
+    fontSize: scaleFont(18),
+    fontWeight: '700',
+    color: Theme.primary,
+  },
   conceptsGridWrap: {
     width: '100%',
     maxWidth: '100%',
@@ -1319,6 +1777,65 @@ const styles = StyleSheet.create({
     color: Theme.textSecondary,
     marginBottom: getSpacing(Spacing.sm),
   },
+  methodsMenuWrap: {
+    width: '100%',
+    maxWidth: scaleSize(isWeb() ? 1100 : 520),
+    alignSelf: 'center',
+    marginTop: getSpacing(Spacing.sm),
+  },
+  methodsMenuIntro: {
+    fontSize: scaleFont(15),
+    fontWeight: '600',
+    color: Theme.textSecondary,
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  methodMenuButton: {
+    backgroundColor: Theme.card,
+    borderRadius: scaleSize(BorderRadius.md),
+    paddingVertical: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(Spacing.md),
+    borderWidth: 1,
+    borderColor: Theme.border,
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  methodMenuButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  methodMenuBadge: {
+    width: scaleSize(28),
+    height: scaleSize(28),
+    borderRadius: scaleSize(14),
+    backgroundColor: Theme.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: getSpacing(Spacing.sm),
+  },
+  methodMenuBadgeText: {
+    fontSize: scaleFont(14),
+    fontWeight: '800',
+    color: Theme.white,
+  },
+  methodMenuButtonText: {
+    fontSize: scaleFont(15),
+    fontWeight: '700',
+    color: Theme.text,
+    flex: 1,
+  },
+  methodMenuArrowWrap: {
+    width: scaleSize(32),
+    height: scaleSize(32),
+    borderRadius: scaleSize(16),
+    backgroundColor: Theme.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: getSpacing(Spacing.sm),
+  },
+  methodMenuArrow: {
+    fontSize: scaleFont(16),
+    fontWeight: '700',
+    color: Theme.primary,
+  },
   methodParagraphBlock: {
     marginBottom: getSpacing(Spacing.xs),
   },
@@ -1358,6 +1875,15 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   factoringVideo: {
+    width: '100%',
+    height: '100%',
+  },
+  factoringVideoWeb: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+  },
+  videoStyleWebContain: {
+    objectFit: 'contain' as const,
     width: '100%',
     height: '100%',
   },
@@ -1446,11 +1972,40 @@ const styles = StyleSheet.create({
     borderLeftWidth: 2,
     borderLeftColor: Theme.border,
   },
+  methodStepEquationImageWrap: {
+    minHeight: scaleSize(120),
+  },
+  methodStepEquationImageSize: {
+    width: '100%',
+    maxWidth: scaleSize(360),
+    minHeight: scaleSize(100),
+    height: scaleSize(220),
+  },
   methodStepEquationText: {
     fontSize: scaleFont(13),
     color: Theme.text,
     lineHeight: scaleFont(20),
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  equationOverFraction: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  equationOverNum: {
+    fontSize: scaleFont(12),
+    lineHeight: scaleFont(16),
+  },
+  equationOverBar: {
+    width: '100%',
+    minWidth: scaleSize(20),
+    height: 1,
+    backgroundColor: Theme.text,
+    marginVertical: 1,
+  },
+  equationOverDen: {
+    fontSize: scaleFont(12),
+    lineHeight: scaleFont(16),
   },
   methodFormulaBlock: {
     backgroundColor: Theme.background,
@@ -1568,6 +2123,18 @@ const styles = StyleSheet.create({
     marginTop: getSpacing(Spacing.xs),
     paddingVertical: getSpacing(Spacing.sm),
     paddingHorizontal: getSpacing(Spacing.md),
+  },
+  methodsDetailWrap: {
+    width: '100%',
+    maxWidth: scaleSize(isWeb() ? 1100 : 520),
+    alignSelf: 'center',
+    marginTop: getSpacing(Spacing.sm),
+  },
+  methodsDetailTitle: {
+    fontSize: scaleFont(isWeb() ? 20 : 17),
+    fontWeight: '700',
+    color: Theme.text,
+    marginBottom: getSpacing(Spacing.sm),
   },
   tableSectionHeading: {
     fontSize: scaleFont(isWeb() ? 18 : 15),

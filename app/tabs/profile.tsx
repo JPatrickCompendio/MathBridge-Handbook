@@ -22,7 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import TabsAnimatedBackground from '../../components/TabsAnimatedBackground';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { database } from '../../services/database';
-import { getProfileOverlay, setProfileOverlay } from '../../utils/profileStorage';
+import { clearProfileOverlay, getProfileOverlay, setProfileOverlay } from '../../utils/profileStorage';
 import { getTopicProgress, resetTopicProgress } from '../../utils/progressStorage';
 import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
@@ -646,50 +646,65 @@ export default function ProfileScreen() {
   };
 
   const handlePickImage = () => {
-    // Defer off the touch handler so native module runs after UI has settled (reduces Android crash risk)
+    // Web: use native file input so the browser file picker opens reliably
+    if (isWeb() && typeof document !== 'undefined') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.style.display = 'none';
+      const onChange = () => {
+        const file = input.files?.[0];
+        input.removeEventListener('change', onChange);
+        document.body.removeChild(input);
+        if (!file || !file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          if (dataUrl) setEditPhotoUri(dataUrl);
+        };
+        reader.readAsDataURL(file);
+      };
+      input.addEventListener('change', onChange);
+      document.body.appendChild(input);
+      input.click();
+      return;
+    }
+
+    // App (native): use expo-image-picker
     InteractionManager.runAfterInteractions(async () => {
       try {
         const ImagePicker = await import('expo-image-picker');
         const isAndroid = Platform.OS === 'android';
 
-        // Always request permission on native so the system asks to access gallery / Google Photos
-        if (!isWeb()) {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') {
-            Alert.alert(
-              'Photo access',
-              'Allow access to your photos so you can choose a profile picture from your gallery or Google Photos. You can change this later in Settings.',
-              [
-                { text: 'Not now', style: 'cancel' },
-                { text: 'Open Settings', onPress: () => Linking.openSettings() },
-              ],
-              { cancelable: true }
-            );
-            return;
-          }
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert(
+            'Photo access',
+            'Allow access to your photos so you can choose a profile picture from your gallery or Google Photos. You can change this later in Settings.',
+            [
+              { text: 'Not now', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => Linking.openSettings() },
+            ],
+            { cancelable: true }
+          );
+          return;
         }
 
-        // On Android, disable cropping to avoid CropImageContract crash on many devices
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ['images'],
           allowsEditing: !isAndroid,
           aspect: isAndroid ? undefined : [1, 1],
           quality: 0.8,
-          base64: isWeb(),
+          base64: false,
         });
 
         if (!result.canceled && result.assets?.[0]) {
-          const asset = result.assets[0];
-          const uri = isWeb() && asset.base64
-            ? `data:image/jpeg;base64,${asset.base64}`
-            : asset.uri;
+          const uri = result.assets[0].uri;
           if (uri) setEditPhotoUri(uri);
         }
       } catch (e) {
         console.warn('Image picker error:', e);
-        if (!isWeb()) {
-          Alert.alert('Error', 'Could not open image picker. Try again or use a different photo.');
-        }
+        Alert.alert('Error', 'Could not open image picker. Try again or use a different photo.');
       }
     });
   };
@@ -753,6 +768,7 @@ export default function ProfileScreen() {
   const performLogout = async () => {
     try {
       await database.signOut();
+      await clearProfileOverlay();
     } catch {
       // continue to login screen
     }
@@ -1082,31 +1098,37 @@ export default function ProfileScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, styles.editModalContent]}>
-            <Text style={styles.modalTitle}>Edit Profile</Text>
+            <Text style={styles.editModalTitle}>Edit Profile</Text>
+            <View style={styles.editModalAvatarSection}>
+              <Text style={styles.editModalAvatarLabel}>Profile photo</Text>
+              <View style={[styles.editModalPhotoRow, !isWeb() && styles.editModalPhotoRowCentered]}>
+                <View style={styles.editModalPhotoPreview}>
+                  {editPhotoUri && (editPhotoUri.startsWith('http') || editPhotoUri.startsWith('data:') || editPhotoUri.startsWith('file:')) ? (
+                    <Image source={{ uri: editPhotoUri }} style={styles.editModalPhotoImage} />
+                  ) : (
+                    <Text style={styles.editModalPhotoPlaceholder}>{userData.avatar || '?'}</Text>
+                  )}
+                </View>
+                {isWeb() && (
+                  <TouchableOpacity
+                    style={styles.editModalPhotoButton}
+                    onPress={handlePickImage}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.editModalPhotoButtonText}>Select profile picture</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+            <Text style={styles.editModalInputLabel}>Display name</Text>
             <TextInput
               style={styles.editModalInput}
-              placeholder="Display name"
+              placeholder="Enter your name"
               placeholderTextColor={ProfessionalColors.textSecondary}
               value={editDisplayName}
               onChangeText={setEditDisplayName}
               autoCapitalize="words"
             />
-            <View style={styles.editModalPhotoRow}>
-              <View style={styles.editModalPhotoPreview}>
-                {editPhotoUri && (editPhotoUri.startsWith('http') || editPhotoUri.startsWith('data:') || editPhotoUri.startsWith('file:')) ? (
-                  <Image source={{ uri: editPhotoUri }} style={styles.editModalPhotoImage} />
-                ) : (
-                  <Text style={styles.editModalPhotoPlaceholder}>{userData.avatar || '?'}</Text>
-                )}
-              </View>
-              <TouchableOpacity
-                style={styles.editModalPhotoButton}
-                onPress={handlePickImage}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.editModalPhotoButtonText}>Select profile picture</Text>
-              </TouchableOpacity>
-            </View>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonCancel]}
@@ -1462,39 +1484,70 @@ const styles = StyleSheet.create({
     maxWidth: scaleSize(responsiveValues.modalMaxWidth),
   },
   editModalContent: {
-    maxWidth: scaleSize(400),
+    maxWidth: scaleSize(380),
+    paddingVertical: getSpacing(Spacing.xl) + getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(Spacing.xl) + getSpacing(Spacing.md),
+  },
+  editModalTitle: {
+    fontSize: scaleFont(22),
+    fontWeight: 'bold',
+    color: ProfessionalColors.text,
+    marginBottom: getSpacing(Spacing.xl),
+    textAlign: 'center',
+  },
+  editModalAvatarSection: {
+    alignItems: 'center',
+    marginBottom: getSpacing(Spacing.xl) + getSpacing(Spacing.md),
+  },
+  editModalAvatarLabel: {
+    fontSize: scaleFont(13),
+    fontWeight: '600',
+    color: ProfessionalColors.textSecondary,
+    marginBottom: getSpacing(Spacing.sm),
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  editModalInputLabel: {
+    fontSize: scaleFont(13),
+    fontWeight: '600',
+    color: ProfessionalColors.textSecondary,
+    marginBottom: getSpacing(Spacing.xs),
   },
   editModalInput: {
     borderWidth: 1,
     borderColor: ProfessionalColors.border,
     borderRadius: scaleSize(BorderRadius.md),
-    paddingVertical: getSpacing(Spacing.sm),
+    paddingVertical: getSpacing(Spacing.md),
     paddingHorizontal: getSpacing(Spacing.md),
     fontSize: scaleFont(16),
     color: ProfessionalColors.text,
-    marginBottom: getSpacing(Spacing.lg),
+    marginBottom: getSpacing(Spacing.xl),
   },
   editModalPhotoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: getSpacing(Spacing.xl),
     gap: getSpacing(Spacing.md),
   },
+  editModalPhotoRowCentered: {
+    alignSelf: 'center',
+  },
   editModalPhotoPreview: {
-    width: scaleSize(80),
-    height: scaleSize(80),
-    borderRadius: scaleSize(40),
+    width: scaleSize(96),
+    height: scaleSize(96),
+    borderRadius: scaleSize(48),
     backgroundColor: ProfessionalColors.background,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: ProfessionalColors.border,
   },
   editModalPhotoImage: {
     width: '100%',
     height: '100%',
   },
   editModalPhotoPlaceholder: {
-    fontSize: scaleFont(32),
+    fontSize: scaleFont(40),
     fontWeight: 'bold',
     color: ProfessionalColors.textSecondary,
   },
