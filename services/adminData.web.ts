@@ -327,8 +327,11 @@ export async function adminSetPassword(userId: string, newPassword: string): Pro
     data = text ? (JSON.parse(text) as { error?: string; success?: boolean }) : {};
   } catch {
     if (res.status === 404) {
+      const isLocal = typeof window !== 'undefined' && /^https?:\/\/localhost(:\d+)?$/.test(window.location.origin);
       throw new Error(
-        'Password reset API not found. Deploy to Vercel and set FIREBASE_SERVICE_ACCOUNT env for admin password reset.'
+        isLocal
+          ? 'Password reset API is not available locally. Run "vercel dev" instead of "expo start --web" to test it, or deploy to Vercel. See ADMIN_PASSWORD_RESET.md for setup.'
+          : 'Password reset API not found. Deploy to Vercel, add FIREBASE_SERVICE_ACCOUNT env var, and redeploy. See ADMIN_PASSWORD_RESET.md.'
       );
     }
     throw new Error(text || `Request failed (${res.status})`);
