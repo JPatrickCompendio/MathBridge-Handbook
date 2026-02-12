@@ -7,6 +7,7 @@ import {
     Easing,
     Image,
     ImageBackground,
+    KeyboardAvoidingView,
     Modal,
     Platform,
     ScrollView,
@@ -24,7 +25,7 @@ import { BorderRadius, Spacing } from '../../constants/colors';
 import { database } from '../../services/database';
 import { getProfileOverlay, PROFILE_OVERLAY_UPDATED, setProfileOverlay } from '../../utils/profileStorage';
 import { getTopicProgress } from '../../utils/progressStorage';
-import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize, useResponsive, wp } from '../../utils/responsive';
+import { getSpacing, isSmallDevice, isTablet, isWeb as isWebPlatformCheck, scaleFont, scaleSize, useResponsive, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
   primary: '#10B981',
@@ -938,6 +939,8 @@ export default function HomeScreen() {
   const [welcomeModalVisible, setWelcomeModalVisible] = useState(false);
   const [welcomeVariant, setWelcomeVariant] = useState<'new' | 'back'>('back');
   const [welcomeUsername, setWelcomeUsername] = useState('');
+  const [namePromptVisible, setNamePromptVisible] = useState(false);
+  const [firstNameInput, setFirstNameInput] = useState('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -1008,6 +1011,22 @@ export default function HomeScreen() {
     router.replace('/tabs');
   }, [router]);
 
+  const handleSaveFirstName = useCallback(async () => {
+    const name = firstNameInput.trim();
+    if (!name) return;
+    try {
+      await setProfileOverlay({ displayName: name });
+      if (typeof database.setDisplayName === 'function') {
+        await database.setDisplayName(name);
+      }
+      setDisplayName(name);
+      setFirstNameInput('');
+      setNamePromptVisible(false);
+    } catch (e) {
+      console.warn('Save name failed:', e);
+    }
+  }, [firstNameInput]);
+
   // Load progress, user, and streak when screen comes into focus; update streak on activity
   useFocusEffect(
     useCallback(() => {
@@ -1023,7 +1042,12 @@ export default function HomeScreen() {
             );
           }
           const [overlay, user] = await Promise.all([getProfileOverlay(), database.getUserData()]);
-          setDisplayName((overlay.displayName?.trim() || user?.username || user?.displayName) ?? DEFAULT_DISPLAY_NAME);
+          const sqliteName = !isWebPlatformCheck() && typeof database.getDisplayName === 'function' ? await database.getDisplayName() : null;
+          const resolved = (overlay.displayName?.trim() || sqliteName || user?.username || user?.displayName) ?? '';
+          setDisplayName(resolved || DEFAULT_DISPLAY_NAME);
+          if (!isWebPlatformCheck() && !resolved.trim()) {
+            setNamePromptVisible(true);
+          }
           // Web: prefer overlay then Firebase photoUrl; hydrate overlay from Firebase after login so photo persists
           if (Platform.OS === 'web') {
             const photoUri = overlay.photoUri || user?.photoUrl;
@@ -1091,9 +1115,9 @@ export default function HomeScreen() {
     topic.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const { isWeb, isWideScreen, width: windowWidth } = useResponsive();
-  const useWebLayout = isWeb && isWideScreen;
-  const useNarrowWeb = isWeb && !isWideScreen; // web on mobile/narrow viewport
+  const { isWeb: isWebPlatform, isWideScreen, width: windowWidth } = useResponsive();
+  const useWebLayout = isWebPlatform && isWideScreen;
+  const useNarrowWeb = isWebPlatform && !isWideScreen; // web on mobile/narrow viewport
   const useFourColGrid = useWebLayout && windowWidth >= 1400;
   const useThreeColGrid = useWebLayout && windowWidth >= 1100 && !useFourColGrid;
 
@@ -1336,6 +1360,43 @@ export default function HomeScreen() {
         username={welcomeUsername}
         onClose={handleCloseWelcomeModal}
       />
+
+      {/* App-only: first-time name prompt when no name is set */}
+      {!isWebPlatformCheck() && (
+        <Modal
+          visible={namePromptVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {}}
+        >
+          <KeyboardAvoidingView
+            style={styles.namePromptOverlay}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <View style={styles.namePromptContent}>
+              <Text style={styles.namePromptTitle}>Welcome!</Text>
+              <Text style={styles.namePromptMessage}>What should we call you?</Text>
+              <TextInput
+                style={styles.namePromptInput}
+                placeholder="Enter your name"
+                placeholderTextColor={ProfessionalColors.textSecondary}
+                value={firstNameInput}
+                onChangeText={setFirstNameInput}
+                autoCapitalize="words"
+                autoFocus
+              />
+              <TouchableOpacity
+                style={[styles.namePromptButton, !firstNameInput.trim() && styles.namePromptButtonDisabled]}
+                onPress={handleSaveFirstName}
+                disabled={!firstNameInput.trim()}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.namePromptButtonText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
     </SafeAreaView>
     </View>
   );
@@ -1343,38 +1404,38 @@ export default function HomeScreen() {
 
 // Web: larger header text and avatar; mobile/tablet unchanged
 const responsiveValues = {
-  paddingH: isWeb() ? getSpacing(Spacing.lg) : (isTablet() ? wp(6) : wp(5)),
-  cardMaxWidth: isWeb() ? undefined : isTablet() ? 800 : undefined,
+  paddingH: isWebPlatformCheck() ? getSpacing(Spacing.lg) : (isTablet() ? wp(6) : wp(5)),
+  cardMaxWidth: isWebPlatformCheck() ? undefined : isTablet() ? 800 : undefined,
   topicCardMarginH: isTablet() ? wp(2) : 0,
-  avatarSize: isWeb() ? 64 : (isTablet() ? 90 : isSmallDevice() ? 60 : 70),
-  avatarRadius: isWeb() ? 32 : (isTablet() ? 45 : isSmallDevice() ? 30 : 35),
-  avatarFont: isWeb() ? 28 : (isTablet() ? 36 : isSmallDevice() ? 24 : 28),
-  titleFont: isWeb() ? 22 : (isTablet() ? 28 : isSmallDevice() ? 18 : 22),
-  welcomeFont: isWeb() ? 16 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
-  progressCircleSize: isWeb() ? 68 : (isTablet() ? 90 : isSmallDevice() ? 60 : 70),
-  progressFont: isWeb() ? 20 : (isTablet() ? 22 : isSmallDevice() ? 14 : 18),
-  progressLabelFont: isWeb() ? 12 : (isTablet() ? 12 : isSmallDevice() ? 8 : 10),
-  sectionTitleFont: isWeb() ? 20 : (isTablet() ? 30 : isSmallDevice() ? 20 : 24),
-  sectionSubtitleFont: isWeb() ? 13 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
-  topicIconSize: isWeb() ? 46 : (isTablet() ? 68 : isSmallDevice() ? 44 : 56),
-  topicIconRadius: isWeb() ? 23 : (isTablet() ? 34 : isSmallDevice() ? 22 : 28),
-  topicIconFont: isWeb() ? 20 : (isTablet() ? 32 : isSmallDevice() ? 20 : 25),
-  topicNameFont: isWeb() ? 15 : (isTablet() ? 22 : isSmallDevice() ? 16 : 18),
-  topicSubtitleFont: isWeb() ? 11 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
+  avatarSize: isWebPlatformCheck() ? 64 : (isTablet() ? 90 : isSmallDevice() ? 60 : 70),
+  avatarRadius: isWebPlatformCheck() ? 32 : (isTablet() ? 45 : isSmallDevice() ? 30 : 35),
+  avatarFont: isWebPlatformCheck() ? 28 : (isTablet() ? 36 : isSmallDevice() ? 24 : 28),
+  titleFont: isWebPlatformCheck() ? 22 : (isTablet() ? 28 : isSmallDevice() ? 18 : 22),
+  welcomeFont: isWebPlatformCheck() ? 16 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+  progressCircleSize: isWebPlatformCheck() ? 68 : (isTablet() ? 90 : isSmallDevice() ? 60 : 70),
+  progressFont: isWebPlatformCheck() ? 20 : (isTablet() ? 22 : isSmallDevice() ? 14 : 18),
+  progressLabelFont: isWebPlatformCheck() ? 12 : (isTablet() ? 12 : isSmallDevice() ? 8 : 10),
+  sectionTitleFont: isWebPlatformCheck() ? 20 : (isTablet() ? 30 : isSmallDevice() ? 20 : 24),
+  sectionSubtitleFont: isWebPlatformCheck() ? 13 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+  topicIconSize: isWebPlatformCheck() ? 46 : (isTablet() ? 68 : isSmallDevice() ? 44 : 56),
+  topicIconRadius: isWebPlatformCheck() ? 23 : (isTablet() ? 34 : isSmallDevice() ? 22 : 28),
+  topicIconFont: isWebPlatformCheck() ? 20 : (isTablet() ? 32 : isSmallDevice() ? 20 : 25),
+  topicNameFont: isWebPlatformCheck() ? 15 : (isTablet() ? 22 : isSmallDevice() ? 16 : 18),
+  topicSubtitleFont: isWebPlatformCheck() ? 11 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
   statCardMaxWidth: isTablet() ? 250 : undefined,
-  statNumberFont: isWeb() ? 18 : (isTablet() ? 26 : isSmallDevice() ? 16 : 20),
-  statLabelFont: isWeb() ? 11 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
-  searchFont: isWeb() ? 15 : (isTablet() ? 18 : isSmallDevice() ? 14 : 16),
-  searchIconFont: isWeb() ? 18 : (isTablet() ? 20 : isSmallDevice() ? 16 : 18),
-  progressTitleFont: isWeb() ? 18 : (isTablet() ? 20 : isSmallDevice() ? 14 : 16),
-  progressSubtitleFont: isWeb() ? 14 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
-  progressBarHeight: isWeb() ? 10 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
-  topicProgressBarHeight: isWeb() ? 6 : (isTablet() ? 10 : isSmallDevice() ? 6 : 8),
-  levelFont: isWeb() ? 11 : (isTablet() ? 12 : isSmallDevice() ? 8 : 10),
-  streakFont: isWeb() ? 13 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
-  streakIconFont: isWeb() ? 14 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
-  topicCardMinHeight: isWeb() ? 180 : 200,
-  searchBarMaxWidth: isWeb() ? 640 : undefined,
+  statNumberFont: isWebPlatformCheck() ? 18 : (isTablet() ? 26 : isSmallDevice() ? 16 : 20),
+  statLabelFont: isWebPlatformCheck() ? 11 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
+  searchFont: isWebPlatformCheck() ? 15 : (isTablet() ? 18 : isSmallDevice() ? 14 : 16),
+  searchIconFont: isWebPlatformCheck() ? 18 : (isTablet() ? 20 : isSmallDevice() ? 16 : 18),
+  progressTitleFont: isWebPlatformCheck() ? 18 : (isTablet() ? 20 : isSmallDevice() ? 14 : 16),
+  progressSubtitleFont: isWebPlatformCheck() ? 14 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+  progressBarHeight: isWebPlatformCheck() ? 10 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
+  topicProgressBarHeight: isWebPlatformCheck() ? 6 : (isTablet() ? 10 : isSmallDevice() ? 6 : 8),
+  levelFont: isWebPlatformCheck() ? 11 : (isTablet() ? 12 : isSmallDevice() ? 8 : 10),
+  streakFont: isWebPlatformCheck() ? 13 : (isTablet() ? 14 : isSmallDevice() ? 10 : 12),
+  streakIconFont: isWebPlatformCheck() ? 14 : (isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+  topicCardMinHeight: isWebPlatformCheck() ? 180 : 200,
+  searchBarMaxWidth: isWebPlatformCheck() ? 640 : undefined,
 };
 
 const styles = StyleSheet.create({
@@ -1687,7 +1748,7 @@ const styles = StyleSheet.create({
     paddingTop: getSpacing(Spacing.md),
     paddingBottom: getSpacing(Spacing.md),
     paddingHorizontal: responsiveValues.paddingH,
-    alignItems: isWeb() ? 'center' : undefined,
+    alignItems: isWebPlatformCheck() ? 'center' : undefined,
   },
   searchBarContainer: {
     flexDirection: 'row',
@@ -1702,8 +1763,8 @@ const styles = StyleSheet.create({
     shadowRadius: scaleSize(12),
     elevation: 6,
     maxWidth: responsiveValues.searchBarMaxWidth ?? responsiveValues.cardMaxWidth,
-    alignSelf: isWeb() ? 'center' : 'stretch',
-    width: isWeb() ? '100%' : undefined,
+    alignSelf: isWebPlatformCheck() ? 'center' : 'stretch',
+    width: isWebPlatformCheck() ? '100%' : undefined,
   },
   searchIcon: {
     fontSize: scaleFont(responsiveValues.searchIconFont),
@@ -1953,5 +2014,57 @@ const styles = StyleSheet.create({
     color: ProfessionalColors.textSecondary,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  // App-only: first-time name prompt modal
+  namePromptOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: getSpacing(Spacing.lg),
+  },
+  namePromptContent: {
+    backgroundColor: ProfessionalColors.white,
+    borderRadius: scaleSize(BorderRadius.xl),
+    padding: getSpacing(Spacing.xl) + getSpacing(Spacing.md),
+    width: '100%',
+    maxWidth: scaleSize(340),
+  },
+  namePromptTitle: {
+    fontSize: scaleFont(24),
+    fontWeight: 'bold',
+    color: ProfessionalColors.text,
+    marginBottom: getSpacing(Spacing.sm),
+    textAlign: 'center',
+  },
+  namePromptMessage: {
+    fontSize: scaleFont(16),
+    color: ProfessionalColors.textSecondary,
+    marginBottom: getSpacing(Spacing.xl),
+    textAlign: 'center',
+  },
+  namePromptInput: {
+    borderWidth: 1,
+    borderColor: ProfessionalColors.border,
+    borderRadius: scaleSize(BorderRadius.md),
+    paddingVertical: getSpacing(Spacing.md),
+    paddingHorizontal: getSpacing(Spacing.md),
+    fontSize: scaleFont(16),
+    color: ProfessionalColors.text,
+    marginBottom: getSpacing(Spacing.xl),
+  },
+  namePromptButton: {
+    backgroundColor: ProfessionalColors.primary,
+    borderRadius: scaleSize(BorderRadius.md),
+    padding: getSpacing(Spacing.md),
+    alignItems: 'center',
+  },
+  namePromptButtonDisabled: {
+    opacity: 0.5,
+  },
+  namePromptButtonText: {
+    fontSize: scaleFont(16),
+    fontWeight: '600',
+    color: ProfessionalColors.white,
   },
 });

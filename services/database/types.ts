@@ -125,4 +125,10 @@ export interface DatabaseService {
 
   /** Get auth email by LRN for web login. Web only; returns null on native. */
   getEmailByLrn?(lrn: string): Promise<string | null>;
+
+  /** Get display name from SQLite (app only). */
+  getDisplayName?(): Promise<string | null>;
+
+  /** Save display name to SQLite (app only). */
+  setDisplayName?(name: string): Promise<void>;
 }

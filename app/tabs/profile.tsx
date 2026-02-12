@@ -629,7 +629,9 @@ export default function ProfileScreen() {
           if (cancelled) return;
           const user = await database.getUserData();
           if (cancelled) return;
-          const displayName = (overlay.displayName?.trim() || user?.username || user?.displayName) ?? '';
+          const sqliteName = !isWeb() && typeof database.getDisplayName === 'function' ? await database.getDisplayName() : null;
+          if (cancelled) return;
+          const displayName = (overlay.displayName?.trim() || sqliteName || user?.username || user?.displayName) ?? '';
           if (user) {
             const isLocalEmail = !!(user.email && user.email.startsWith('_local_') && user.email.endsWith('@app'));
             setUserData({
@@ -747,6 +749,9 @@ export default function ProfileScreen() {
           displayName: name || undefined,
           photoUrl: photoUriToSave,
         });
+      }
+      if (!isWeb() && name && typeof database.setDisplayName === 'function') {
+        await database.setDisplayName(name);
       }
       await setProfileOverlay({ displayName: name || undefined, photoUri: photoUriToSave });
       setProfilePhotoUri(photoUriToSave);
@@ -1122,17 +1127,17 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, styles.editModalContent]}>
             <Text style={styles.editModalTitle}>Edit Profile</Text>
-            <View style={styles.editModalAvatarSection}>
-              <Text style={styles.editModalAvatarLabel}>Profile photo</Text>
-              <View style={[styles.editModalPhotoRow, !isWeb() && styles.editModalPhotoRowCentered]}>
-                <View style={styles.editModalPhotoPreview}>
-                  {editPhotoUri && (editPhotoUri.startsWith('http') || editPhotoUri.startsWith('data:') || editPhotoUri.startsWith('file:')) ? (
-                    <Image source={{ uri: editPhotoUri }} style={styles.editModalPhotoImage} />
-                  ) : (
-                    <Text style={styles.editModalPhotoPlaceholder}>{userData.avatar || '?'}</Text>
-                  )}
-                </View>
-                {isWeb() && (
+            {isWeb() && (
+              <View style={styles.editModalAvatarSection}>
+                <Text style={styles.editModalAvatarLabel}>Profile photo</Text>
+                <View style={styles.editModalPhotoRow}>
+                  <View style={styles.editModalPhotoPreview}>
+                    {editPhotoUri && (editPhotoUri.startsWith('http') || editPhotoUri.startsWith('data:') || editPhotoUri.startsWith('file:')) ? (
+                      <Image source={{ uri: editPhotoUri }} style={styles.editModalPhotoImage} />
+                    ) : (
+                      <Text style={styles.editModalPhotoPlaceholder}>{userData.avatar || '?'}</Text>
+                    )}
+                  </View>
                   <TouchableOpacity
                     style={styles.editModalPhotoButton}
                     onPress={handlePickImage}
@@ -1140,9 +1145,9 @@ export default function ProfileScreen() {
                   >
                     <Text style={styles.editModalPhotoButtonText}>Select profile picture</Text>
                   </TouchableOpacity>
-                )}
+                </View>
               </View>
-            </View>
+            )}
             <Text style={styles.editModalInputLabel}>Display name</Text>
             <TextInput
               style={styles.editModalInput}

@@ -341,6 +341,25 @@ const sqliteService: DatabaseService = {
     // No-op on native; password reset is available on web (Firebase)
   },
 
+  async getDisplayName(): Promise<string | null> {
+    const db = await getDb();
+    await ensureTables(db);
+    const row = await db.getFirstAsync<{ value: string }>(
+      "SELECT value FROM activity_meta WHERE key = 'display_name'"
+    );
+    return row?.value?.trim() ?? null;
+  },
+
+  async setDisplayName(name: string): Promise<void> {
+    const db = await getDb();
+    await ensureTables(db);
+    const value = (name || '').trim();
+    await db.runAsync(
+      "INSERT INTO activity_meta (key, value) VALUES ('display_name', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      [value]
+    );
+  },
+
   async resetPasswordWithPin(emailOrUsername: string, recoveryPin: string, newPassword: string): Promise<void> {
     const db = await getDb();
     await ensureTables(db);
