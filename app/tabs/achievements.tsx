@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import TabsAnimatedBackground from '../../components/TabsAnimatedBackground';
 import { BorderRadius, Spacing } from '../../constants/colors';
 import { getTopicProgress } from '../../utils/progressStorage';
+import { database } from '../../services/database';
 import { getCardWidth, getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
@@ -333,8 +334,8 @@ const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
 ];
 
-function buildAchievements(progress: TopicProgressMap): Achievement[] {
-  return ACHIEVEMENT_DEFINITIONS.map((def) => {
+async function buildAchievements(progress: TopicProgressMap): Promise<Achievement[]> {
+  const base = ACHIEVEMENT_DEFINITIONS.map((def) => {
     const { earned, progress: prog } = checkUnlock(def.unlockRule, progress);
     const { unlockRule: _, ...rest } = def;
     return {
@@ -344,6 +345,23 @@ function buildAchievements(progress: TopicProgressMap): Achievement[] {
       dateEarned: earned ? new Date().toISOString().slice(0, 10) : undefined,
     };
   });
+
+  // Persist newly earned achievements to Firebase so admin can see them.
+  try {
+    const unlocked = base.filter((a) => a.earned);
+    if (unlocked.length) {
+      // Fire and forget; database.unlockAchievement is per-achievement.
+      unlocked.forEach((a) => {
+        database.unlockAchievement?.(a.id).catch(() => {
+          // ignore errors silently in UI
+        });
+      });
+    }
+  } catch {
+    // ignore
+  }
+
+  return base;
 }
 
 function computeUserStats(achievements: Achievement[]): UserStats {
@@ -960,7 +978,7 @@ function AchievementCard({
 
 export default function AchievementsScreen() {
   const { width: windowWidth } = useWindowDimensions();
-  const [achievements, setAchievements] = useState<Achievement[]>(() => buildAchievements({}));
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [userStats, setUserStats] = useState<UserStats>(DEFAULT_USER_STATS);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
@@ -969,9 +987,9 @@ export default function AchievementsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      getTopicProgress().then((saved) => {
+      getTopicProgress().then(async (saved) => {
         const progress: TopicProgressMap = (saved && typeof saved === 'object' ? saved : {}) as TopicProgressMap;
-        const next = buildAchievements(progress);
+        const next = await buildAchievements(progress);
         setAchievements(next);
         setUserStats(computeUserStats(next));
       });

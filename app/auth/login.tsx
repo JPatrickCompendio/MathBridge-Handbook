@@ -305,8 +305,14 @@ export default function LoginScreen() {
     try {
       const session = await database.loginUser(email.trim(), password);
       if (session) {
-        const welcomeParam = `welcome=back&username=${encodeURIComponent(session.username || email.trim())}`;
-        router.replace(`/tabs?${welcomeParam}` as Href);
+        const normalizedEmail = (session.email || email.trim()).toLowerCase();
+        const ADMIN_EMAILS = ['admin@example.com']; // TODO: replace with your real teacher/admin email(s)
+        if (isWeb() && ADMIN_EMAILS.includes(normalizedEmail)) {
+          router.replace('/admin' as Href);
+        } else {
+          const welcomeParam = `welcome=back&username=${encodeURIComponent(session.username || email.trim())}`;
+          router.replace(`/tabs?${welcomeParam}` as Href);
+        }
       } else {
         setLoginError('Invalid email or password. Create an account if you don\'t have one.');
       }

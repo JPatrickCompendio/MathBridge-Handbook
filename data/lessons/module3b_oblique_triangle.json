@@ -61,8 +61,8 @@
             "a over (sin A) = b over (sin B)",
             "Substitute the given values:",
             "12 over (sin 30°) = b over (sin 70°), cross multiplication.",
-            "Step 1: b = (12 × sin 70°) over (sin 30°) →",
-            "Step 2: b = 12(0.94) over 0.5 →",
+            "Step 1: b = (12 × sin 70°) over (sin 30°)",
+            "Step 2: b = 12(0.94) over 0.5",
             "Step 3: b = 11.28 over 0.5",
             "b = 22.56 cm"
           ],
@@ -72,7 +72,7 @@
             "substitute_label": "Substitute the given values:",
             "substitute_equation": "12 over (sin 30°) = b over (sin 70°)",
             "cross_note": ", cross multiplication.",
-            "steps": ["Step 1: b = (12 × sin 70°) over (sin 30°) →", "Step 2: b = 12(0.94) over 0.5 →", "Step 3: b = 11.28 over 0.5"],
+            "steps": ["Step 1: b = (12 × sin 70°) over (sin 30°)", "Step 2: b = 12(0.94) over 0.5", "Step 3: b = 11.28 over 0.5"],
             "show_divider": false
           },
           "answer": "b = 22.56 cm",
@@ -84,8 +84,8 @@
           "solution": [
             "a over (sin A) = c over (sin C)",
             "a over (sin 60°) = 15 over (sin 50°), cross multiplication.",
-            "Step 1: a = (15 sin 60°) over (sin 50°) →",
-            "Step 2: a = 15(0.87) over 0.77 →",
+            "Step 1: a = (15 sin 60°) over (sin 50°)",
+            "Step 2: a = 15(0.87) over 0.77",
             "Step 3: a = 13.05 over 0.77",
             "a = 16.95 cm"
           ],
@@ -93,7 +93,7 @@
             "formula": "a over (sin A) = c over (sin C)",
             "substitute_equation": "a over (sin 60°) = 15 over (sin 50°)",
             "cross_note": ", cross multiplication.",
-            "steps": ["Step 1: a = (15 sin 60°) over (sin 50°) →", "Step 2: a = 15(0.87) over 0.77 →", "Step 3: a = 13.05 over 0.77"],
+            "steps": ["Step 1: a = (15 sin 60°) over (sin 50°)", "Step 2: a = 15(0.87) over 0.77", "Step 3: a = 13.05 over 0.77"],
             "show_divider": true
           },
           "answer": "a = 16.95 cm",
@@ -105,8 +105,8 @@
           "solution": [
             "a over (sin A) = b over (sin B)",
             "10 over (sin 45°) = b over (sin 65°), cross multiplication.",
-            "Step 1: b = (10 sin 65°) over (sin 45°) →",
-            "Step 2: b = 10(0.91) over 0.71 →",
+            "Step 1: b = (10 sin 65°) over (sin 45°)",
+            "Step 2: b = 10(0.91) over 0.71",
             "Step 3: b = 9.1 over 0.71",
             "b = 12.82 cm"
           ],
@@ -114,7 +114,7 @@
             "formula": "a over (sin A) = b over (sin B)",
             "substitute_equation": "10 over (sin 45°) = b over (sin 65°)",
             "cross_note": ", cross multiplication.",
-            "steps": ["Step 1: b = (10 sin 65°) over (sin 45°) →", "Step 2: b = 10(0.91) over 0.71 →", "Step 3: b = 9.1 over 0.71"]
+            "steps": ["Step 1: b = (10 sin 65°) over (sin 45°)", "Step 2: b = 10(0.91) over 0.71", "Step 3: b = 9.1 over 0.71"]
           },
           "answer": "b = 12.82 cm",
           "image": "law-sines-ex3"

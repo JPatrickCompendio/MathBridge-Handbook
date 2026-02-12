@@ -204,7 +204,13 @@ export function FractionText({
   let lastEnd = 0;
   for (const match of matches) {
     if (match.index > lastEnd) segments.push({ type: 'text', value: text.slice(lastEnd, match.index) });
-    segments.push({ type: 'frac', num: match.num, den: match.den });
+    const isRootSolutions =
+      (match.num === 'Roots' && match.den === 'Solutions') || (match.num === 'Root' && match.den === 'Solutions');
+    if (isRootSolutions) {
+      segments.push({ type: 'text', value: 'Root / Solutions' });
+    } else {
+      segments.push({ type: 'frac', num: match.num, den: match.den });
+    }
     lastEnd = match.end;
   }
   if (lastEnd < text.length) segments.push({ type: 'text', value: text.slice(lastEnd) });
@@ -218,17 +224,22 @@ export function FractionText({
 
   return (
     <View style={[styles.row, containerStyle]}>
-      {segments.map((seg, idx) =>
-        seg.type === 'text' ? (
-          <Text key={idx} style={[styles.text, segmentStyle]}>{seg.value}</Text>
-        ) : (
+      {segments.map((seg, idx) => {
+        if (seg.type === 'text') {
+          // key is valid for list items; React Native's TextProps type omits it
+          // @ts-expect-error
+          return <Text key={idx} style={[styles.text, segmentStyle]}>{seg.value}</Text>;
+        }
+        return (
+          // key is valid for list items; React Native's ViewProps type omits it
+          // @ts-expect-error
           <View key={idx} style={styles.frac}>
             <Text style={[styles.text, styles.num, segmentStyle]}>{seg.num}</Text>
             <View style={[styles.bar, { backgroundColor: color }]} />
             <Text style={[styles.text, styles.den, segmentStyle]}>{seg.den}</Text>
           </View>
-        )
-      )}
+        );
+      })}
     </View>
   );
 }

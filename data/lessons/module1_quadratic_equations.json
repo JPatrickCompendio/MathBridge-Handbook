@@ -67,12 +67,12 @@
           "Step 1: Isolate the term with x².\nAdd 81 to both sides:",
           "4x²-81+81=0+81\n 4x²=81\n\nDivide both sides by 4:",
           "4x² / 4 = 81 / 4\nx² = 81 / 4",
-          "Step 2: Take the square root of both sides.\n √x² = √(81\\4)\n x = ± √81 / √4",
+          "Step 2: Take the square root of both sides.\n √x² = √(81 / 4)\n x = ± √81 / √4",
           "Step 3: Simplify the square root.",
           "x = ± 9 / 2",
           "Step 4: State the solution set.\nThe solutions are:",
           "x = 9 / 2 and x = - 9 / 2",
-"Step 5: Check the solutions.\nSubstitute x = 9 / 2:\n 4x² - 81 = 0\n 4(9\\2)² - 81 = 0\n 4·81\\4 - 81 = 0\n 81 - 81 = 0 ✔\n\nSubstitute x = - 9 / 2:\n 4(-9\\2)² - 81 = 0\n 4·81\\4 - 81 = 0\n 81 - 81 = 0 ✔"
+         "Step 5: Check the solutions.\nSubstitute x = 9 / 2:\n 4x² - 81 = 0\n 4(9 / 2)² - 81 = 0\n 4·81 / 4 - 81 = 0\n 81 - 81 = 0 ✔\n\nSubstitute x = - 9 / 2:\n 4(-9 / 2)² - 81 = 0\n 4·81 / 4 - 81 = 0\n 81 - 81 = 0 ✔"
         ],
         "C. Solving by Completing the Square": [
           "Use this method when the quadratic cannot be factored easily.",
@@ -200,7 +200,8 @@
             "options": {
               "A": "Factoring",
               "B": "Extracting square roots",
-              "C": "Quadratic formula"
+              "C": "Quadratic formula",
+              "D": "Completing the square"
             },
             "correct": "B",
             "raw": "Which method fits x² - 4 = 0?\nA. Factoring                   B. Extracting square roots ✔\nC. Quadratic formula      D. Completing the square"
@@ -286,21 +287,22 @@
             "raw": "Solve: 2x² - 3x - 2 = 0\nA. x = 2, -1 / 2 ✔        B. x = -2, 1 / 2\nC. x = 1, -2                   D. x = 0, 3 / 2"
           },
           {
-            "prompt": "The discriminant of x² + 4x + 5 = 0 is:",
+            "prompt": "What is the value of a in the equation 3x² + 5x - 2 = 0 ?",
             "options": {
-              "A": "16",
-              "B": "−4",
-              "C": "4",
-              "D": "20"
+              "A": "5",
+              "B": "−2",
+              "C": "3",
+              "D": "0"
             },
-            "correct": "B",
-            "raw": "The discriminant of x² + 4x + 5 = 0 is:\nA. 16                                B. −4 ✔\nC. 4                                   D. 20"
+            "correct": "C",
+            "raw": "What is the value of a in the equation 3x² + 5x - 2 = 0 ?\nA. 5                                B. −2  \nC. 3✔                                   D. 0"
           },
           {
             "prompt": "Which of the following steps is the most appropriate way to begin solving the quadratic equation x²-7x+10=0 by factoring?",
             "options": {
               "A": "Subtract 10 from both sides",
               "B": "Factor the quadratic into two binomials",
+              "C": "Divide all terms by the coefficient of x²",
               "D": "Use the quadratic formula"
             },
             "correct": "B",
@@ -354,7 +356,7 @@
     "3. x² - 4(2 +x) = 13                Given equation\n    x² - 8-4x = 13                     Apply the Distributive Property\n    x² - 8-4x-13= 13-13   Subtraction Property of Equality\n    x² - 8-4x-13= 0                Simplify\n    x²-4x-21= 0                        Combine like terms and write in standard form",
     "III. Key Words and Concepts",
     "• Quadratic Equation – an equation of degree 2\n",
-    "• Standard Form: ax² + bx + c = 0\n• Roots / Solutions – values of x that satisfy the equation\n",
+    "• Standard Form: ax² + bx + c = 0\n• Roots / – values of x that satisfy the equation\n",
     "• Factoring – expressing a quadratic as a product of two binomials\n",
     "• Extracting Square Roots – solving equations of the form x² = k\n"
     ,"• Completing the Square – transforming a quadratic into a perfect square\n• Quadratic Formula: x = (-b ± √(b² - 4ac)) / (2a)",
@@ -380,7 +382,7 @@
     "Step 5: Check the solutions.\nSubstitute x = 4:\n x²= 16 \n 4² = 16\n 16=16✔ \n\nSubstitute x = -4:\n x²= 16\n (-4)² = 16 \n 16=16✔\n\n🔹 Example 2\nSolve: 4x²-81=0\n\nStep 1: Isolate the term with x².\nAdd 81 to both sides:",
     "4x²-81+81=0+81\n 4x²=81\n\nDivide both sides by 4:",
     "4x² / 4 = 81 / 4\nx² = 81 / 4",
-    "Step 2: Take the square root of both sides.\n √x² = √(81\\4)\n x = ± √81 / √4",
+    "Step 2: Take the square root of both sides.\n √x² = √(81 / 4)\n x = ± √81 / √4",
     "Step 3: Simplify the square root.",
     "x = ± 9 / 2",
     "Step 4: State the solution set.\nThe solutions are:",

@@ -58,6 +58,15 @@ export interface ScoreRecord {
   completedAt: string; // ISO
 }
 
+/** Per-question answer detail (web only, stored with score for admin review). */
+export interface QuizAnswerDetail {
+  questionIndex: number;
+  questionText?: string;
+  selectedAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+}
+
 export interface ActivityLog {
   id?: string;
   userId: string;
@@ -81,7 +90,8 @@ export interface DatabaseService {
   unlockAchievement(achievementId: string): Promise<void>;
   getAchievements(): Promise<AchievementRecord[]>;
 
-  saveScore(record: Omit<ScoreRecord, 'id' | 'completedAt'>): Promise<void>;
+  /** Pass optional `answers` (web only) to store per-question details for admin. */
+  saveScore(record: Omit<ScoreRecord, 'id' | 'completedAt'> & { answers?: QuizAnswerDetail[] }): Promise<void>;
   getScores(topicId?: number): Promise<ScoreRecord[]>;
 
   getLastActivityTimestamp(): Promise<string | null>;

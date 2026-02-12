@@ -515,14 +515,46 @@ export default function QuizScreen() {
     const difficulty = params.difficulty as 'easy' | 'medium' | 'hard' | undefined;
     if (!Number.isNaN(tid) && difficulty && params.mode === 'topic-quiz') {
       const passed = calculatedScore >= Math.ceil(questions.length * 0.6);
-      database.saveScore({
+      const scorePayload: Parameters<typeof database.saveScore>[0] = {
         topicId: tid,
         quizId: subtopic || undefined,
         difficulty,
         score: calculatedScore,
         total: questions.length,
         passed,
-      }).catch((e) => console.warn('Save score failed:', e));
+      };
+      if (isWeb()) {
+        scorePayload.answers = questionsToCheck.map((q, idx) => {
+          let selectedAnswer = '';
+          let isCorrect = false;
+          if (isBlindMode) {
+            const typed = typedAnswers[q.id]?.toLowerCase().trim() || '';
+            const correct = q.options[q.correctAnswer].toLowerCase().trim();
+            const correctNumeric = correct.replace(/[^\d.-]/g, '');
+            const typedNumeric = typed.replace(/[^\d.-]/g, '');
+            selectedAnswer = typed || (q.options[selectedAnswers[q.id] ?? -1] ?? '');
+            isCorrect = !!(
+              typed === correct ||
+              typedNumeric === correctNumeric ||
+              (typed && correct.includes(typed)) ||
+              (correct && typed.includes(correct)) ||
+              (typedNumeric && correctNumeric && typedNumeric === correctNumeric)
+            );
+          } else {
+            const sel = selectedAnswers[q.id] ?? -1;
+            selectedAnswer = q.options[sel] ?? '';
+            isCorrect = sel === q.correctAnswer;
+          }
+          return {
+            questionIndex: idx,
+            questionText: q.question,
+            selectedAnswer,
+            correctAnswer: q.options[q.correctAnswer],
+            isCorrect,
+          };
+        });
+      }
+      database.saveScore(scorePayload).catch((e) => console.warn('Save score failed:', e));
 
       // Map easy/medium/hard to 33/66/100% activities; update only on pass, DB keeps max so progress never drops
       if (passed) {
@@ -644,6 +676,28 @@ export default function QuizScreen() {
       : questions.length;
     const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
+    const questionsToShow = isSurvivalMode
+      ? questions.slice(0, survivalEnded ? currentQuestionIndex + 1 : currentQuestionIndex + 1)
+      : questions;
+    const answerSummary: Array<{ q: Question; userAnswer: string; correctAnswer: string; isCorrect: boolean }> = questionsToShow.map((q) => {
+      if (isBlindMode) {
+        const typed = typedAnswers[q.id]?.toLowerCase().trim() || '';
+        const correct = q.options[q.correctAnswer].toLowerCase().trim();
+        const correctNumeric = correct.replace(/[^\d.-]/g, '');
+        const typedNumeric = typed.replace(/[^\d.-]/g, '');
+        const correctBool =
+          typed === correct ||
+          typedNumeric === correctNumeric ||
+          (typed && correct.includes(typed)) ||
+          (correct && typed.includes(correct)) ||
+          (typedNumeric && correctNumeric && typedNumeric === correctNumeric);
+        return { q, userAnswer: typedAnswers[q.id] ?? '—', correctAnswer: q.options[q.correctAnswer], isCorrect: Boolean(correctBool) };
+      }
+      const sel = selectedAnswers[q.id];
+      const userOpt = sel !== undefined ? q.options[sel] : '—';
+      return { q, userAnswer: userOpt, correctAnswer: q.options[q.correctAnswer], isCorrect: sel !== undefined && sel === q.correctAnswer };
+    });
+
     return (
       <SafeAreaView style={[styles.container, isWeb() && styles.containerWeb]} edges={['top', 'left', 'right']}>
         <ScrollView
@@ -691,6 +745,31 @@ export default function QuizScreen() {
             )}
           </View>
 
+          {answerSummary.length > 0 && (
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryCardTitle}>Summary of your answers</Text>
+              {answerSummary.map((item, idx) => (
+                // @ts-expect-error key is valid for list items; ViewProps omits it
+                <View key={item.q.id} style={styles.summaryRow}>
+                  <Text style={styles.summaryRowNum}>Q{idx + 1}</Text>
+                  <View style={styles.summaryRowContent}>
+                    <Text style={styles.summaryQuestion} numberOfLines={2}>{item.q.question}</Text>
+                    <View style={styles.summaryAnswerRow}>
+                      {item.isCorrect ? (
+                        <Text style={styles.summaryCorrect}>✓ Correct — {item.userAnswer}</Text>
+                      ) : (
+                        <>
+                          <Text style={styles.summaryWrong}>✕ Wrong — Your answer: {item.userAnswer}</Text>
+                          <Text style={styles.summaryCorrectAnswer}>Correct answer: {item.correctAnswer}</Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
           <View style={styles.actionsContainer}>
             <TouchableOpacity
               style={styles.restartButton}
@@ -725,7 +804,8 @@ export default function QuizScreen() {
 
   const selectedAnswer = selectedAnswers[currentQuestion.id];
   const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
-  const showAnswer = isSurvivalMode && selectedAnswer !== undefined;
+  const isTopicQuiz = mode === 'topic-quiz';
+  const showAnswer = (isSurvivalMode || isTopicQuiz) && selectedAnswer !== undefined;
   const hasAnsweredCurrent = isBlindMode
     ? submittedBlindIds.has(currentQuestion.id)
     : selectedAnswers[currentQuestion.id] !== undefined;
@@ -860,12 +940,6 @@ export default function QuizScreen() {
               </View>
             )}
 
-            {showAnswer && (
-              <View style={styles.explanationContainer}>
-                <Text style={styles.explanationLabel}>Explanation:</Text>
-                <Text style={styles.explanationText}>{currentQuestion.explanation}</Text>
-              </View>
-            )}
           </Animated.View>
         </ScrollView>
 
@@ -890,7 +964,7 @@ export default function QuizScreen() {
             </Text>
           </TouchableOpacity>
 
-          {!isSurvivalMode && (
+          {!isSurvivalMode && currentQuestionIndex < questions.length - 1 && (
             <TouchableOpacity
               style={[
                 styles.navButton,
@@ -906,7 +980,7 @@ export default function QuizScreen() {
                   !hasAnsweredCurrent && styles.navButtonTextDisabled,
                 ]}
               >
-                {currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next →'}
+                Next →
               </Text>
             </TouchableOpacity>
           )}
@@ -1407,6 +1481,64 @@ const styles = StyleSheet.create({
     color: ProfessionalColors.text,
     fontSize: scaleFont(isTablet() ? 18 : isSmallDevice() ? 14 : 16),
     fontWeight: '600',
+  },
+  summaryCard: {
+    backgroundColor: ProfessionalColors.white,
+    borderRadius: scaleSize(BorderRadius.lg),
+    padding: getSpacing(Spacing.lg),
+    marginBottom: getSpacing(Spacing.xl),
+    marginHorizontal: getSpacing(Spacing.md),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scaleSize(2) },
+    shadowOpacity: 0.1,
+    shadowRadius: scaleSize(8),
+    elevation: 4,
+  },
+  summaryCardTitle: {
+    fontSize: scaleFont(isTablet() ? 20 : isSmallDevice() ? 16 : 18),
+    fontWeight: 'bold',
+    color: ProfessionalColors.text,
+    marginBottom: getSpacing(Spacing.md),
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    marginBottom: getSpacing(Spacing.md),
+    paddingBottom: getSpacing(Spacing.md),
+    borderBottomWidth: 1,
+    borderBottomColor: ProfessionalColors.border,
+  },
+  summaryRowNum: {
+    fontSize: scaleFont(isTablet() ? 16 : isSmallDevice() ? 12 : 14),
+    fontWeight: '700',
+    color: ProfessionalColors.primary,
+    marginRight: getSpacing(Spacing.sm),
+    minWidth: scaleSize(28),
+  },
+  summaryRowContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  summaryQuestion: {
+    fontSize: scaleFont(isTablet() ? 14 : isSmallDevice() ? 11 : 13),
+    color: ProfessionalColors.textSecondary,
+    marginBottom: getSpacing(Spacing.xs),
+  },
+  summaryAnswerRow: {
+    gap: getSpacing(Spacing.xs),
+  },
+  summaryCorrect: {
+    fontSize: scaleFont(isTablet() ? 14 : isSmallDevice() ? 12 : 13),
+    color: ProfessionalColors.success,
+    fontWeight: '600',
+  },
+  summaryWrong: {
+    fontSize: scaleFont(isTablet() ? 14 : isSmallDevice() ? 12 : 13),
+    color: ProfessionalColors.error,
+    fontWeight: '600',
+  },
+  summaryCorrectAnswer: {
+    fontSize: scaleFont(isTablet() ? 14 : isSmallDevice() ? 12 : 13),
+    color: ProfessionalColors.text,
   },
 });
 

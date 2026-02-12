@@ -26,11 +26,13 @@ import {
   where,
   orderBy,
   limit,
+  writeBatch,
 } from 'firebase/firestore';
 import type {
   AchievementRecord,
   DatabaseService,
   ProgressMap,
+  QuizAnswerDetail,
   ScoreRecord,
   Session,
   TopicProgressMap,
@@ -89,6 +91,8 @@ function computeCombined(content: number, activities: number): number {
   return Math.round(Math.min(100, Math.max(0, content * 0.70 + activities * 0.30)));
 }
 
+const ADMIN_EMAILS = ['admin@example.com']; // Web/admin: emails that can bypass emailVerified check
+
 const firebaseService: DatabaseService = {
   async createUser(credentials: UserCredentials): Promise<{ user: User; session: Session }> {
     const authInstance = getAuthInstance();
@@ -131,7 +135,12 @@ const firebaseService: DatabaseService = {
       const userCred = await signInWithEmailAndPassword(authInstance, email, password);
       const fbUser = userCred.user;
 
-      if (!fbUser.emailVerified) {
+      const effectiveEmail = (fbUser.email ?? email).toLowerCase();
+      const isAdminEmail = ADMIN_EMAILS.includes(effectiveEmail);
+
+      // For regular student accounts, require email verification.
+      // For predefined admin/teacher accounts, allow login even if not verified.
+      if (!fbUser.emailVerified && !isAdminEmail) {
         await firebaseSignOut(authInstance);
         throw new Error('EMAIL_NOT_VERIFIED');
       }
@@ -255,11 +264,11 @@ const firebaseService: DatabaseService = {
     }));
   },
 
-  async saveScore(record: Omit<ScoreRecord, 'id' | 'completedAt'>): Promise<void> {
+  async saveScore(record: Omit<ScoreRecord, 'id' | 'completedAt'> & { answers?: QuizAnswerDetail[] }): Promise<void> {
     const userId = getCurrentUserId();
     const database = getDb();
     const coll = collection(database, 'scores', userId, 'items');
-    await addDoc(coll, {
+    const payload: Record<string, unknown> = {
       topicId: record.topicId,
       quizId: record.quizId ?? null,
       difficulty: record.difficulty ?? null,
@@ -267,7 +276,11 @@ const firebaseService: DatabaseService = {
       total: record.total,
       passed: record.passed,
       completedAt: new Date().toISOString(),
-    });
+    };
+    if (record.answers && record.answers.length > 0) {
+      payload.answers = record.answers;
+    }
+    await addDoc(coll, payload);
   },
 
   async getScores(topicId?: number): Promise<ScoreRecord[]> {
@@ -347,16 +360,28 @@ const firebaseService: DatabaseService = {
   async clearAllProgress(): Promise<void> {
     const userId = getCurrentUserId();
     const database = getDb();
+    // Clear progress (topic completion %)
     const progressRef = doc(database, 'progress', userId);
     await setDoc(progressRef, {});
-    // Also clear all saved scores so Activities "Best" labels reset
+    // Clear all scores (quiz attempts)
     const scoresColl = collection(database, 'scores', userId, 'items');
-    const snap = await getDocs(scoresColl);
-    const batch = writeBatch(database);
-    snap.docs.forEach((d) => {
+    const scoresSnap = await getDocs(scoresColl);
+    let batch = writeBatch(database);
+    scoresSnap.docs.forEach((d) => {
       batch.delete(d.ref);
     });
     await batch.commit();
+    // Clear all achievements
+    const achievementsColl = collection(database, 'achievements', userId, 'items');
+    const achievementsSnap = await getDocs(achievementsColl);
+    batch = writeBatch(database);
+    achievementsSnap.docs.forEach((d) => {
+      batch.delete(d.ref);
+    });
+    await batch.commit();
+    // Clear activity meta (streak, last activity)
+    const activityMetaRef = doc(database, 'activity_meta', userId);
+    await setDoc(activityMetaRef, { lastActivityDate: null, streak: 0 }, { merge: true });
   },
 
   async signOut(): Promise<void> {

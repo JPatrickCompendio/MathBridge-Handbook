@@ -183,20 +183,20 @@
       { "question": "Two triangles are similar if their corresponding angles are equal and their corresponding sides are ___.", "choices": { "A": "equal", "B": "parallel", "C": "proportional", "D": "perpendicular" }, "correct": "C" },
       { "question": "Which method is used when two sides are proportional and the included angle is equal?", "choices": { "A": "ASA", "B": "SSS", "C": "SAS", "D": "AAS" }, "correct": "C" },
       { "question": "If all three pairs of corresponding sides of two triangles are proportional, the triangles are similar by ___.", "choices": { "A": "ASA", "B": "SAS", "C": "AAS", "D": "SSS" }, "correct": "D" },
-      { "question": "If △ABC △DEF, then ∠A corresponds to ___.", "choices": { "A": "∠E", "B": "∠F", "C": "∠D", "D": "∠B" }, "correct": "C" },
+      { "question": "If △ABC~△DEF, then ∠A corresponds to ___.", "choices": { "A": "∠E", "B": "∠F", "C": "∠D", "D": "∠B" }, "correct": "C" },
       { "question": "If two triangles have proportional sides but unequal included angles, they are ___.", "choices": { "A": "similar", "B": "congruent", "C": "not similar", "D": "right triangles" }, "correct": "C" }
     ],
     "medium": [
       { "question": "Which condition proves triangles similar by ASA?", "choices": { "A": "Two sides and one angle", "B": "Three sides", "C": "Two angles and the included side", "D": "One angle only" }, "correct": "C" },
-      { "question": "If △ABC △DEF, which side corresponds to ?", "choices": { "A": "Side AB", "B": "Side BC", "C": "Side AC", "D": "Side DF" }, "correct": "C" },
-      { "question": "△JAK △BOD. If = 6 cm, = 9 cm, and = 12 cm, find .", "choices": { "A": "12 cm", "B": "15 cm", "C": "18 cm", "D": "20 cm" }, "correct": "C" },
+      { "question": "If △ABC~△DEF, which side corresponds to AC?", "choices": { "A": "Side DE", "B": "Side EF", "C": "Side DF", "D": "Side FE" }, "correct": "C" },
+      { "question": "△JAK~△BOD. If JA= 6 cm, AK= 9 cm, and BO= 12 cm, find side OD.", "choices": { "A": "12 cm", "B": "15 cm", "C": "18 cm", "D": "20 cm" }, "correct": "C" },
       { "question": "Which ratio proves triangle similarity?", "choices": { "A": "3 over 4 = 6 over 7", "B": "4 over 6 = 6 over 9", "C": "5 over 7 = 10 over 12", "D": "6 over 8 = 9 over 10" }, "correct": "B" },
-      { "question": "If △ABC △PQR and = 7 cm, = 14 cm, and = 10 cm, find .", "choices": { "A": "15 cm", "B": "18 cm", "C": "20 cm", "D": "24 cm" }, "correct": "C" }
+      { "question": "If △ABC~△PQR and AC= 7 cm, PR= 14 cm, and BC= 10 cm, find QR.", "choices": { "A": "15 cm", "B": "18 cm", "C": "20 cm", "D": "24 cm" }, "correct": "C" }
     ],
     "hard": [
       { "question": "Why is correct matching of corresponding parts important?", "choices": { "A": "To find perimeter", "B": "To prove similarity", "C": "To find area", "D": "To identify right triangles" }, "correct": "B" },
       { "question": "If the sides of one triangle are doubled, what happens to the similar triangle?", "choices": { "A": "Angles change", "B": "Shape changes", "C": "Size changes but shape stays", "D": "It becomes congruent" }, "correct": "C" },
-      { "question": "△QRS △TUV. If = 8 cm, = 12 cm, and = 20 cm, find .", "choices": { "A": "18 cm", "B": "24 cm", "C": "30 cm", "D": "32 cm" }, "correct": "C" },
+      { "question": "△QRS~△TUV. If QR= 8 cm, RS= 12 cm, and TU= 20 cm, find UV.", "choices": { "A": "18 cm", "B": "24 cm", "C": "30 cm", "D": "32 cm" }, "correct": "C" },
       { "question": "The sides of a triangle are 6 cm, 9 cm, and 12 cm. A similar triangle has a longest side of 20 cm. What is the length of the shortest side of the larger triangle?", "choices": { "A": "8 cm", "B": "9 cm", "C": "10 cm", "D": "12 cm" }, "correct": "C" },
       { "question": "The sides of △XYZ are 6 cm, 8 cm, and 10 cm. A similar triangle has a perimeter of 72 cm. What is the length of the longest side of the larger triangle?", "choices": { "A": "20 cm", "B": "24 cm", "C": "30 cm", "D": "36 cm" }, "correct": "B" }
     ]
