@@ -37,16 +37,16 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const Theme = {
-  primary: '#FF6600',
+  primary: '#10B981',
   white: '#FFFFFF',
-  background: '#FFF8F5',
+  background: '#F0FDF4',
   card: '#FFFFFF',
   text: '#1A1A2E',
   textSecondary: '#4A4A6A',
-  border: '#FFE5D9',
+  border: '#D1FAE5',
   accent: '#0EA5E9',
   success: '#10B981',
-  muted: '#E8E4E0',
+  muted: '#D1FAE5',
 };
 
 function AccordionHeader({
@@ -579,6 +579,19 @@ function parseFactoringBlocks(rest: string[]): FactoringBlock[] {
   return blocks;
 }
 
+// Extra guide text for factoring Example 1 (factor pairs for 10 that sum to -7)
+const FACTOR_PAIR_GUIDE_TEXT =
+  'Which two numbers multiply to 10?\n' +
+  '1 × 10 = 10\n' +
+  '2 × 5 = 10\n' +
+  '(-1) × (-10) = 10\n' +
+  '(-2) × (-5) = 10\n\n' +
+  'Then check which pair adds up to -7:\n' +
+  '1 + 10 = 11 ❌\n' +
+  '2 + 5 = 7 ❌\n' +
+  '-1 + -10 = -11 ❌\n' +
+  '-2 + -5 = -7 ✔';
+
 /** Key terms to bold in Methods of Solving (all methods A–D) for clarity */
 const METHOD_BOLD_PHRASES = [
   'standard form',
@@ -845,41 +858,53 @@ function MethodContentBlock({ methodTitle, content }: { methodTitle: string; con
         <RichParagraph text={intro} first boldPhrases={METHOD_BOLD_PHRASES} style={styles.methodIntroText} />
       </View>
       {blocks.map((block, blockIdx) => (
-        <View key={blockIdx} style={styles.methodTwoColumnCard}>
-          <View style={styles.methodTwoColHeader}>
-            <View style={styles.methodExampleHeaderLeft}>
-              <View style={styles.methodExampleBullet} />
-              <Text style={styles.methodTwoColHeaderLeft}>Example {block.exampleNum}</Text>
+        <React.Fragment key={blockIdx}>
+          <View style={styles.methodExampleHeaderBlock}>
+            <View style={styles.methodExampleHeaderRow}>
+              <View style={styles.methodExampleHeaderBullet} />
+              <Text style={styles.methodExampleHeaderText}>Example {block.exampleNum}</Text>
             </View>
-            <Text style={styles.methodTwoColHeaderRight}>Steps:</Text>
+            {block.solveLine ? (
+              <Text style={styles.methodSolveLineStandalone}>{block.solveLine}</Text>
+            ) : null}
           </View>
-          {block.solveLine ? (
-            <View style={styles.methodTwoColRow}>
-              <View style={styles.methodTwoColLeft}>
-                <Text style={styles.methodSolveLine}>{block.solveLine}</Text>
-              </View>
-              <View style={styles.methodTwoColRight} />
-            </View>
-          ) : null}
           {block.rows.map((row, idx) => {
-            const isSubstituteBlock = /^Substitute\s+x\s*=/.test(row.left.trim());
+            const stepNum = idx + 1;
+            let leftText = row.left ?? '';
+            let rightText = row.right ?? '';
+            // Move "x = 2" or "x = 5" from guide (right) to equation (left) when guide is "Addition Property of Equality"
+            const resultMatch = rightText.match(/^(.*?Addition Property of Equality)\s*\n\s*(x\s*=\s*-?\d+)\s*$/s);
+            if (resultMatch) {
+              rightText = resultMatch[1].trim();
+              leftText = leftText ? `${leftText}\n${resultMatch[2].trim()}` : resultMatch[2].trim();
+            }
+            const hasLeft = !!leftText.trim();
+            const hasRight = !!rightText.trim();
+            const labelText = hasRight ? `Step ${stepNum}: ${rightText.trim()}` : `Step ${stepNum}`;
+
+            // For Example 1, Step 2: append the factor-pair guide text into the equation box
+            const equationText =
+              block.exampleNum === '1' && stepNum === 2 && hasLeft
+                ? `${leftText}\n\n${FACTOR_PAIR_GUIDE_TEXT}`
+                : leftText;
+
             return (
-              <View key={idx}>
-                {isSubstituteBlock ? <View style={styles.methodBlockSpacer} /> : null}
-                <View style={styles.methodTwoColRow}>
-                  <View style={styles.methodTwoColLeft}>
-                    <Text style={styles.methodTwoColLeftText}>{row.left}</Text>
+              <View key={idx} style={styles.methodStepCard}>
+                <View style={styles.methodStepCardRow}>
+                  <View style={styles.methodStepCircle}>
+                    <Text style={styles.methodStepCircleText}>{stepNum}</Text>
                   </View>
-                  <View style={styles.methodTwoColRight}>
-                    {row.right ? (
-                      <MethodStepText text={row.right} style={styles.methodTwoColRightText} />
+                  <View style={styles.methodStepCardBody}>
+                    <Text style={styles.methodStepCardLabel}>{labelText}</Text>
+                    {hasLeft ? (
+                      <MethodStepEquationBlock text={equationText} useSlashFractions={false} />
                     ) : null}
                   </View>
                 </View>
               </View>
             );
           })}
-        </View>
+        </React.Fragment>
       ))}
       {renderMethodVideo()}
     </>

@@ -5,8 +5,8 @@ import { Spacing } from '../constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const PRIMARY_COLOR = '#FF6600';
-const PRIMARY_DARK = '#E55A00';
+const PRIMARY_COLOR = '#10B981';
+const PRIMARY_DARK = '#047857';
 const WHITE = '#FFFFFF';
 
 interface LoadingScreenProps {

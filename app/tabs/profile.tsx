@@ -27,8 +27,8 @@ import { getTopicProgress, resetTopicProgress } from '../../utils/progressStorag
 import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
-  primary: '#FF6600',
-  primaryDark: '#CC5200',
+  primary: '#10B981',
+  primaryDark: '#047857',
   white: '#FFFFFF',
   background: '#FAFAFA',
   card: '#FFFFFF',
@@ -36,7 +36,7 @@ const ProfessionalColors = {
   textSecondary: '#666666',
   border: '#E5E5E5',
   error: '#DC2626',
-  success: '#61E35D',
+  success: '#10B981',
   warning: '#F59E0B',
 };
 
@@ -48,16 +48,7 @@ const getDefaultUser = () => ({
   avatar: '',
 });
 
-// Statistics — will be loaded from database
-const DEFAULT_STATS = {
-  topicsMastered: 0,
-  totalTopics: 5,
-  averageScore: 0,
-  quizzesCompleted: 0,
-  currentStreak: 0,
-  learningTime: 0,
-  achievementPoints: 0,
-};
+const TOTAL_TOPICS = 5;
 
 // Topics with progress (match home screen; progress loaded from storage)
 const TOPICS = [
@@ -197,12 +188,12 @@ function AnimatedStatCard({
   const combinedScale = Animated.multiply(Animated.multiply(scaleAnim, pressScale), pulseAnim);
 
   const gradientColors: [string, string][] = [
-    ['#FF6600', '#FF8C42'],
-    ['#4ECDC4', '#45B7D1'],
-    ['#61E35D', '#4ECDC4'],
-    ['#FF6B6B', '#FFA726'],
-    ['#AB47BC', '#9B59B6'],
-    ['#FFA726', '#FFCC80'],
+    ['#10B981', '#34D399'],
+    ['#059669', '#10B981'],
+    ['#047857', '#0D9488'],
+    ['#0F766E', '#14B8A6'],
+    ['#115E59', '#0D9488'],
+    ['#134E4A', '#14B8A6'],
   ];
 
   return (
@@ -591,6 +582,15 @@ export default function ProfileScreen() {
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editPhotoUri, setEditPhotoUri] = useState<string | undefined>(undefined);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [stats, setStats] = useState({
+    topicsMastered: 0,
+    totalTopics: TOTAL_TOPICS,
+    averageScore: 0,
+    quizzesCompleted: 0,
+    currentStreak: 0,
+    learningTime: 0,
+    achievementPoints: 0,
+  });
 
   useFocusEffect(
     useCallback(() => {
@@ -599,9 +599,32 @@ export default function ProfileScreen() {
         try {
           const saved = await getTopicProgress();
           if (cancelled) return;
-          if (saved && typeof saved === 'object') {
-            setTopics((prev) => prev.map((t) => ({ ...t, progress: (saved as Record<number, number>)[t.id] ?? 0 })));
-          }
+          const progressMap = saved && typeof saved === 'object' ? (saved as Record<number, number>) : {};
+          setTopics((prev) => prev.map((t) => ({ ...t, progress: progressMap[t.id] ?? 0 })));
+
+          const [scores, streak, achievements] = await Promise.all([
+            database.getScores(),
+            database.getStreak(),
+            database.getAchievements(),
+          ]).then(([s, st, a]) => (cancelled ? [[], 0, []] as const : [s, st, a]));
+          if (cancelled) return;
+          const topicsMastered = TOPICS.filter((t) => (progressMap[t.id] ?? 0) >= 100).length;
+          const averageScore =
+            scores.length > 0
+              ? Math.round(
+                  scores.reduce((sum, r) => sum + (r.total > 0 ? (r.score / r.total) * 100 : 0), 0) / scores.length
+                )
+              : 0;
+          setStats({
+            topicsMastered,
+            totalTopics: TOTAL_TOPICS,
+            averageScore,
+            quizzesCompleted: scores.length,
+            currentStreak: streak,
+            learningTime: 0,
+            achievementPoints: achievements.length,
+          });
+
           const overlay = await getProfileOverlay();
           if (cancelled) return;
           const user = await database.getUserData();
@@ -961,42 +984,42 @@ export default function ProfileScreen() {
           <View style={styles.statsGrid}>
             <AnimatedStatCard
               icon="📚"
-              value={`${DEFAULT_STATS.topicsMastered}/${DEFAULT_STATS.totalTopics}`}
+              value={`${stats.topicsMastered}/${stats.totalTopics}`}
               label="Topics Mastered"
               index={0}
               delay={100}
             />
             <AnimatedStatCard
               icon="📊"
-              value={`${DEFAULT_STATS.averageScore}%`}
+              value={`${stats.averageScore}%`}
               label="Average Score"
               index={1}
               delay={150}
             />
             <AnimatedStatCard
               icon="✅"
-              value={DEFAULT_STATS.quizzesCompleted}
+              value={stats.quizzesCompleted}
               label="Quizzes Completed"
               index={2}
               delay={200}
             />
             <AnimatedStatCard
               icon="🔥"
-              value={DEFAULT_STATS.currentStreak}
+              value={stats.currentStreak}
               label="Day Streak"
               index={3}
               delay={250}
             />
             <AnimatedStatCard
               icon="⏱️"
-              value={`${DEFAULT_STATS.learningTime}h`}
+              value={`${stats.learningTime}h`}
               label="Learning Time"
               index={4}
               delay={300}
             />
             <AnimatedStatCard
               icon="🏆"
-              value={DEFAULT_STATS.achievementPoints}
+              value={stats.achievementPoints}
               label="Achievement Points"
               index={5}
               delay={350}

@@ -8,7 +8,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { isWeb } from '../utils/responsive';
 
-const PRIMARY = '#FF6600';
+const PRIMARY = '#10B981';
 
 const BG_SYMBOLS = ['+', '−', '×', '÷', 'π', '√', 'Σ', '∫', '∞', 'θ', 'α', '='];
 
@@ -168,7 +168,7 @@ export default function TabsAnimatedBackground() {
     <View style={styles.container} pointerEvents="none">
       <View style={styles.gradient} />
       <LinearGradient
-        colors={[`${PRIMARY}08`, `${PRIMARY}02`, 'transparent', 'transparent']}
+        colors={[`${PRIMARY}12`, `${PRIMARY}04`, 'transparent', 'transparent']}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}

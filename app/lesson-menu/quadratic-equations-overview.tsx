@@ -16,16 +16,16 @@ import { QUADRATIC_EQUATIONS_DATA } from '@/data/lessons/module1_quadratic';
 import { getSpacing, scaleFont, scaleSize } from '@/utils/responsive';
 
 const Theme = {
-  primary: '#FF6600',
-  primaryDark: '#E55A00',
+  primary: '#10B981',
+  primaryDark: '#047857',
   white: '#FFFFFF',
-  background: '#FFF8F5',
+  background: '#F0FDF4',
   text: '#1A1A2E',
   textSecondary: '#4A4A6A',
-  border: '#FFE5D9',
+  border: '#D1FAE5',
   accent: '#0EA5E9',
   cardGradientStart: '#FFFFFF',
-  cardGradientEnd: '#FFFBF9',
+  cardGradientEnd: '#F0FDF4',
 };
 
 const ANIM_DURATION = 420;

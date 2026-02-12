@@ -13,15 +13,15 @@ import { BorderRadius, Spacing } from '../../constants/colors';
 import { getSpacing, scaleFont, scaleSize } from '../../utils/responsive';
 
 const Theme = {
-  primary: '#FF6600',
-  primaryLight: '#FF8533',
+  primary: '#10B981',
+  primaryLight: '#34D399',
   white: '#FFFFFF',
-  background: '#FFFBF7',
+  background: '#F0FDF4',
   card: '#FFFFFF',
   text: '#1A1A2E',
   textSecondary: '#5A5A6E',
-  border: '#FFE5D9',
-  cardShadow: 'rgba(255, 102, 0, 0.08)',
+  border: '#D1FAE5',
+  cardShadow: 'rgba(16, 185, 129, 0.08)',
 };
 
 const TOPICS = [

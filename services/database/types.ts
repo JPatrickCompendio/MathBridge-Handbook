@@ -31,6 +31,10 @@ export interface UserCredentials {
   password: string;
   /** Recovery PIN for offline app; used to reset password when forgotten. Optional on web. */
   recoveryPin?: string;
+  /** Full name (web signup). Stored as username/displayName. */
+  fullName?: string;
+  /** Learner Reference Number (web signup). */
+  lrn?: string;
 }
 
 export interface Session {
@@ -110,9 +114,15 @@ export interface DatabaseService {
   /** Send password reset email (Firebase only on web; no-op on native) */
   sendPasswordResetEmail(email: string): Promise<void>;
 
+  /** Request password reset (web only): creates a request for admin to set password. Teacher tells student in person. */
+  requestPasswordReset?(identifier: string): Promise<void>;
+
   /** Reset password with recovery PIN (SQLite/app only; throws on web) */
   resetPasswordWithPin(email: string, recoveryPin: string, newPassword: string): Promise<void>;
 
   /** Update profile (displayName, photoUrl). Firebase/web only; no-op on native. */
   updateUserProfile?(updates: { displayName?: string; photoUrl?: string }): Promise<void>;
+
+  /** Get auth email by LRN for web login. Web only; returns null on native. */
+  getEmailByLrn?(lrn: string): Promise<string | null>;
 }

@@ -13,8 +13,8 @@ import { BorderRadius, Spacing } from '../constants/colors';
 import { getSpacing, scaleFont, scaleSize, wp } from '../utils/responsive';
 
 const ProfessionalColors = {
-  primary: '#FF6600',
-  primaryDark: '#CC5200',
+  primary: '#10B981',
+  primaryDark: '#047857',
   white: '#FFFFFF',
   background: '#FAFAFA',
   text: '#1A1A1A',

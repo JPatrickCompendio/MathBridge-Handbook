@@ -1,7 +1,8 @@
 // Web-only admin data helpers for teacher/admin dashboard.
 // Reads from Firebase directly (shared with the existing web database config).
 
-import { initializeApp, type FirebaseApp } from 'firebase/app';
+import { getApps, initializeApp, type FirebaseApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import {
   getFirestore,
   type Firestore,
@@ -12,6 +13,8 @@ import {
   query,
   orderBy,
   limit,
+  where,
+  updateDoc,
 } from 'firebase/firestore';
 import firebaseConfig from './database/firebaseConfig';
 import type { AchievementRecord, QuizAnswerDetail, ScoreRecord } from './database/types';
@@ -50,7 +53,7 @@ function getDb(): Firestore {
     throw new Error('Firebase is not configured. Set EXPO_PUBLIC_FIREBASE_* env vars.');
   }
   if (!app) {
-    app = initializeApp(firebaseConfig);
+    app = getApps().length > 0 ? (getApps()[0] as FirebaseApp) : initializeApp(firebaseConfig);
     db = getFirestore(app);
   }
   return db!;
@@ -267,3 +270,68 @@ export async function fetchQuizAttemptDetails(
 
 export type { AdminUserSummary, AdminOverview };
 
+/** Password reset request created when a student clicks Forgot Password on web login */
+export type PasswordResetRequest = {
+  id: string;
+  identifier: string;
+  userId: string | null;
+  requestedAt: string;
+  status: 'pending' | 'completed';
+};
+
+/** Fetch pending password reset requests (web admin only) */
+export async function fetchPasswordResetRequests(): Promise<PasswordResetRequest[]> {
+  const database = getDb();
+  const coll = collection(database, 'password_reset_requests');
+  const q = query(coll, where('status', '==', 'pending'), limit(100));
+  const snap = await getDocs(q);
+  const list = snap.docs.map((d) => {
+    const data = d.data() as { identifier: string; userId: string | null; requestedAt: string; status: string };
+    return {
+      id: d.id,
+      identifier: data.identifier,
+      userId: data.userId ?? null,
+      requestedAt: data.requestedAt,
+      status: (data.status as 'pending' | 'completed') || 'pending',
+    };
+  });
+  list.sort((a, b) => b.requestedAt.localeCompare(a.requestedAt));
+  return list;
+}
+
+/** Mark a password reset request as completed (web admin only) */
+export async function completePasswordResetRequest(requestId: string): Promise<void> {
+  const database = getDb();
+  const ref = doc(database, 'password_reset_requests', requestId);
+  await updateDoc(ref, { status: 'completed' });
+}
+
+/** Admin sets a student's password via serverless API (requires Firebase Admin on server) */
+export async function adminSetPassword(userId: string, newPassword: string): Promise<void> {
+  const auth = getAuth();
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+  const token = await user.getIdToken();
+  const base = typeof window !== 'undefined' ? window.location.origin : '';
+  const res = await fetch(`${base}/api/admin-set-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ userId, newPassword }),
+  });
+  const text = await res.text();
+  let data: { error?: string; success?: boolean } = {};
+  try {
+    data = text ? (JSON.parse(text) as { error?: string; success?: boolean }) : {};
+  } catch {
+    if (res.status === 404) {
+      throw new Error(
+        'Password reset API not found. Deploy to Vercel and set FIREBASE_SERVICE_ACCOUNT env for admin password reset.'
+      );
+    }
+    throw new Error(text || `Request failed (${res.status})`);
+  }
+  if (!res.ok) throw new Error(data.error ?? 'Failed to set password');
+}

@@ -28,8 +28,8 @@ import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize } from
 const QUIZ_WEB_MAX_WIDTH = 680;
 
 const ProfessionalColors = {
-  primary: '#FF6600',
-  primaryDark: '#CC5200',
+  primary: '#10B981',
+  primaryDark: '#047857',
   white: '#FFFFFF',
   background: '#FAFAFA',
   card: '#FFFFFF',
@@ -37,10 +37,10 @@ const ProfessionalColors = {
   textSecondary: '#666666',
   border: '#E5E5E5',
   error: '#DC2626',
-  success: '#61E35D',
+  success: '#10B981',
   warning: '#F59E0B',
-  easy: '#61E35D',
-  medium: '#FF6600',
+  easy: '#10B981',
+  medium: '#F59E0B',
   hard: '#DC2626',
 };
 

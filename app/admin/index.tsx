@@ -21,8 +21,12 @@ import {
   fetchUserScores,
   fetchUserAchievements,
   fetchQuizAttemptDetails,
+  fetchPasswordResetRequests,
+  completePasswordResetRequest,
+  adminSetPassword,
   type AdminUserSummary,
   type AdminOverview,
+  type PasswordResetRequest,
 } from '../../services/adminData.web';
 import type { AchievementRecord, ScoreRecord } from '../../services/database/types';
 import type { QuizAnswerDetail } from '../../services/database/types';
@@ -89,6 +93,9 @@ export default function AdminDashboardScreen() {
   const [studentDetailsLoading, setStudentDetailsLoading] = useState(false);
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [logoutConfirmVisible, setLogoutConfirmVisible] = useState(false);
+  const [passwordResetRequests, setPasswordResetRequests] = useState<PasswordResetRequest[]>([]);
+  const [passwordResetRequestsLoading, setPasswordResetRequestsLoading] = useState(false);
+  const [setPasswordModal, setSetPasswordModal] = useState<{ request: PasswordResetRequest; user?: AdminUserSummary } | null>(null);
   const backgroundAnim = React.useRef(new Animated.Value(0)).current;
   const headerOpacity = React.useRef(new Animated.Value(0)).current;
   const headerScale = React.useRef(new Animated.Value(0.96)).current;
@@ -175,6 +182,16 @@ export default function AdminDashboardScreen() {
       Animated.spring(headerScale, { toValue: 1, useNativeDriver: true, tension: 80, friction: 10 }),
     ]).start();
   }, [authorized, headerOpacity, headerScale]);
+
+  useEffect(() => {
+    if (authorized === true && activeTab === 'students') {
+      setPasswordResetRequestsLoading(true);
+      fetchPasswordResetRequests()
+        .then(setPasswordResetRequests)
+        .catch(() => setPasswordResetRequests([]))
+        .finally(() => setPasswordResetRequestsLoading(false));
+    }
+  }, [authorized, activeTab]);
 
   const handleStudentSelect = async (user: AdminUserSummary | null) => {
     setSelectedStudent(user);
@@ -273,6 +290,16 @@ export default function AdminDashboardScreen() {
               users={users}
               searchQuery={studentSearchQuery}
               onSearchChange={setStudentSearchQuery}
+              passwordResetRequests={passwordResetRequests}
+              passwordResetRequestsLoading={passwordResetRequestsLoading}
+              onRefreshRequests={() => {
+                setPasswordResetRequestsLoading(true);
+                fetchPasswordResetRequests()
+                  .then(setPasswordResetRequests)
+                  .catch(() => setPasswordResetRequests([]))
+                  .finally(() => setPasswordResetRequestsLoading(false));
+              }}
+              onSetPassword={(request, user) => setSetPasswordModal({ request, user })}
             />
           )}
           {activeTab === 'leaderboard' && (
@@ -293,6 +320,24 @@ export default function AdminDashboardScreen() {
           achievements={studentAchievements}
           loading={studentDetailsLoading}
           onFetchAttemptDetails={(scoreId) => fetchQuizAttemptDetails(selectedStudent.id, scoreId)}
+        />
+      )}
+
+      {setPasswordModal && (
+        <SetPasswordModal
+          visible={!!setPasswordModal}
+          request={setPasswordModal.request}
+          user={setPasswordModal.user}
+          onClose={() => setSetPasswordModal(null)}
+          onSuccess={(requestId) => {
+            setSetPasswordModal(null);
+            setPasswordResetRequests((prev) => prev.filter((r) => r.id !== requestId));
+            setPasswordResetRequestsLoading(true);
+            fetchPasswordResetRequests()
+              .then(setPasswordResetRequests)
+              .catch(() => setPasswordResetRequests([]))
+              .finally(() => setPasswordResetRequestsLoading(false));
+          }}
         />
       )}
 
@@ -640,6 +685,96 @@ function StudentDetailModal({
   );
 }
 
+function SetPasswordModal({
+  visible,
+  request,
+  user,
+  onClose,
+  onSuccess,
+}: {
+  visible: boolean;
+  request: PasswordResetRequest;
+  user?: AdminUserSummary;
+  onClose: () => void;
+  onSuccess: (requestId: string) => void;
+}) {
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const displayName = user?.username || user?.displayName || user?.email || request.identifier;
+
+  const handleSubmit = async () => {
+    setError('');
+    if (!user?.id) {
+      setError('User not found. The student may have used an identifier we could not match.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await adminSetPassword(user.id, newPassword);
+      await completePasswordResetRequest(request.id);
+      onSuccess(request.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to set password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.logoutConfirmOverlay}>
+        <View style={styles.logoutConfirmCard}>
+          <Text style={styles.logoutConfirmTitle}>Set password for student</Text>
+          <Text style={styles.logoutConfirmMessage}>
+            {displayName} ({request.identifier}) requested a password reset. Enter the new password below. Tell the student in person.
+          </Text>
+          <TextInput
+            style={[styles.searchBarInput, { marginBottom: getSpacing(Spacing.sm) }]}
+            placeholder="New password (min 6 characters)"
+            placeholderTextColor="#9CA3AF"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry
+          />
+          <TextInput
+            style={[styles.searchBarInput, { marginBottom: getSpacing(Spacing.sm) }]}
+            placeholder="Confirm password"
+            placeholderTextColor="#9CA3AF"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+          />
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <View style={[styles.logoutConfirmActions, { marginTop: getSpacing(Spacing.md) }]}>
+            <TouchableOpacity style={styles.logoutConfirmCancel} onPress={onClose}>
+              <Text style={styles.logoutConfirmCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.setPasswordConfirmButton, (!user?.id || loading) && styles.setPasswordConfirmDisabled]}
+              onPress={handleSubmit}
+              disabled={!user?.id || loading}
+            >
+              <Text style={styles.logoutConfirmOkText}>
+                {loading ? 'Setting…' : 'Set password'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function TabButton({
   label,
   tab,
@@ -792,23 +927,62 @@ function StudentsTab({
   users,
   searchQuery,
   onSearchChange,
+  passwordResetRequests,
+  passwordResetRequestsLoading,
+  onRefreshRequests,
+  onSetPassword,
 }: {
   users: AdminUserSummary[];
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  passwordResetRequests: PasswordResetRequest[];
+  passwordResetRequestsLoading: boolean;
+  onRefreshRequests: () => void;
+  onSetPassword: (request: PasswordResetRequest, user?: AdminUserSummary) => void;
 }) {
   const filteredUsers = filterUsersByName(users, searchQuery);
 
-  if (!users.length) {
-    return (
-      <View style={styles.section}>
-        <Text style={styles.mutedText}>No students found yet.</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.section}>
+      {passwordResetRequests.length > 0 ? (
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Password reset requests</Text>
+          <Text style={[styles.mutedText, { marginBottom: getSpacing(Spacing.sm) }]}>
+            Students who clicked Forgot Password. Set a new password and tell them in person.
+          </Text>
+          {passwordResetRequestsLoading ? (
+            <ActivityIndicator size="small" color="#10B981" />
+          ) : (
+            <View style={styles.resetRequestList}>
+              {passwordResetRequests.map((req) => {
+                const user = req.userId ? users.find((u) => u.id === req.userId) : undefined;
+                return (
+                  <View key={req.id} style={styles.resetRequestRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.resetRequestIdentifier}>{req.identifier}</Text>
+                      <Text style={styles.resetRequestMeta}>
+                        {req.requestedAt.slice(0, 16).replace('T', ' ')}
+                        {user ? ` · ${user.username || user.email}` : ' · User not found'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.setPasswordButton, !user && styles.setPasswordButtonDisabled]}
+                      onPress={() => onSetPassword(req, user)}
+                      disabled={!user}
+                    >
+                      <Text style={styles.setPasswordButtonText}>
+                        {user ? 'Set password' : 'N/A'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      ) : null}
+
+      <Text style={styles.sectionTitle}>All students</Text>
       <View style={styles.studentsTabSearchRow}>
         <View style={{ flex: 1 }} />
         <View style={styles.searchBarWrap}>
@@ -821,6 +995,9 @@ function StudentsTab({
           />
         </View>
       </View>
+      {!users.length ? (
+        <Text style={styles.mutedText}>No students found yet.</Text>
+      ) : (
       <View style={styles.tableCard}>
         <View style={styles.tableHeaderRow}>
           <Text style={[styles.tableHeaderCell, { flex: 2 }]}>Student</Text>
@@ -854,6 +1031,7 @@ function StudentsTab({
           </Text>
         )}
       </View>
+      )}
     </View>
   );
 }
@@ -1044,6 +1222,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: getSpacing(Spacing.lg),
     borderRadius: scaleSize(12),
     backgroundColor: '#B91C1C',
+  },
+  setPasswordConfirmButton: {
+    paddingVertical: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(Spacing.lg),
+    borderRadius: scaleSize(12),
+    backgroundColor: '#10B981',
+  },
+  setPasswordConfirmDisabled: {
+    opacity: 0.5,
   },
   logoutConfirmOkText: {
     fontSize: scaleFont(14),
@@ -1449,6 +1636,45 @@ const styles = StyleSheet.create({
   tableEmptyText: {
     paddingVertical: getSpacing(Spacing.lg),
     paddingHorizontal: getSpacing(Spacing.md),
+  },
+  resetRequestList: {
+    gap: getSpacing(Spacing.sm),
+  },
+  resetRequestRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(Spacing.md),
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: scaleSize(12),
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+  },
+  resetRequestIdentifier: {
+    fontSize: scaleFont(14),
+    fontWeight: '600',
+    color: '#ECFDF5',
+  },
+  resetRequestMeta: {
+    fontSize: scaleFont(12),
+    color: '#A7F3D0',
+    marginTop: 2,
+  },
+  setPasswordButton: {
+    paddingVertical: getSpacing(Spacing.sm),
+    paddingHorizontal: getSpacing(Spacing.md),
+    borderRadius: scaleSize(10),
+    backgroundColor: '#10B981',
+  },
+  setPasswordButtonDisabled: {
+    backgroundColor: '#6B7280',
+    opacity: 0.7,
+  },
+  setPasswordButtonText: {
+    fontSize: scaleFont(13),
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   leaderRow: {
     flexDirection: 'row',

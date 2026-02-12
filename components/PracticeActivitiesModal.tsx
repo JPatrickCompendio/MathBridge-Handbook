@@ -17,8 +17,8 @@ import { getSpacing, isWeb, scaleFont, scaleSize } from '../utils/responsive';
 const PRACTICE_MODAL_WEB_MAX_WIDTH = 420;
 
 const ProfessionalColors = {
-  primary: '#FF6600',
-  primaryDark: '#CC5200',
+  primary: '#10B981',
+  primaryDark: '#047857',
   white: '#FFFFFF',
   background: '#FAFAFA',
   card: '#FFFFFF',
@@ -26,7 +26,7 @@ const ProfessionalColors = {
   textSecondary: '#666666',
   border: '#E5E5E5',
   error: '#DC2626',
-  success: '#61E35D',
+  success: '#10B981',
   overlay: 'rgba(0, 0, 0, 0.7)',
 };
 

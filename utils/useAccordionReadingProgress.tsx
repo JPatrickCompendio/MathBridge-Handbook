@@ -14,7 +14,9 @@ export function useAccordionReadingProgress(
   openedSectionIds: ReadonlySet<string> | readonly string[],
   saveContentProgress: (topicId: number, percent: number) => void | Promise<void>
 ) {
-  const openedCount = Array.isArray(openedSectionIds) ? openedSectionIds.length : openedSectionIds.size;
+  const openedCount = Array.isArray(openedSectionIds)
+    ? openedSectionIds.length
+    : (openedSectionIds as ReadonlySet<string>).size;
   const percent = totalSections > 0 ? Math.min(100, Math.round((openedCount / totalSections) * 100)) : 0;
   const lastSaved = useRef(0);
   const indicatorOpacity = useRef(new Animated.Value(0)).current;

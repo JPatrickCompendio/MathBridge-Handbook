@@ -33,15 +33,15 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const Theme = {
-  primary: '#FF6600',
+  primary: '#10B981',
   white: '#FFFFFF',
-  background: '#FFF8F5',
+  background: '#F0FDF4',
   card: '#FFFFFF',
   text: '#1A1A2E',
   textSecondary: '#4A4A6A',
-  border: '#FFE5D9',
+  border: '#D1FAE5',
   accent: '#0EA5E9',
-  muted: '#E8E4E0',
+  muted: '#D1FAE5',
 };
 
 function AccordionHeader({

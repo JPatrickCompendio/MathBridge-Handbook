@@ -11,7 +11,6 @@ import {
   signOut as firebaseSignOut,
   updateProfile,
   sendEmailVerification,
-  sendPasswordResetEmail as firebaseSendPasswordResetEmail,
 } from 'firebase/auth';
 import {
   collection,
@@ -98,31 +97,39 @@ const firebaseService: DatabaseService = {
     const authInstance = getAuthInstance();
     const database = getDb();
 
+    const displayName = credentials.fullName?.trim() || credentials.username.trim();
+    const email = credentials.email.trim();
+    const isRealEmail = /\S+@\S+\.\S+/.test(email) && !email.includes('@mathbridge.local');
+
     const userCred = await createUserWithEmailAndPassword(
       authInstance,
-      credentials.email,
+      email,
       credentials.password
     );
     const fbUser = userCred.user;
 
-    await updateProfile(fbUser, { displayName: credentials.username });
-    await sendEmailVerification(fbUser);
+    await updateProfile(fbUser, { displayName });
+    if (isRealEmail) {
+      await sendEmailVerification(fbUser);
+    }
 
     const createdAt = new Date().toISOString();
     const userRef = doc(database, 'users', fbUser.uid);
-    await setDoc(userRef, {
-      username: credentials.username,
-      email: credentials.email,
+    const userData: Record<string, unknown> = {
+      username: displayName,
+      email,
       createdAt,
-    });
+    };
+    if (credentials.lrn?.trim()) userData.lrn = credentials.lrn.trim();
+    await setDoc(userRef, userData);
 
     const user: User = {
       id: fbUser.uid,
-      username: credentials.username,
-      email: credentials.email,
+      username: displayName,
+      email,
       createdAt,
     };
-    const session: Session = { userId: fbUser.uid, email: credentials.email, username: credentials.username };
+    const session: Session = { userId: fbUser.uid, email, username: displayName };
     setSession(session);
     return { user, session };
   },
@@ -137,10 +144,11 @@ const firebaseService: DatabaseService = {
 
       const effectiveEmail = (fbUser.email ?? email).toLowerCase();
       const isAdminEmail = ADMIN_EMAILS.includes(effectiveEmail);
+      const isPlaceholderEmail = effectiveEmail.includes('@mathbridge.local');
 
-      // For regular student accounts, require email verification.
+      // For regular student accounts, require email verification (except placeholder LRN-only accounts).
       // For predefined admin/teacher accounts, allow login even if not verified.
-      if (!fbUser.emailVerified && !isAdminEmail) {
+      if (!fbUser.emailVerified && !isAdminEmail && !isPlaceholderEmail) {
         await firebaseSignOut(authInstance);
         throw new Error('EMAIL_NOT_VERIFIED');
       }
@@ -384,6 +392,17 @@ const firebaseService: DatabaseService = {
     await setDoc(activityMetaRef, { lastActivityDate: null, streak: 0 }, { merge: true });
   },
 
+  async getEmailByLrn(lrn: string): Promise<string | null> {
+    const database = getDb();
+    const usersColl = collection(database, 'users');
+    const q = query(usersColl, where('lrn', '==', lrn.trim()));
+    const snap = await getDocs(q);
+    const first = snap.docs[0];
+    if (!first) return null;
+    const email = first.data().email;
+    return typeof email === 'string' ? email : null;
+  },
+
   async signOut(): Promise<void> {
     setSession(null);
     try {
@@ -394,9 +413,35 @@ const firebaseService: DatabaseService = {
     }
   },
 
-  async sendPasswordResetEmail(email: string): Promise<void> {
-    const authInstance = getAuthInstance();
-    await firebaseSendPasswordResetEmail(authInstance, email.trim());
+  async sendPasswordResetEmail(_email: string): Promise<void> {
+    // Not used on web; use requestPasswordReset instead so admin sets password in person.
+    throw new Error('Use forgot password to request a reset. The teacher will set your password.');
+  },
+
+  async requestPasswordReset(identifier: string): Promise<void> {
+    const database = getDb();
+    const trimmed = identifier.trim();
+    if (!trimmed) throw new Error('Enter your LRN or email.');
+    const requestedAt = new Date().toISOString();
+    const coll = collection(database, 'password_reset_requests');
+    let userId: string | null = null;
+    const usersSnap = await getDocs(collection(database, 'users'));
+    const isEmail = /\S+@\S+\.\S+/.test(trimmed);
+    for (const d of usersSnap.docs) {
+      const data = d.data() as { email?: string; lrn?: string };
+      const email = (data.email ?? '').toLowerCase();
+      const lrn = (data.lrn ?? '').trim();
+      if (email === trimmed.toLowerCase() || lrn === trimmed) {
+        userId = d.id;
+        break;
+      }
+    }
+    await addDoc(coll, {
+      identifier: trimmed,
+      userId: userId ?? null,
+      requestedAt,
+      status: 'pending',
+    });
   },
 
   async resetPasswordWithPin(_email: string, _recoveryPin: string, _newPassword: string): Promise<void> {

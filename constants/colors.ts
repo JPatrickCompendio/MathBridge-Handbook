@@ -1,28 +1,28 @@
 /**
- * Color constants for the Math Bridge Handbook app
+ * Color constants for the Math Bridge Handbook app (admin-style green theme)
  */
 export const Colors = {
-  primary: '#61E35D',      // Main green
-  primaryDark: '#4FC84B',  // Darker green for pressed states
-  primaryLight: '#7FE87C', // Lighter green for hover states
-  secondary: '#FF6600',     // Orange for accent/secondary actions
-  secondaryDark: '#E55A00', // Darker orange for pressed states
-  secondaryLight: '#FF8533', // Lighter orange for hover states
-  accent: '#FF6600',       // Orange accent
+  primary: '#10B981',       // Main green (emerald, same as admin)
+  primaryDark: '#047857',   // Darker green for pressed states
+  primaryLight: '#34D399',  // Lighter green for hover states
+  secondary: '#10B981',     // Green accent (same as admin)
+  secondaryDark: '#047857', // Darker green for pressed states
+  secondaryLight: '#34D399', // Lighter green for hover states
+  accent: '#10B981',       // Green accent
   background: '#F3F3F3',   // Light gray background
   surface: '#FFFFFF',       // White for cards/surfaces
   text: '#2C3E50',         // Dark gray for main text
   textSecondary: '#7F8C8D', // Lighter gray for secondary text
   border: '#E1E8ED',       // Light border color
   error: '#E74C3C',        // Error red
-  warning: '#FF6600',      // Warning orange
-  success: '#61E35D',      // Success green
-  info: '#61E35D',         // Info green
+  warning: '#F59E0B',      // Warning amber
+  success: '#10B981',      // Success green (same as admin)
+  info: '#10B981',         // Info green
   
   // Difficulty colors
-  easy: '#61E35D',         // Green
-  medium: '#FF6600',      // Orange
-  hard: '#E74C3C',        // Red
+  easy: '#10B981',         // Green
+  medium: '#F59E0B',       // Amber
+  hard: '#E74C3C',         // Red
   
   // Google brand color
   googleBlue: '#4285F4',
@@ -32,6 +32,7 @@ export const Colors = {
 };
 
 export const Spacing = {
+  xxxs: 2,
   xs: 4,
   sm: 8,
   md: 16,

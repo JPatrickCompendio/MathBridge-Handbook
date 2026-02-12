@@ -21,8 +21,8 @@ import { database } from '../../services/database';
 import { getSafeAreaTopPadding, getSpacing, hp, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
-  primary: '#FF6600',
-  primaryDark: '#CC5200',
+  primary: '#10B981',
+  primaryDark: '#047857',
   white: '#FFFFFF',
   background: '#FAFAFA',
   card: '#FFFFFF',
@@ -30,7 +30,7 @@ const ProfessionalColors = {
   textSecondary: '#666666',
   border: '#E5E5E5',
   error: '#DC2626',
-  success: '#059669',
+  success: '#10B981',
 };
 
 const MATH_SYMBOLS = ['+', '−', '×', '÷', 'Σ', 'π', '√', '='];
@@ -285,8 +285,8 @@ export default function LoginScreen() {
     const newErrors: { email?: string; password?: string } = {};
 
     if (!email.trim()) {
-      newErrors.email = isWeb() ? 'Email is required' : 'Username is required';
-    } else if (isWeb() && !/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = isWeb() ? 'Enter your LRN or email' : 'Username is required';
+    } else if (isWeb() && email.includes('@') && !/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Please enter a valid email';
     }
 
@@ -303,7 +303,17 @@ export default function LoginScreen() {
     if (!validateForm()) return;
     setLoading(true);
     try {
-      const session = await database.loginUser(email.trim(), password);
+      let authEmail = email.trim();
+      if (isWeb() && !authEmail.includes('@')) {
+        const emailByLrn = await database.getEmailByLrn?.(authEmail);
+        if (!emailByLrn) {
+          setLoginError('No account found for this LRN.');
+          setLoading(false);
+          return;
+        }
+        authEmail = emailByLrn;
+      }
+      const session = await database.loginUser(authEmail, password);
       if (session) {
         const normalizedEmail = (session.email || email.trim()).toLowerCase();
         const ADMIN_EMAILS = ['admin@example.com']; // TODO: replace with your real teacher/admin email(s)
@@ -331,19 +341,22 @@ export default function LoginScreen() {
     setLoginError('');
     if (isWeb()) {
       if (!email.trim()) {
-        setErrors((e) => ({ ...e, email: 'Enter your email to receive a reset link' }));
+        setErrors((e) => ({ ...e, email: 'Enter your LRN or email to request a password reset' }));
         return;
       }
       setResettingPassword(true);
       try {
-        await database.sendPasswordResetEmail(email.trim());
-        setForgotPasswordMessage({ type: 'success', text: 'Check your email for a link to reset your password.' });
+        if (database.requestPasswordReset) {
+          await database.requestPasswordReset(email.trim());
+          setForgotPasswordMessage({
+            type: 'success',
+            text: 'Your request has been sent. Your teacher will set a new password and tell you in person.',
+          });
+        } else {
+          setForgotPasswordMessage({ type: 'error', text: 'Password reset requests are not available.' });
+        }
       } catch (e: unknown) {
-        const msg = e && typeof e === 'object' && 'code' in e
-          ? (e as { code: string }).code === 'auth/user-not-found'
-            ? 'No account found for this email.'
-            : (e as { message?: string }).message ?? 'Something went wrong. Please try again.'
-          : 'Something went wrong. Please try again.';
+        const msg = e instanceof Error ? e.message : 'Something went wrong. Please try again.';
         setForgotPasswordMessage({ type: 'error', text: msg });
       } finally {
         setResettingPassword(false);
@@ -450,14 +463,14 @@ export default function LoginScreen() {
                 </Text>
               ) : null}
               <Input
-                label={isWeb() ? 'Email Address' : 'Username'}
-                placeholder={isWeb() ? 'Enter your email' : 'Your username'}
+                label={isWeb() ? '' : 'Username'}
+                placeholder={isWeb() ? 'Enter your LRN or email' : 'Your username'}
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
                   if (errors.email) setErrors({ ...errors, email: undefined });
                 }}
-                keyboardType={isWeb() ? 'email-address' : 'default'}
+                keyboardType={isWeb() ? 'default' : 'default'}
                 autoCapitalize="none"
                 autoCorrect={false}
                 error={errors.email}
@@ -483,7 +496,7 @@ export default function LoginScreen() {
                 disabled={resettingPassword}
               >
                 <Text style={styles.forgotPasswordText}>
-                  {resettingPassword ? 'Sending…' : 'Forgot your password?'}
+                  {resettingPassword ? 'Sending request…' : 'Forgot your password?'}
                 </Text>
               </TouchableOpacity>
 
@@ -531,7 +544,7 @@ export default function LoginScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={[styles.header, styles.headerCompact]}>
+            <View style={[styles.header, styles.headerCompact, styles.splashCentered]}>
               <View style={[styles.logoContainer, styles.logoCompact]}>
                 <Animated.View
                   style={[
@@ -554,83 +567,17 @@ export default function LoginScreen() {
                   </View>
                 </Animated.View>
               </View>
-              <Text style={[styles.title, styles.titleCompact]}>Welcome Back</Text>
+              <Text style={[styles.title, styles.titleCompact]}>Math Bridge</Text>
               <Text style={[styles.subtitle, styles.subtitleCompact]}>
-                Sign in to access your learning dashboard
+                Your learning journey starts here
               </Text>
-            </View>
-            <View style={[styles.formArea, styles.formAreaCompact]}>
-              <View style={[styles.form, styles.formCompact]}>
-                <Input
-                  label="Username"
-                  placeholder="Your username"
-                  value={email}
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    if (errors.email) setErrors({ ...errors, email: undefined });
-                  }}
-                  keyboardType="default"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  error={errors.email}
-                  containerStyle={[styles.input, styles.inputCompact]}
-                />
-                <Input
-                  label="Password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    if (errors.password) setErrors({ ...errors, password: undefined });
-                  }}
-                  secureTextEntry
-                  error={errors.password}
-                  containerStyle={[styles.input, styles.inputCompact]}
-                />
-                <TouchableOpacity
-                  onPress={handleForgotPassword}
-                  style={[styles.forgotPassword, styles.forgotPasswordCompact]}
-                  disabled={resettingPassword}
-                >
-                  <Text style={styles.forgotPasswordText}>
-                    {resettingPassword ? 'Sending…' : 'Forgot your password?'}
-                  </Text>
-                </TouchableOpacity>
-                {forgotPasswordMessage ? (
-                  <Text style={[
-                    styles.forgotPasswordMessage,
-                    forgotPasswordMessage.type === 'success'
-                      ? styles.forgotPasswordMessageSuccess
-                      : styles.forgotPasswordMessageError,
-                  ]}>
-                    {forgotPasswordMessage.text}
-                  </Text>
-                ) : null}
-                {loginError ? (
-                  <Text style={styles.loginErrorText}>{loginError}</Text>
-                ) : null}
-                <Button
-                  title={loading ? 'Signing in...' : 'Sign In'}
-                  onPress={handleLogin}
-                  variant="primary"
-                  size="large"
-                  style={[styles.signInButton, styles.signInButtonCompact]}
-                  disabled={loading}
-                />
-                {loading ? (
-                  <ActivityIndicator
-                    size="small"
-                    color={ProfessionalColors.primary}
-                    style={styles.loader}
-                  />
-                ) : null}
-                <View style={[styles.signupContainer, styles.signupContainerCompact]}>
-                  <Text style={styles.signupText}>Don't have an account? </Text>
-                  <TouchableOpacity onPress={() => router.push('/auth/signup')}>
-                    <Text style={styles.signupLinkText}>Create account</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+              <Button
+                title="Get Started"
+                onPress={() => router.replace('/tabs' as Href)}
+                variant="primary"
+                size="large"
+                style={[styles.signInButton, styles.signInButtonCompact, styles.splashButton]}
+              />
             </View>
           </ScrollView>
         )}
@@ -760,6 +707,17 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: wp(6),
     paddingBottom: hp(8),
+  },
+  splashCentered: {
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: '100%',
+    paddingTop: hp(12),
+  },
+  splashButton: {
+    marginTop: getSpacing(Spacing.xl),
+    alignSelf: 'center',
+    minWidth: 200,
   },
   headerCompact: {
     paddingTop: getSafeAreaTopPadding() + hp(1.5),

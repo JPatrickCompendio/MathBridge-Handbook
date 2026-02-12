@@ -33,16 +33,16 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const Theme = {
-  primary: '#FF6600',
+  primary: '#10B981',
   white: '#FFFFFF',
-  background: '#FFF8F5',
+  background: '#F0FDF4',
   card: '#FFFFFF',
   text: '#1A1A2E',
   textSecondary: '#4A4A6A',
-  border: '#FFE5D9',
+  border: '#D1FAE5',
   accent: '#0EA5E9',
   success: '#10B981',
-  muted: '#E8E4E0',
+  muted: '#D1FAE5',
 };
 
 const SECTION_V_IMAGES: Record<string, ImageSourcePropType> = {
@@ -82,7 +82,12 @@ function AccordionHeader({
 }
 
 
-function SectionFadeIn({ index, children }: { index: number; children: React.ReactNode }) {
+/** Wrapper that accepts key for map() - React's key is valid but not in RN View/Fragment types */
+function Keyed(props: React.PropsWithChildren<{ key?: React.Key }>) {
+  return <>{props.children}</>;
+}
+
+function SectionFadeIn({ index, children }: { index: number; children?: React.ReactNode }) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(16)).current;
   useEffect(() => {
@@ -176,10 +181,12 @@ export default function TriangleSimilarityLessonScreen() {
                 </Text>
                 <View style={styles.objectiveList}>
                   {objectives.map((item: string, idx: number) => (
-                    <View key={idx} style={styles.objectiveRow}>
-                      <View style={styles.objectiveBullet} />
-                      <Text style={styles.objectiveItem}>{item}</Text>
-                    </View>
+                    <Keyed key={idx}>
+                      <View style={styles.objectiveRow}>
+                        <View style={styles.objectiveBullet} />
+                        <Text style={styles.objectiveItem}>{item}</Text>
+                      </View>
+                    </Keyed>
                   ))}
                 </View>
               </View>
@@ -200,14 +207,18 @@ export default function TriangleSimilarityLessonScreen() {
               <Text style={styles.paragraph}>Two triangles are similar if:</Text>
               <View style={styles.bulletList}>
                 {(whatAre.conditions || []).map((c: string, idx: number) => (
-                  <View key={idx} style={styles.bulletRow}>
-                    <Text style={styles.bulletDot}>•</Text>
-                    <Text style={styles.bulletText}>{c}</Text>
-                  </View>
+                  <Keyed key={idx}>
+                    <View style={styles.bulletRow}>
+                      <Text style={styles.bulletDot}>•</Text>
+                      <Text style={styles.bulletText}>{c}</Text>
+                    </View>
+                  </Keyed>
                 ))}
               </View>
               {(whatAre.notes || []).map((note: string, idx: number) => (
-                <Text key={idx} style={styles.paragraph}>{note}</Text>
+                <Keyed key={idx}>
+                  <Text style={styles.paragraph}>{note}</Text>
+                </Keyed>
               ))}
             </AccordionRevealBody>
           )}
@@ -225,13 +236,15 @@ export default function TriangleSimilarityLessonScreen() {
             <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               <View style={styles.keyWordsList}>
                 {keyWordTerms.map((item: { term?: string; definition?: string }, idx: number) => (
-                  <View key={idx} style={[styles.keyWordItem, idx === keyWordTerms.length - 1 && styles.keyWordItemLast]}>
-                    <View style={styles.keyWordTermRow}>
-                      <Text style={styles.keyWordBullet}>•</Text>
-                      <Text style={styles.keyWordTerm}>{item.term}</Text>
+                  <Keyed key={idx}>
+                    <View style={[styles.keyWordItem, idx === keyWordTerms.length - 1 && styles.keyWordItemLast]}>
+                      <View style={styles.keyWordTermRow}>
+                        <Text style={styles.keyWordBullet}>•</Text>
+                        <Text style={styles.keyWordTerm}>{item.term}</Text>
+                      </View>
+                      <Text style={styles.keyWordDefinition}>{item.definition}</Text>
                     </View>
-                    <Text style={styles.keyWordDefinition}>{item.definition}</Text>
-                  </View>
+                  </Keyed>
                 ))}
               </View>
             </AccordionRevealBody>
@@ -314,7 +327,8 @@ export default function TriangleSimilarityLessonScreen() {
                 const examples = method.examples || [];
                 const hasStructuredExamples = Array.isArray(examples) && examples.length > 0 && typeof examples[0] === 'object';
                 return (
-                  <View key={key} style={styles.methodBlock}>
+                  <Keyed key={key}>
+                  <View style={styles.methodBlock}>
                     <TouchableOpacity
                       style={styles.methodHeader}
                       onPress={() => toggleMethod(key)}
@@ -328,10 +342,12 @@ export default function TriangleSimilarityLessonScreen() {
                         <Text style={styles.methodCriteriaTitle}>Triangles are similar if:</Text>
                         <View style={styles.bulletList}>
                           {(method.criteria || []).map((c: string, idx: number) => (
-                            <View key={idx} style={styles.bulletRow}>
-                              <Text style={styles.bulletDot}>•</Text>
-                              <Text style={styles.bulletText}>{c}</Text>
-                            </View>
+                            <Keyed key={idx}>
+                              <View style={styles.bulletRow}>
+                                <Text style={styles.bulletDot}>•</Text>
+                                <Text style={styles.bulletText}>{c}</Text>
+                              </View>
+                            </Keyed>
                           ))}
                         </View>
                         {method.note ? (
@@ -339,7 +355,8 @@ export default function TriangleSimilarityLessonScreen() {
                         ) : null}
                         {hasStructuredExamples ? (
                           (examples as Array<{ title?: string; given?: string[]; solution?: string[]; conclusion?: string; image?: string }>).map((ex, exIdx) => (
-                            <View key={exIdx} style={styles.similarityExampleBlock}>
+                            <Keyed key={exIdx}>
+                            <View style={styles.similarityExampleBlock}>
                               <Text style={styles.similarityExampleTitle}>{ex.title || `Example ${exIdx + 1}:`}</Text>
                               {ex.image && SECTION_V_IMAGES[ex.image] ? (
                                 <View style={styles.diagramWrap}>
@@ -353,25 +370,29 @@ export default function TriangleSimilarityLessonScreen() {
                               {(ex.given || []).length > 0 && (
                                 <>
                                   <Text style={styles.similarityLabel}>Given:</Text>
-                                  {(ex.given || []).map((line: string, i: number) =>
-                                    / over /.test(line) ? (
-                                      <FractionText key={i} text={line} style={styles.similarityGivenLine} />
-                                    ) : (
-                                      <Text key={i} style={styles.similarityGivenLine}>{line}</Text>
-                                    )
-                                  )}
+                                  {(ex.given || []).map((line: string, i: number) => (
+                                    <Keyed key={i}>
+                                      {/ over /.test(line) ? (
+                                        <FractionText text={line} style={styles.similarityGivenLine} />
+                                      ) : (
+                                        <Text style={styles.similarityGivenLine}>{line}</Text>
+                                      )}
+                                    </Keyed>
+                                  ))}
                                 </>
                               )}
                               {(ex.solution || []).length > 0 && (
                                 <>
                                   <Text style={[styles.similarityLabel, styles.similarityLabelSolution]}>Solution:</Text>
-                                  {(ex.solution || []).map((line: string, i: number) =>
-                                    / over /.test(line) ? (
-                                      <FractionText key={i} text={line} style={styles.similaritySolutionLine} />
-                                    ) : (
-                                      <Text key={i} style={styles.similaritySolutionLine}>{line}</Text>
-                                    )
-                                  )}
+                                  {(ex.solution || []).map((line: string, i: number) => (
+                                    <Keyed key={i}>
+                                      {/ over /.test(line) ? (
+                                        <FractionText text={line} style={styles.similaritySolutionLine} />
+                                      ) : (
+                                        <Text style={styles.similaritySolutionLine}>{line}</Text>
+                                      )}
+                                    </Keyed>
+                                  ))}
                                 </>
                               )}
                               {ex.conclusion ? (
@@ -381,15 +402,19 @@ export default function TriangleSimilarityLessonScreen() {
                                 </>
                               ) : null}
                             </View>
+                            </Keyed>
                           ))
                         ) : (
                           (method.examples_text || []).map((ex: string, idx: number) => (
-                            <Text key={idx} style={styles.exampleText}>{ex}</Text>
+                            <Keyed key={idx}>
+                              <Text style={styles.exampleText}>{ex}</Text>
+                            </Keyed>
                           ))
                         )}
                       </View>
                     )}
                   </View>
+                  </Keyed>
                 );
               })}
             </AccordionRevealBody>

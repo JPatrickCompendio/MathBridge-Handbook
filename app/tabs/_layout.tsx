@@ -7,15 +7,16 @@ import { BorderRadius } from '../../constants/colors';
 import { getSpacing, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
 
 const ProfessionalColors = {
-  primary: '#FF6600',
-  primaryDark: '#CC5200',
+  primary: '#10B981',
+  primaryDark: '#047857',
+  tabBarBackground: '#022C22',
   white: '#FFFFFF',
   background: '#FAFAFA',
   card: '#FFFFFF',
   text: '#1A1A1A',
   textSecondary: '#666666',
   border: '#E5E5E5',
-  activeBackground: 'rgba(255, 102, 0, 0.12)',
+  activeBackground: 'rgba(16, 185, 129, 0.12)',
 };
 
 // Enhanced Tab Icon Component with active state indicator
@@ -158,7 +159,7 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: ProfessionalColors.primary,
+    backgroundColor: ProfessionalColors.tabBarBackground,
     borderTopWidth: 0,
     elevation: 16,
     shadowColor: '#000',
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   iconWrapperActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: 'rgba(16, 185, 129, 0.35)',
   },
   icon: {
     textAlign: 'center',

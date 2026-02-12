@@ -82,6 +82,11 @@ Tables are created automatically on first use.
   Document ID = `userId`.  
   Fields: `lastActivity` (string, ISO).
 
+- **`password_reset_requests`**  
+  Auto-generated document IDs.  
+  Fields: `identifier` (LRN or email), `userId` (nullable), `requestedAt` (ISO), `status` ('pending'|'completed').  
+  Created when a student clicks Forgot Password on web login. Admin marks complete after setting password in person.
+
 **Indexes (Firestore):**  
 If you use `orderBy('completedAt', 'desc')` with `where('topicId', '==', ...)`, create a composite index in the Firebase console (or via `firestore.indexes.json`) for the `scores/{userId}/items` collection.
 

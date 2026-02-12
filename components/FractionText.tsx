@@ -226,13 +226,9 @@ export function FractionText({
     <View style={[styles.row, containerStyle]}>
       {segments.map((seg, idx) => {
         if (seg.type === 'text') {
-          // key is valid for list items; React Native's TextProps type omits it
-          // @ts-expect-error
           return <Text key={idx} style={[styles.text, segmentStyle]}>{seg.value}</Text>;
         }
         return (
-          // key is valid for list items; React Native's ViewProps type omits it
-          // @ts-expect-error
           <View key={idx} style={styles.frac}>
             <Text style={[styles.text, styles.num, segmentStyle]}>{seg.num}</Text>
             <View style={[styles.bar, { backgroundColor: color }]} />

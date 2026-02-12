@@ -21,8 +21,8 @@ import { database } from '../../services/database';
 import { getSafeAreaTopPadding, getSpacing, hp, isSmallDevice, isTablet, isWeb, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
-  primary: '#FF6600',
-  primaryDark: '#CC5200',
+  primary: '#10B981',
+  primaryDark: '#047857',
   white: '#FFFFFF',
   background: '#FAFAFA',
   card: '#FFFFFF',
@@ -30,7 +30,7 @@ const ProfessionalColors = {
   textSecondary: '#666666',
   border: '#E5E5E5',
   error: '#DC2626',
-  success: '#61E35D',
+  success: '#10B981',
 };
 
 const MATH_SYMBOLS = ['+', '−', '×', '÷', 'Σ', 'π', '√', '='];
@@ -40,6 +40,8 @@ export default function SignupScreen() {
   const [formData, setFormData] = useState({
     email: '',
     username: '',
+    fullName: '',
+    lrn: '',
     password: '',
     confirmPassword: '',
     recoveryPin: '',
@@ -48,6 +50,8 @@ export default function SignupScreen() {
   const [errors, setErrors] = useState<{
     email?: string;
     username?: string;
+    fullName?: string;
+    lrn?: string;
     password?: string;
     confirmPassword?: string;
     recoveryPin?: string;
@@ -145,17 +149,21 @@ export default function SignupScreen() {
     const newErrors: typeof errors = {};
 
     if (isWeb()) {
-      if (!formData.email.trim()) {
-        newErrors.email = 'Email is required';
-      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      if (!formData.fullName.trim()) {
+        newErrors.fullName = 'Full name is required';
+      }
+      if (!formData.lrn.trim()) {
+        newErrors.lrn = 'LRN is required';
+      }
+      if (formData.email.trim() && !/\S+@\S+\.\S+/.test(formData.email)) {
         newErrors.email = 'Email is invalid';
       }
-    }
-
-    if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
-    } else if (formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
+    } else {
+      if (!formData.username.trim()) {
+        newErrors.username = 'Username is required';
+      } else if (formData.username.length < 3) {
+        newErrors.username = 'Username must be at least 3 characters';
+      }
     }
 
     if (!formData.password.trim()) {
@@ -194,27 +202,42 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       const email = isWeb()
-        ? formData.email.trim()
+        ? (formData.email.trim() && /\S+@\S+\.\S+/.test(formData.email.trim())
+            ? formData.email.trim()
+            : `lrn_${formData.lrn.trim().replace(/\s/g, '')}@mathbridge.local`)
         : `_local_${Date.now()}_${Math.random().toString(36).slice(2, 9)}@app`;
       await database.createUser({
-        username: formData.username.trim(),
+        username: isWeb() ? formData.fullName.trim() : formData.username.trim(),
         email,
         password: formData.password,
+        ...(isWeb() && { fullName: formData.fullName.trim(), lrn: formData.lrn.trim() }),
         ...(!isWeb() && formData.recoveryPin.trim() ? { recoveryPin: formData.recoveryPin.trim() } : {}),
       });
       if (isWeb()) {
         await database.signOut();
-        if (typeof window !== 'undefined' && window.alert) {
-          window.alert(
-            'Account created!\n\nA verification email has been sent to your email address. Please check your inbox (and spam folder) and click the link to verify your account. You can sign in after verifying.'
-          );
-          router.replace('/auth/login?verify=1' as never);
+        const hadRealEmail = !!(formData.email.trim() && /\S+@\S+\.\S+/.test(formData.email.trim()));
+        if (hadRealEmail) {
+          if (typeof window !== 'undefined' && window.alert) {
+            window.alert(
+              'Account created!\n\nA verification email has been sent to your email address. Please check your inbox (and spam folder) and click the link to verify your account. You can sign in after verifying.'
+            );
+            router.replace('/auth/login?verify=1' as never);
+          } else {
+            Alert.alert(
+              'Email verification sent',
+              'A verification email has been sent to your email address. Please check your inbox and click the link to verify. You can sign in after verifying.',
+              [{ text: 'OK', onPress: () => router.replace('/auth/login?verify=1' as never) }]
+            );
+          }
         } else {
-          Alert.alert(
-            'Email verification sent',
-            'A verification email has been sent to your email address. Please check your inbox and click the link to verify. You can sign in after verifying.',
-            [{ text: 'OK', onPress: () => router.replace('/auth/login?verify=1' as never) }]
-          );
+          if (typeof window !== 'undefined' && window.alert) {
+            window.alert('Account created! You can sign in with your LRN and password.');
+            router.replace('/auth/login' as never);
+          } else {
+            Alert.alert('Account created', 'You can sign in with your LRN and password.', [
+              { text: 'OK', onPress: () => router.replace('/auth/login' as never) },
+            ]);
+          }
         }
       } else {
         const welcomeParam = `welcome=new&username=${encodeURIComponent(formData.username.trim())}`;
@@ -283,29 +306,50 @@ export default function SignupScreen() {
           <View style={styles.formCard}>
             <View style={styles.form}>
               {isWeb() ? (
+                <>
+                  <Input
+                    label="Full Name"
+                    placeholder="Enter your full name"
+                    value={formData.fullName}
+                    onChangeText={(text) => handleFieldChange('fullName', text)}
+                    autoCapitalize="words"
+                    error={errors.fullName}
+                    containerStyle={styles.input}
+                  />
+                  <Input
+                    label="LRN"
+                    placeholder="Enter your Learner Reference Number"
+                    value={formData.lrn}
+                    onChangeText={(text) => handleFieldChange('lrn', text)}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    error={errors.lrn}
+                    containerStyle={styles.input}
+                  />
+                  <Input
+                    label="Email (optional)"
+                    placeholder="Enter your email to verify your account"
+                    value={formData.email}
+                    onChangeText={(text) => handleFieldChange('email', text)}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    error={errors.email}
+                    containerStyle={styles.input}
+                  />
+                </>
+              ) : (
                 <Input
-                  label="Email Address"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChangeText={(text) => handleFieldChange('email', text)}
-                  keyboardType="email-address"
+                  label="Username"
+                  placeholder="Choose a username"
+                  value={formData.username}
+                  onChangeText={(text) => handleFieldChange('username', text)}
                   autoCapitalize="none"
                   autoCorrect={false}
-                  error={errors.email}
+                  error={errors.username}
                   containerStyle={styles.input}
                 />
-              ) : null}
-
-              <Input
-                label="Username"
-                placeholder="Choose a username"
-                value={formData.username}
-                onChangeText={(text) => handleFieldChange('username', text)}
-                autoCapitalize="none"
-                autoCorrect={false}
-                error={errors.username}
-                containerStyle={styles.input}
-              />
+              )}
 
               <Input
                 label="Password"

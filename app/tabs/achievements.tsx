@@ -22,8 +22,8 @@ import { database } from '../../services/database';
 import { getCardWidth, getSpacing, isSmallDevice, isTablet, scaleFont, scaleSize, wp } from '../../utils/responsive';
 
 const ProfessionalColors = {
-  primary: '#FF6600',
-  primaryDark: '#CC5200',
+  primary: '#10B981',
+  primaryDark: '#047857',
   white: '#FFFFFF',
   background: '#FAFAFA',
   card: '#FFFFFF',
@@ -31,7 +31,7 @@ const ProfessionalColors = {
   textSecondary: '#666666',
   border: '#E5E5E5',
   error: '#DC2626',
-  success: '#61E35D',
+  success: '#10B981',
   warning: '#F59E0B',
 };
 
@@ -76,7 +76,7 @@ function AchievementsBackground() {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <LinearGradient
-        colors={['#FFFFFF', '#FFF5F0', '#FFE8DC', '#FFF5F0', '#FFFFFF']}
+        colors={['#FFFFFF', '#F0FDF4', '#ECFDF5', '#F0FDF4', '#FFFFFF']}
         locations={[0, 0.25, 0.5, 0.75, 1]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
@@ -84,7 +84,7 @@ function AchievementsBackground() {
       />
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: overlayOpacity }]} pointerEvents="none">
         <LinearGradient
-          colors={['#FF6600', '#FF8533', '#FF6600']}
+          colors={['#10B981', '#34D399', '#10B981']}
           locations={[0, 0.5, 1]}
           style={StyleSheet.absoluteFill}
           start={{ x: 0, y: 0 }}
@@ -227,7 +227,7 @@ const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
     type: 'certificate',
     category: 'topic_mastery',
     icon: '📊',
-    color: '#FF6600',
+    color: '#10B981',
     earned: false,
     rarity: 'rare',
     requirements: ['Read all Variation content', 'Complete Take Activities for this topic'],
@@ -241,7 +241,7 @@ const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
     type: 'badge',
     category: 'special',
     icon: '🌟',
-    color: '#61E35D',
+    color: '#10B981',
     earned: false,
     rarity: 'common',
     requirements: ['Get 25% or more on any topic'],

@@ -12,7 +12,7 @@ const SHINE_DURATION_MS = 420;
 const SCALE_DURATION_MS = 320;
 
 type AccordionRevealBodyProps = {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
 };
 

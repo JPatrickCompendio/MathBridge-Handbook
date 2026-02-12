@@ -188,10 +188,10 @@
       }
     ],
     "examples": [
-      { "set": "(3, 4, 5)", "result": "Triangle Triple" },
-      { "set": "(5, 12, 13)", "result": "Triangle Triple" },
+      { "set": "(3, 4, 5)", "result": "Triangle Triple (Primitive)" },
+      { "set": "(5, 12, 13)", "result": "Triangle Triple (Primitive)" },
       { "set": "(6, 8, 10)", "result": "Triangle Triple (Non-Primitive)" },
-      { "set": "(7, 24, 25)", "result": "Triangle Triple" },
+      { "set": "(7, 24, 25)", "result": "Triangle Triple (Primitive)" },
       { "set": "(8, 15, 16)", "result": "Not a Triangle Triple" }
     ],
     "practice_activities": {
