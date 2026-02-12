@@ -4,10 +4,12 @@
  * Pauses when screen loses focus to reduce memory use and avoid native crashes on Android.
  */
 
+import { useEvent } from 'expo';
 import { useFocusEffect } from '@react-navigation/native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, StyleSheet, StyleProp, ViewStyle, Text, View } from 'react-native';
+import { scaleFont } from '../utils/responsive';
 import { getVideoSource } from '../utils/videoCatalog';
 import type { VideoId } from '../utils/videoCatalog';
 
@@ -17,6 +19,8 @@ export type LessonVideoProps = {
   videoId: VideoId;
   style?: StyleProp<ViewStyle>;
   contentFit?: ContentFit;
+  /** Thumbnail label shown before first frame (e.g. topic or method name) */
+  thumbnailLabel?: string;
 };
 
 function normalizeSource(videoId: VideoId): string | number {
@@ -50,6 +54,10 @@ class VideoErrorBoundary extends React.Component<
 }
 
 const styles = StyleSheet.create({
+  videoWrapper: {
+    overflow: 'hidden',
+    position: 'relative',
+  },
   fallback: {
     backgroundColor: '#1a1a1a',
     alignItems: 'center',
@@ -60,14 +68,37 @@ const styles = StyleSheet.create({
     color: '#999',
     fontSize: 14,
   },
+  thumbnailOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#0f172a',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  thumbnailLabel: {
+    color: '#94A3B8',
+    fontSize: scaleFont(16),
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingHorizontal: 24,
+  },
 });
 
-export function LessonVideo({ videoId, style, contentFit }: LessonVideoProps) {
+export function LessonVideo({ videoId, style, contentFit, thumbnailLabel }: LessonVideoProps) {
+  const [showThumbnail, setShowThumbnail] = useState(!!thumbnailLabel);
   const source = normalizeSource(videoId);
   const player = useVideoPlayer(source, (p) => {
     p.loop = false;
     p.muted = false;
   });
+
+  const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
+
+  useEffect(() => {
+    if (thumbnailLabel && isPlaying) {
+      setShowThumbnail(false);
+    }
+  }, [thumbnailLabel, isPlaying]);
 
   useFocusEffect(
     useCallback(() => {
@@ -93,13 +124,20 @@ export function LessonVideo({ videoId, style, contentFit }: LessonVideoProps) {
 
   return (
     <VideoErrorBoundary style={style}>
-      <VideoView
-        player={player}
-        style={style}
-        contentFit={fit}
-        nativeControls
-        {...fullscreenProps}
-      />
+      <View style={[styles.videoWrapper, style]}>
+        <VideoView
+          player={player}
+          style={StyleSheet.absoluteFill}
+          contentFit={fit}
+          nativeControls
+          {...fullscreenProps}
+        />
+        {thumbnailLabel && showThumbnail && (
+          <View style={styles.thumbnailOverlay} pointerEvents="none">
+            <Text style={styles.thumbnailLabel}>{thumbnailLabel}</Text>
+          </View>
+        )}
+      </View>
     </VideoErrorBoundary>
   );
 }

@@ -280,11 +280,12 @@ export default function VariationLessonScreen() {
         {/* Video: Variation */}
         <SectionFadeIn index={5}>
           <View style={styles.topicVideoWrap}>
-            <Text style={styles.topicVideoLabel}>Video: Variation</Text>
+            <Text style={styles.topicVideoLabel}>Video</Text>
             <View style={styles.topicVideoContainer}>
               <View style={styles.topicVideoInner}>
                 <LessonVideo
                   videoId="M5Variation"
+                  thumbnailLabel="Variation"
                   style={[styles.topicVideo, Platform.OS === 'web' && styles.topicVideoWeb]}
                   contentFit={Platform.OS === 'web' ? 'contain' : 'cover'}
                 />

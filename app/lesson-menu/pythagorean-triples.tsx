@@ -378,11 +378,12 @@ export default function PythagoreanTriplesLessonScreen() {
         {/* Video: Triangle Triples */}
         <SectionFadeIn index={5}>
           <View style={styles.topicVideoWrap}>
-            <Text style={styles.topicVideoLabel}>Video: Triangle Triples</Text>
+            <Text style={styles.topicVideoLabel}>Video</Text>
             <View style={styles.topicVideoContainer}>
               <View style={styles.topicVideoInner}>
                 <LessonVideo
                   videoId="M2TriangleTriples"
+                  thumbnailLabel="Triangle Triples"
                   style={[styles.topicVideo, Platform.OS === 'web' && styles.topicVideoWeb]}
                   contentFit={Platform.OS === 'web' ? 'contain' : 'cover'}
                 />

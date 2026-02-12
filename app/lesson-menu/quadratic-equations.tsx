@@ -779,11 +779,12 @@ function MethodStepsContent({ content, useSlashFractions }: { content: string[];
 function MethodVideoBlock({ label, videoId }: { label: string; videoId: VideoId }) {
   return (
     <View style={styles.factoringVideoWrap}>
-      <Text style={styles.factoringVideoLabel}>Video: {label}</Text>
+      <Text style={styles.factoringVideoLabel}>Video</Text>
       <View style={styles.factoringVideoContainer}>
         <View style={styles.factoringVideoInner}>
           <LessonVideo
             videoId={videoId}
+            thumbnailLabel={label}
             style={[styles.factoringVideo, Platform.OS === 'web' && styles.factoringVideoWeb]}
             contentFit={Platform.OS === 'web' ? 'contain' : 'cover'}
           />
@@ -1344,11 +1345,12 @@ export default function LessonMenuScreen({
             {/* Introduction Video (moved below accordions) */}
             <SectionFadeIn index={5}>
               <View style={styles.factoringVideoWrap}>
-                <Text style={styles.factoringVideoLabel}>Video: Introduction</Text>
+                <Text style={styles.factoringVideoLabel}>Video</Text>
                 <View style={styles.factoringVideoContainer}>
                   <View style={styles.factoringVideoInner}>
                     <LessonVideo
                       videoId="M1INTRO"
+                      thumbnailLabel="Quadratic Equations"
                       style={[styles.factoringVideo, Platform.OS === 'web' && styles.factoringVideoWeb]}
                       contentFit={Platform.OS === 'web' ? 'contain' : 'cover'}
                     />

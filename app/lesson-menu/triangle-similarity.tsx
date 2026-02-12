@@ -424,11 +424,12 @@ export default function TriangleSimilarityLessonScreen() {
         {/* Video: Triangle Similarities */}
         <SectionFadeIn index={5}>
           <View style={styles.topicVideoWrap}>
-            <Text style={styles.topicVideoLabel}>Video: Triangle Similarities</Text>
+            <Text style={styles.topicVideoLabel}>Video</Text>
             <View style={styles.topicVideoContainer}>
               <View style={styles.topicVideoInner}>
                 <LessonVideo
                   videoId="M3ATriangleSimilarities"
+                  thumbnailLabel="Triangle Similarities"
                   style={[styles.topicVideo, Platform.OS === 'web' && styles.topicVideoWeb]}
                   contentFit={Platform.OS === 'web' ? 'contain' : 'cover'}
                 />
