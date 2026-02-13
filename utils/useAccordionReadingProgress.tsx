@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { getSpacing, scaleFont, scaleSize } from './responsive';
 
-const INDICATOR_COLORS = { bg: 'rgba(255, 102, 0, 0.9)', text: '#FFFFFF' };
+const INDICATOR_COLORS = { bg: 'rgba(16, 185, 129, 0.9)', text: '#FFFFFF' };
 
 export function useAccordionReadingProgress(
   topicId: number,

@@ -631,14 +631,18 @@ export default function ProfileScreen() {
           if (cancelled) return;
           const sqliteName = !isWeb() && typeof database.getDisplayName === 'function' ? await database.getDisplayName() : null;
           if (cancelled) return;
-          const displayName = (overlay.displayName?.trim() || sqliteName || user?.username || user?.displayName) ?? '';
+          // On app: prefer SQLite name (source of truth) then overlay then user
+          const displayName = !isWeb() && sqliteName
+            ? ((sqliteName.trim() || overlay.displayName?.trim() || user?.username || user?.displayName) ?? '')
+            : ((overlay.displayName?.trim() || sqliteName || user?.username || user?.displayName) ?? '');
+          const nameToShow = (displayName || user?.username || user?.displayName || overlay.displayName?.trim() || '').trim();
           if (user) {
             const isLocalEmail = !!(user.email && user.email.startsWith('_local_') && user.email.endsWith('@app'));
             setUserData({
-              name: (displayName || user.username) ?? '',
+              name: nameToShow || user.username || '',
               email: isLocalEmail ? '' : (user.email ?? ''),
               memberSince: user.createdAt ?? '',
-              avatar: ((displayName || user.username) ?? '').charAt(0).toUpperCase() || '?',
+              avatar: (nameToShow || user.username || '').charAt(0).toUpperCase() || '?',
             });
             if (isWeb() && user.photoUrl) {
               setProfilePhotoUri(user.photoUrl);
@@ -646,7 +650,11 @@ export default function ProfileScreen() {
               setProfilePhotoUri(overlay.photoUri);
             }
           } else {
-            setUserData(getDefaultUser());
+            setUserData({
+              ...getDefaultUser(),
+              name: overlay.displayName?.trim() || '',
+              avatar: (overlay.displayName?.trim() || '?').charAt(0).toUpperCase() || '?',
+            });
             setProfilePhotoUri(overlay.photoUri);
           }
         } catch (e) {
@@ -1076,11 +1084,13 @@ export default function ProfileScreen() {
           </View>
         </Animated.View>
 
-        {/* Logout Button */}
-        <AnimatedLogoutButton
-          onPress={handleLogout}
-          fadeAnim={fadeAnim}
-        />
+        {/* Logout Button (web only) */}
+        {isWeb() && (
+          <AnimatedLogoutButton
+            onPress={handleLogout}
+            fadeAnim={fadeAnim}
+          />
+        )}
         </View>
       </ScrollView>
 

@@ -103,7 +103,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHINE_BAND_WIDTH = Math.max(SCREEN_WIDTH, 400) * 0.8;
 const SHINE_DURATION = 2200;
 
-/** White–orange gradient with a sweeping shine effect (activities tab). */
+/** White–light green gradient with a sweeping shine effect (activities tab). */
 function ActivitiesGradientBackground() {
   const shineX = useRef(new Animated.Value(0)).current;
   const shineOpacity = useRef(new Animated.Value(0)).current;
@@ -159,7 +159,7 @@ function ActivitiesGradientBackground() {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <LinearGradient
-        colors={['#FFFFFF', '#FFF5F0', '#FFE8DC', '#FFF5F0', '#FFFFFF']}
+        colors={['#FFFFFF', '#F0FDF4', '#ECFDF5', '#F0FDF4', '#FFFFFF']}
         locations={[0, 0.25, 0.5, 0.75, 1]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
