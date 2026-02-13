@@ -31,7 +31,7 @@ import {
 import type { AchievementRecord, ScoreRecord } from '../../services/database/types';
 import type { QuizAnswerDetail } from '../../services/database/types';
 import { Spacing } from '../../constants/colors';
-import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive';
+import { getSpacing, isWeb, scaleFont, scaleSize, useResponsive } from '../../utils/responsive';
 
 const ADMIN_EMAILS = ['admin@example.com']; // TODO: replace with your real teacher/admin email(s)
 
@@ -99,6 +99,8 @@ export default function AdminDashboardScreen() {
   const backgroundAnim = React.useRef(new Animated.Value(0)).current;
   const headerOpacity = React.useRef(new Animated.Value(0)).current;
   const headerScale = React.useRef(new Animated.Value(0.96)).current;
+  const { isWideScreen } = useResponsive();
+  const narrowWeb = isWeb() && !isWideScreen;
 
   useEffect(() => {
     if (!isWeb()) {
@@ -250,7 +252,7 @@ export default function AdminDashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
+      <View style={[styles.header, narrowWeb && styles.headerMobileWeb]}>
         <Animated.View style={[styles.headerTitleWrap, { opacity: headerOpacity, transform: [{ scale: headerScale }] }]}>
           <Text style={styles.headerTitle}>TEACHER DASHBOARD</Text>
         </Animated.View>
@@ -262,7 +264,7 @@ export default function AdminDashboardScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, narrowWeb && styles.tabBarMobileWeb]}>
         <TabButton label="Overview" tab="overview" activeTab={activeTab} onPress={setActiveTab} />
         <TabButton label="Leaderboard" tab="leaderboard" activeTab={activeTab} onPress={setActiveTab} />
         <TabButton label="Students" tab="students" activeTab={activeTab} onPress={setActiveTab} />
@@ -273,7 +275,7 @@ export default function AdminDashboardScreen() {
 
         <ScrollView
           style={styles.content}
-          contentContainerStyle={styles.contentInner}
+          contentContainerStyle={[styles.contentInner, narrowWeb && styles.contentInnerMobileWeb]}
           showsVerticalScrollIndicator={false}
         >
           {activeTab === 'overview' && overview && (
@@ -283,6 +285,7 @@ export default function AdminDashboardScreen() {
               onStudentPress={handleStudentSelect}
               searchQuery={studentSearchQuery}
               onSearchChange={setStudentSearchQuery}
+              narrow={narrowWeb}
             />
           )}
           {activeTab === 'students' && (
@@ -292,6 +295,7 @@ export default function AdminDashboardScreen() {
               onSearchChange={setStudentSearchQuery}
               passwordResetRequests={passwordResetRequests}
               passwordResetRequestsLoading={passwordResetRequestsLoading}
+              narrow={narrowWeb}
               onRefreshRequests={() => {
                 setPasswordResetRequestsLoading(true);
                 fetchPasswordResetRequests()
@@ -303,7 +307,7 @@ export default function AdminDashboardScreen() {
             />
           )}
           {activeTab === 'leaderboard' && (
-            <LeaderboardTab byProgress={sortedByProgress} byScore={topByScore} />
+            <LeaderboardTab byProgress={sortedByProgress} byScore={topByScore} narrow={narrowWeb} />
           )}
         </ScrollView>
       </View>
@@ -806,12 +810,14 @@ function OverviewTab({
   onStudentPress,
   searchQuery,
   onSearchChange,
+  narrow,
 }: {
   overview: AdminOverview;
   users: AdminUserSummary[];
   onStudentPress: (user: AdminUserSummary) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  narrow?: boolean;
 }) {
   const filteredUsers = filterUsersByName(users, searchQuery);
   const topActive = [...users]
@@ -825,8 +831,8 @@ function OverviewTab({
       <Text style={styles.overviewPageSubtitle}>
         Monitor student progress, quiz performance, and achievements in one place.
       </Text>
-      <View style={styles.cardRow}>
-        <View style={[styles.statCard, styles.statCardPrimary]}>
+      <View style={[styles.cardRow, narrow && styles.cardRowMobileWeb]}>
+        <View style={[styles.statCard, styles.statCardPrimary, narrow && styles.statCardMobileWeb]}>
           <View style={styles.statCardTopRow}>
             <View style={[styles.statIconChip, styles.statIconChipPrimary]}>
               <Text style={styles.statIconText}>👥</Text>
@@ -836,7 +842,7 @@ function OverviewTab({
           <Text style={[styles.statValue, styles.statValuePrimary]}>{overview.totalStudents}</Text>
           <Text style={[styles.statSubLabel, styles.statSubLabelPrimary]}>All registered learners</Text>
         </View>
-        <View style={[styles.statCard, styles.statCardSecondary]}>
+        <View style={[styles.statCard, styles.statCardSecondary, narrow && styles.statCardMobileWeb]}>
           <View style={styles.statCardTopRow}>
             <View style={[styles.statIconChip, styles.statIconChipSecondary]}>
               <Text style={styles.statIconText}>📈</Text>
@@ -846,7 +852,7 @@ function OverviewTab({
           <Text style={[styles.statValue, styles.statValueSecondary]}>{overview.avgCombinedProgress}%</Text>
           <Text style={[styles.statSubLabel, styles.statSubLabelSecondary]}>Across all topics</Text>
         </View>
-        <View style={[styles.statCard, styles.statCardTertiary]}>
+        <View style={[styles.statCard, styles.statCardTertiary, narrow && styles.statCardMobileWeb]}>
           <View style={styles.statCardTopRow}>
             <View style={[styles.statIconChip, styles.statIconChipTertiary]}>
               <Text style={styles.statIconText}>🎯</Text>
@@ -860,7 +866,7 @@ function OverviewTab({
 
       <View style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>All Students</Text>
-        <View style={styles.searchBarWrap}>
+        <View style={[styles.searchBarWrap, narrow && styles.searchBarWrapMobileWeb]}>
           <TextInput
             style={styles.searchBarInput}
             placeholder="Search by name or email..."
@@ -874,13 +880,13 @@ function OverviewTab({
         ) : filteredUsers.length === 0 ? (
           <Text style={styles.mutedText}>No students match your search.</Text>
         ) : (
-          <View style={styles.studentGrid}>
+          <View style={[styles.studentGrid, narrow && styles.studentGridMobileWeb]}>
             {filteredUsers.map((u) => {
               const name = u.username || u.displayName || u.email;
               const initial = (name || '?').charAt(0).toUpperCase();
               const photo = u.photoUrl;
               return (
-                <View key={u.id} style={styles.studentCardWrap}>
+                <View key={u.id} style={[styles.studentCardWrap, narrow && styles.studentCardWrapMobileWeb]}>
                   <TouchableOpacity
                     style={styles.studentCard}
                     activeOpacity={0.85}
@@ -931,6 +937,7 @@ function StudentsTab({
   passwordResetRequestsLoading,
   onRefreshRequests,
   onSetPassword,
+  narrow,
 }: {
   users: AdminUserSummary[];
   searchQuery: string;
@@ -939,6 +946,7 @@ function StudentsTab({
   passwordResetRequestsLoading: boolean;
   onRefreshRequests: () => void;
   onSetPassword: (request: PasswordResetRequest, user?: AdminUserSummary) => void;
+  narrow?: boolean;
 }) {
   const filteredUsers = filterUsersByName(users, searchQuery);
 
@@ -957,7 +965,7 @@ function StudentsTab({
               {passwordResetRequests.map((req) => {
                 const user = req.userId ? users.find((u) => u.id === req.userId) : undefined;
                 return (
-                  <View key={req.id} style={styles.resetRequestRow}>
+                  <View key={req.id} style={[styles.resetRequestRow, narrow && styles.resetRequestRowMobileWeb]}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.resetRequestIdentifier}>{req.identifier}</Text>
                       <Text style={styles.resetRequestMeta}>
@@ -983,9 +991,9 @@ function StudentsTab({
       ) : null}
 
       <Text style={styles.sectionTitle}>All students</Text>
-      <View style={styles.studentsTabSearchRow}>
+      <View style={[styles.studentsTabSearchRow, narrow && styles.studentsTabSearchRowMobileWeb]}>
         <View style={{ flex: 1 }} />
-        <View style={styles.searchBarWrap}>
+        <View style={[styles.searchBarWrap, narrow && styles.searchBarWrapMobileWeb]}>
           <TextInput
             style={styles.searchBarInput}
             placeholder="Search by name or email..."
@@ -997,6 +1005,39 @@ function StudentsTab({
       </View>
       {!users.length ? (
         <Text style={styles.mutedText}>No students found yet.</Text>
+      ) : narrow ? (
+        filteredUsers.length === 0 ? (
+          <Text style={styles.mutedText}>No students match your search.</Text>
+        ) : (
+        <View style={styles.studentCardListMobileWeb}>
+          {filteredUsers.map((u) => (
+            <View key={u.id} style={styles.studentCardMobileWeb}>
+              <View style={styles.studentCardMobileWebHeader}>
+                <Text style={styles.studentCardMobileWebName} numberOfLines={1}>
+                  {u.username || u.displayName || u.email}
+                </Text>
+                <Text style={styles.studentCardMobileWebEmail} numberOfLines={1}>
+                  {u.email}
+                </Text>
+              </View>
+              <View style={styles.studentCardMobileWebStats}>
+                <View style={styles.studentCardMobileWebStat}>
+                  <Text style={styles.studentCardMobileWebStatLabel}>Progress</Text>
+                  <Text style={styles.studentCardMobileWebStatValue}>{u.combinedProgress}%</Text>
+                </View>
+                <View style={styles.studentCardMobileWebStat}>
+                  <Text style={styles.studentCardMobileWebStatLabel}>Avg Score</Text>
+                  <Text style={styles.studentCardMobileWebStatValue}>{u.avgScore || '—'}%</Text>
+                </View>
+                <View style={styles.studentCardMobileWebStat}>
+                  <Text style={styles.studentCardMobileWebStatLabel}>Quizzes</Text>
+                  <Text style={styles.studentCardMobileWebStatValue}>{u.quizzesTaken}</Text>
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+        )
       ) : (
       <View style={styles.tableCard}>
         <View style={styles.tableHeaderRow}>
@@ -1039,9 +1080,11 @@ function StudentsTab({
 function LeaderboardTab({
   byProgress,
   byScore,
+  narrow,
 }: {
   byProgress: AdminUserSummary[];
   byScore: AdminUserSummary[];
+  narrow?: boolean;
 }) {
   const shineAnim = React.useRef(new Animated.Value(0)).current;
   React.useEffect(() => {
@@ -1072,7 +1115,7 @@ function LeaderboardTab({
   });
 
   return (
-    <View style={styles.leaderboardRow}>
+    <View style={[styles.leaderboardRow, narrow && styles.leaderboardRowMobileWeb]}>
       <View style={[styles.sectionCard, styles.leaderboardColumn, styles.leaderboardCardShineWrap]}>
         <Animated.View
           style={[
@@ -1290,6 +1333,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: getSpacing(Spacing.lg),
     paddingBottom: getSpacing(Spacing.xxl),
     gap: getSpacing(Spacing.lg),
+  },
+  contentInnerMobileWeb: {
+    paddingHorizontal: getSpacing(Spacing.md),
   },
   section: {
     gap: getSpacing(Spacing.lg),
@@ -1651,6 +1697,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#F59E0B',
   },
+  resetRequestRowMobileWeb: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: getSpacing(Spacing.sm),
+  },
   resetRequestIdentifier: {
     fontSize: scaleFont(14),
     fontWeight: '600',
@@ -1961,6 +2012,82 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(14),
     color: '#F97373',
     textAlign: 'center',
+  },
+  // Web mobile responsive (narrow viewport)
+  headerMobileWeb: {
+    flexWrap: 'wrap',
+    paddingHorizontal: getSpacing(Spacing.md),
+  },
+  tabBarMobileWeb: {
+    flexWrap: 'wrap',
+    gap: getSpacing(Spacing.xs),
+  },
+  cardRowMobileWeb: {
+    flexDirection: 'column',
+  },
+  statCardMobileWeb: {
+    minWidth: '100%',
+  },
+  studentGridMobileWeb: {
+    marginTop: getSpacing(Spacing.sm),
+  },
+  studentCardWrapMobileWeb: {
+    width: '50%',
+    padding: getSpacing(Spacing.sm),
+    paddingBottom: 0,
+    marginBottom: getSpacing(Spacing.md),
+  },
+  searchBarWrapMobileWeb: {
+    maxWidth: '100%',
+  },
+  studentsTabSearchRowMobileWeb: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+  leaderboardRowMobileWeb: {
+    flexDirection: 'column',
+  },
+  studentCardListMobileWeb: {
+    gap: getSpacing(Spacing.sm),
+  },
+  studentCardMobileWeb: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(12),
+    padding: getSpacing(Spacing.md),
+    borderLeftWidth: 4,
+    borderLeftColor: '#10B981',
+  },
+  studentCardMobileWebHeader: {
+    marginBottom: getSpacing(Spacing.sm),
+  },
+  studentCardMobileWebName: {
+    fontSize: scaleFont(15),
+    fontWeight: '600',
+    color: '#022C22',
+  },
+  studentCardMobileWebEmail: {
+    fontSize: scaleFont(12),
+    color: '#4B5563',
+    marginTop: 2,
+  },
+  studentCardMobileWebStats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: getSpacing(Spacing.md),
+  },
+  studentCardMobileWebStat: {
+    minWidth: 80,
+  },
+  studentCardMobileWebStatLabel: {
+    fontSize: scaleFont(11),
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  studentCardMobileWebStatValue: {
+    fontSize: scaleFont(14),
+    fontWeight: '600',
+    color: '#022C22',
   },
 });
 
