@@ -151,14 +151,38 @@ export default function AdminDashboardScreen() {
     };
   }, [router]);
 
-  const sortedByProgress = useMemo(
-    () => [...users].sort((a, b) => b.combinedProgress - a.combinedProgress),
+  // Exclude admin accounts from student lists (admin sees only students, not themselves)
+  const studentsOnly = useMemo(
+    () => users.filter((u) => !ADMIN_EMAILS.includes((u.email || '').toLowerCase())),
     [users]
+  );
+
+  const sortedByProgress = useMemo(
+    () => [...studentsOnly].sort((a, b) => b.combinedProgress - a.combinedProgress),
+    [studentsOnly]
   );
   const topByScore = useMemo(
-    () => [...users].sort((a, b) => b.avgScore - a.avgScore).slice(0, 10),
-    [users]
+    () => [...studentsOnly].sort((a, b) => b.avgScore - a.avgScore).slice(0, 10),
+    [studentsOnly]
   );
+
+  const overviewAdjusted = useMemo(() => {
+    if (!overview) return overview;
+    const totalStudents = studentsOnly.length;
+    const avgCombinedProgress =
+      totalStudents > 0
+        ? Math.round(
+            studentsOnly.reduce((sum, u) => sum + u.combinedProgress, 0) / totalStudents
+          )
+        : 0;
+    const totalQuizzesTaken = studentsOnly.reduce((sum, u) => sum + u.quizzesTaken, 0);
+    return {
+      ...overview,
+      totalStudents,
+      avgCombinedProgress,
+      totalQuizzesTaken,
+    };
+  }, [overview, studentsOnly]);
 
   useEffect(() => {
     Animated.loop(
@@ -278,10 +302,10 @@ export default function AdminDashboardScreen() {
           contentContainerStyle={[styles.contentInner, narrowWeb && styles.contentInnerMobileWeb]}
           showsVerticalScrollIndicator={false}
         >
-          {activeTab === 'overview' && overview && (
+          {activeTab === 'overview' && overviewAdjusted && (
             <OverviewTab
-              overview={overview}
-              users={users}
+              overview={overviewAdjusted}
+              users={studentsOnly}
               onStudentPress={handleStudentSelect}
               searchQuery={studentSearchQuery}
               onSearchChange={setStudentSearchQuery}
@@ -290,7 +314,7 @@ export default function AdminDashboardScreen() {
           )}
           {activeTab === 'students' && (
             <StudentsTab
-              users={users}
+              users={studentsOnly}
               searchQuery={studentSearchQuery}
               onSearchChange={setStudentSearchQuery}
               passwordResetRequests={passwordResetRequests}

@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  Image,
   LayoutAnimation,
   Platform,
   ScrollView,
@@ -22,6 +23,16 @@ import { getSpacing, isWeb, scaleFont, scaleSize } from '../../utils/responsive'
 import { useAccordionReadingProgress } from '../../utils/useAccordionReadingProgress';
 
 const PYTHAGOREAN_SECTION_KEYS = ['I', 'II', 'III', 'IV', 'V'];
+
+const MODULE2_WORKED_EXAMPLE_IMAGES: Record<number, ReturnType<typeof require>> = {
+  1: require('../../assets/images/module2mages/example1.jpg'),
+  2: require('../../assets/images/module2mages/example2.jpg'),
+  3: require('../../assets/images/module2mages/example3.jpg'),
+  4: require('../../assets/images/module2mages/example4.jpg'),
+  5: require('../../assets/images/module2mages/example5.jpg'),
+};
+
+const MODULE2_FORMULA_IMAGE = require('../../assets/images/module2mages/formula.jpg');
 
 const PYTHAGOREAN_TOPIC_ID = 2;
 
@@ -190,6 +201,9 @@ export default function PythagoreanTriplesLessonScreen() {
                 <View style={styles.formulaBlock}>
                   <Text style={styles.formulaText}>{sectionII.formula}</Text>
                 </View>
+                <View style={styles.formulaImageWrap}>
+                  <Image source={MODULE2_FORMULA_IMAGE} style={styles.formulaImage} resizeMode="contain" />
+                </View>
                 <Text style={styles.sectionIIParagraph}>{sectionII.theorem_application}</Text>
               </View>
               <View style={styles.sectionIISubsection}>
@@ -319,10 +333,18 @@ export default function PythagoreanTriplesLessonScreen() {
             <AccordionRevealBody contentStyle={[styles.accordionBody, isWeb() && styles.accordionBodyWeb]}>
               {workedExamples.length > 0 ? (
                 <>
-                  {workedExamples.map((ex: { exampleNum?: number; problem?: string; steps?: Array<{ label?: string; text?: string; formula?: string; substitution?: string }>; extra?: string; conclusion?: string }, idx: number) => (
+                  {workedExamples.map((ex: { exampleNum?: number; problem?: string; steps?: Array<{ label?: string; text?: string; formula?: string; substitution?: string }>; extra?: string; conclusion?: string }, idx: number) => {
+                    const exNum = ex.exampleNum ?? idx + 1;
+                    const imgSource = MODULE2_WORKED_EXAMPLE_IMAGES[exNum];
+                    return (
                     <View key={idx} style={styles.workedExampleCard}>
-                      <Text style={styles.workedExampleTitle}>Example {ex.exampleNum ?? idx + 1}</Text>
+                      <Text style={styles.workedExampleTitle}>Example {exNum}</Text>
                       <Text style={styles.workedExampleProblem}>{ex.problem}</Text>
+                      {imgSource ? (
+                        <View style={styles.workedExampleImageWrap}>
+                          <Image source={imgSource} style={styles.workedExampleImage} resizeMode="contain" />
+                        </View>
+                      ) : null}
                       <View style={styles.workedExampleSteps}>
                         {(ex.steps || []).map((step: { label?: string; text?: string; formula?: string; substitution?: string }, stepIdx: number) => (
                           <View key={stepIdx} style={styles.workedExampleStepRow}>
@@ -338,7 +360,8 @@ export default function PythagoreanTriplesLessonScreen() {
                         <Text style={styles.workedExampleConclusion}>{ex.conclusion}</Text>
                       </View>
                     </View>
-                  ))}
+                    );
+                  })}
                   {examples.length > 0 ? (
                     <>
                       <Text style={styles.workedExamplesTableHeading}>Quick reference</Text>
@@ -715,6 +738,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Theme.primary,
   },
+  formulaImageWrap: {
+    marginBottom: getSpacing(Spacing.sm),
+    width: '100%',
+    alignItems: 'center',
+  },
+  formulaImage: {
+    width: '100%',
+    maxWidth: scaleSize(320),
+    height: scaleSize(180),
+  },
   keywordsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -910,6 +943,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Theme.text,
     marginBottom: getSpacing(Spacing.sm),
+  },
+  workedExampleImageWrap: {
+    marginBottom: getSpacing(Spacing.sm),
+    width: '100%',
+  },
+  workedExampleImage: {
+    width: '100%',
+    maxWidth: scaleSize(320),
+    height: scaleSize(180),
   },
   workedExampleSteps: {
     marginBottom: getSpacing(Spacing.sm),
