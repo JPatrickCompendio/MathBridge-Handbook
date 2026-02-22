@@ -66,6 +66,124 @@ function getAchievementDisplay(id: string): { title: string; icon: string; color
   return { title, icon: '🏅', color: '#94A3B8' };
 }
 
+function escapeHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Generates and opens a print-ready student report (web only) */
+function openPrintReport(
+  student: AdminUserSummary,
+  scores: ScoreRecord[],
+  achievements: AchievementRecord[]
+): void {
+  if (typeof window === 'undefined' || !window.Blob || !URL.createObjectURL) return;
+
+  const name = escapeHtml(student.username || student.displayName || student.email || 'Student');
+  const email = escapeHtml(student.email || '');
+  const joinedDate = student.createdAt ? new Date(student.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : '—';
+  const topicRows = Object.entries(student.topicProgress || {}).map(([tid, value]) => {
+    const label = TOPIC_LABELS[Number(tid)] || `Topic ${tid}`;
+    const pct = value ?? 0;
+    return `<tr><td>${label}</td><td><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div></td><td>${pct}%</td></tr>`;
+  }).join('');
+  const scoreRows = scores.slice(0, 15).map((s) => {
+    const topicName = TOPIC_LABELS[s.topicId] ?? `Topic ${s.topicId}`;
+    const pct = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0;
+    const date = s.completedAt ? new Date(s.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    return `<tr><td>${topicName}</td><td>${s.score}/${s.total}</td><td>${pct}%</td><td>${date}</td></tr>`;
+  }).join('');
+  const achievementItems = achievements.map((a) => {
+    const { title, icon } = getAchievementDisplay(a.id);
+    const dateStr = a.unlockedAt ? new Date(a.unlockedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    return `<li><span class="ach-icon">${escapeHtml(icon)}</span> ${escapeHtml(title)}${dateStr ? ` <span class="ach-date">(${dateStr})</span>` : ''}</li>`;
+  }).join('');
+
+  const generatedAt = new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Report - ${name}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #1e293b; padding: 32px; max-width: 800px; margin: 0 auto; line-height: 1.5; }
+    .header { text-align: center; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #10B981; }
+    .header h1 { font-size: 24px; color: #0f172a; margin-bottom: 4px; }
+    .header .sub { font-size: 13px; color: #64748b; }
+    .student-card { background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #a7f3d0; }
+    .student-card h2 { font-size: 20px; color: #065f46; margin-bottom: 8px; }
+    .student-card .email { color: #047857; font-size: 14px; margin-bottom: 12px; }
+    .stats { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
+    .stat { background: white; padding: 12px 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 18px; font-weight: 700; color: #10B981; }
+    .section { margin-bottom: 28px; }
+    .section h3 { font-size: 16px; color: #0f172a; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f8fafc; color: #475569; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+    .bar-wrap { background: #e2e8f0; border-radius: 6px; height: 10px; overflow: hidden; }
+    .bar-fill { background: linear-gradient(90deg, #10B981, #34d399); height: 100%; border-radius: 6px; }
+    ul { list-style: none; }
+    ul li { padding: 8px 0; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 8px; }
+    .ach-icon { font-size: 18px; }
+    .ach-date { font-size: 12px; color: #94a3b8; }
+    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center; }
+    .no-print { padding: 24px; text-align: center; }
+    .print-btn { padding: 12px 24px; background: #10B981; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    @media print { body { padding: 16px; } .no-print { display: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Math Bridge Handbook</h1>
+    <p class="sub">Student Progress Report</p>
+  </div>
+  <div class="student-card">
+    <h2>${name}</h2>
+    <p class="email">${email}</p>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Joined</div><div class="stat-value">${joinedDate}</div></div>
+      <div class="stat"><div class="stat-label">Overall Progress</div><div class="stat-value">${student.combinedProgress}%</div></div>
+      <div class="stat"><div class="stat-label">Quizzes Taken</div><div class="stat-value">${student.quizzesTaken}</div></div>
+      <div class="stat"><div class="stat-label">Avg Score</div><div class="stat-value">${student.avgScore}%</div></div>
+      ${student.streak != null ? `<div class="stat"><div class="stat-label">Current Streak</div><div class="stat-value">${student.streak} day(s)</div></div>` : ''}
+    </div>
+  </div>
+  <div class="section">
+    <h3>Progress by Topic</h3>
+    ${topicRows ? `<table><thead><tr><th>Topic</th><th>Progress</th><th></th></tr></thead><tbody>${topicRows}</tbody></table>` : '<p style="color:#94a3b8;">No topic progress recorded yet.</p>'}
+  </div>
+  <div class="section">
+    <h3>Quiz Scores</h3>
+    ${scoreRows ? `<table><thead><tr><th>Topic</th><th>Score</th><th>%</th><th>Date</th></tr></thead><tbody>${scoreRows}</tbody></table>` : '<p style="color:#94a3b8;">No quiz attempts yet.</p>'}
+  </div>
+  <div class="section">
+    <h3>Achievements</h3>
+    ${achievementItems ? `<ul>${achievementItems}</ul>` : '<p style="color:#94a3b8;">No achievements unlocked yet.</p>'}
+  </div>
+  <div class="footer">
+    Generated on ${generatedAt} · Math Bridge Handbook
+  </div>
+  <div class="no-print">
+    <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+  </div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank', 'noopener,noreferrer,width=900,height=700');
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
 type TabKey = 'overview' | 'students' | 'leaderboard';
 
 function filterUsersByName(users: AdminUserSummary[], query: string): AdminUserSummary[] {
@@ -551,6 +669,15 @@ function StudentDetailModal({
               <Text style={styles.modalTitle}>{name}</Text>
               <Text style={styles.modalSubtitle}>{student.email}</Text>
             </View>
+            {Platform.OS === 'web' && (
+              <TouchableOpacity
+                onPress={() => openPrintReport(student, scores, achievements)}
+                style={styles.printReportButton}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.printReportButtonText}>📄 Print Report</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
               <Text style={styles.modalCloseText}>✕</Text>
             </TouchableOpacity>
@@ -1851,6 +1978,18 @@ const styles = StyleSheet.create({
   modalSubtitle: {
     color: '#9CA3AF',
     fontSize: scaleFont(13),
+  },
+  printReportButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: getSpacing(Spacing.md),
+    paddingVertical: getSpacing(Spacing.sm),
+    borderRadius: scaleSize(8),
+    marginRight: getSpacing(Spacing.sm),
+  },
+  printReportButtonText: {
+    color: '#fff',
+    fontSize: scaleFont(13),
+    fontWeight: '600',
   },
   modalCloseButton: {
     paddingHorizontal: getSpacing(Spacing.xs),
