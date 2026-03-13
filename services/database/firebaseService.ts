@@ -164,9 +164,13 @@ const firebaseService: DatabaseService = {
       };
       setSession(session);
       return session;
-    } catch (e) {
+    } catch (e: unknown) {
       if (e instanceof Error && e.message === 'EMAIL_NOT_VERIFIED') throw e;
-      return null;
+      // Firebase auth errors (invalid credential, wrong password, etc.) - return null so UI shows "Invalid email or password"
+      const code = (e as { code?: string })?.code;
+      if (typeof code === 'string' && code.startsWith('auth/')) return null;
+      // Other errors (network, Firestore, config) - rethrow so UI can show a helpful message
+      throw e;
     }
   },
 

@@ -327,9 +327,23 @@ export default function LoginScreen() {
         setLoginError('Invalid email or password. Create an account if you don\'t have one.');
       }
     } catch (e) {
-      const msg = e instanceof Error && e.message === 'EMAIL_NOT_VERIFIED'
-        ? 'Please verify your email before signing in. Check your inbox (and spam folder) for the verification link.'
-        : 'Something went wrong. Please try again.';
+      let msg = 'Something went wrong. Please try again.';
+      if (e instanceof Error) {
+        if (e.message === 'EMAIL_NOT_VERIFIED') {
+          msg = 'Please verify your email before signing in. Check your inbox (and spam folder) for the verification link.';
+        } else {
+          const code = (e as { code?: string })?.code;
+          if (code === 'auth/network-request-failed') {
+            msg = 'Network error. Please check your connection and try again.';
+          } else if (code === 'auth/too-many-requests') {
+            msg = 'Too many login attempts. Please try again later.';
+          } else if (typeof code === 'string' && code.startsWith('auth/')) {
+            msg = 'Invalid email or password. Create an account if you don\'t have one.';
+          } else if (e.message) {
+            msg = e.message;
+          }
+        }
+      }
       setLoginError(msg);
     } finally {
       setLoading(false);
