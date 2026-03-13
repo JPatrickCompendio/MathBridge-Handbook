@@ -1,9 +1,10 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users: authenticated users can read (login reads own doc; admin reads all). Users can only create/update their own.
+    // Users: allow read for LRN→email lookup (happens before login, no auth yet) and for login/admin (authenticated).
+    // Note: Public read exposes LRN/email mapping. For stricter security, use a separate lrn_lookup collection.
     match /users/{userId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow create, update: if request.auth != null && request.auth.uid == userId;
     }
 
